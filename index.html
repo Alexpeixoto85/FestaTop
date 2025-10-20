@@ -1,0 +1,1579 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle de Eventos</title>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6b8cbc;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --card-blue: #5ac8fa;
+            --card-green: #4cd964;
+            --card-orange: #ff9500;
+            --card-purple: #af52de;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding-bottom: 20px;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 15px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 80px;
+            z-index: 99;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background-color: white;
+            border: none;
+            font-weight: bold;
+            color: var(--dark-color);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .dashboard-card {
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 150px;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+        
+        .card-event {
+            background: linear-gradient(135deg, var(--card-blue), #007aff);
+        }
+        
+        .card-guests {
+            background: linear-gradient(135deg, var(--card-green), #34c759);
+        }
+        
+        .card-suppliers {
+            background: linear-gradient(135deg, var(--card-orange), #ff9500);
+        }
+        
+        .card-payments {
+            background: linear-gradient(135deg, var(--card-purple), #af52de);
+        }
+        
+        .card-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .card-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        button.success {
+            background-color: var(--success-color);
+        }
+        
+        button.success:hover {
+            background-color: #218838;
+        }
+        
+        button.danger {
+            background-color: var(--danger-color);
+        }
+        
+        button.warning {
+            background-color: var(--warning-color);
+            color: var(--dark-color);
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status.paid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .actions button {
+            flex: 1;
+            margin-top: 0;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .summary-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: auto;
+            padding: 0;
+            color: var(--dark-color);
+        }
+        
+        .file-input {
+            margin-bottom: 15px;
+        }
+        
+        .file-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+        
+        .receipt {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px dashed #e0e0e0;
+            padding-bottom: 15px;
+        }
+        
+        .receipt-details {
+            margin-bottom: 20px;
+        }
+        
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+        
+        .receipt-total {
+            font-weight: bold;
+            font-size: 18px;
+            border-top: 2px solid #e0e0e0;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        .receipt-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777;
+        }
+        
+        .payment-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .payment-actions button {
+            flex: 1;
+        }
+        
+        @media (max-width: 480px) {
+            .summary {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .payment-actions {
+                flex-direction: column;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .receipt, .receipt * {
+                visibility: visible;
+            }
+            .receipt {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Controle de Eventos</h1>
+    </header>
+    
+    <div class="container">
+        <!-- Dashboard com Cards -->
+        <div class="dashboard">
+            <div class="dashboard-card card-event" data-tab="event">
+                <div>
+                    <div class="card-icon">📅</div>
+                    <div class="card-title">Evento</div>
+                </div>
+                <div class="card-value" id="dashboard-event-name">Configurar</div>
+            </div>
+            
+            <div class="dashboard-card card-guests" data-tab="guests">
+                <div>
+                    <div class="card-icon">👥</div>
+                    <div class="card-title">Convidados</div>
+                </div>
+                <div class="card-value" id="dashboard-guest-count">0</div>
+            </div>
+            
+            <div class="dashboard-card card-suppliers" data-tab="suppliers">
+                <div>
+                    <div class="card-icon">🏢</div>
+                    <div class="card-title">Fornecedores</div>
+                </div>
+                <div class="card-value" id="dashboard-supplier-count">0</div>
+            </div>
+            
+            <div class="dashboard-card card-payments" data-tab="payments">
+                <div>
+                    <div class="card-icon">💰</div>
+                    <div class="card-title">Pagamentos</div>
+                </div>
+                <div class="card-value" id="dashboard-payment-total">R$ 0,00</div>
+            </div>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="event">Evento</button>
+            <button class="nav-tab" data-tab="guests">Convidados</button>
+            <button class="nav-tab" data-tab="suppliers">Fornecedores</button>
+            <button class="nav-tab" data-tab="payments">Pagamentos</button>
+        </div>
+        
+        <!-- Aba de Configuração do Evento -->
+        <div id="event" class="tab-content active">
+            <h2>Configuração do Evento</h2>
+            
+            <div class="form-group">
+                <label for="event-name">Nome do Evento</label>
+                <input type="text" id="event-name" placeholder="Ex: Aniversário da Maria">
+            </div>
+            
+            <div class="form-group">
+                <label for="event-date">Data do Evento</label>
+                <input type="date" id="event-date">
+            </div>
+            
+            <div class="form-group">
+                <label for="event-location">Local do Evento</label>
+                <input type="text" id="event-location" placeholder="Ex: Salão de Festas">
+            </div>
+            
+            <h3>Custos do Evento</h3>
+            
+            <div class="form-group">
+                <label for="food-cost">Custo com Alimentação (R$)</label>
+                <input type="number" id="food-cost" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="music-cost">Custo com Música (R$)</label>
+                <input type="number" id="music-cost" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="venue-cost">Custo com Aluguel do Espaço (R$)</label>
+                <input type="number" id="venue-cost" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="drinks-cost">Custo com Bebidas (R$)</label>
+                <input type="number" id="drinks-cost" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="other-costs">Outros Custos (R$)</label>
+                <input type="number" id="other-costs" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <button id="save-event">Salvar Configuração do Evento</button>
+            
+            <div class="summary" id="cost-summary">
+                <div class="summary-item">
+                    <div>Custo Total</div>
+                    <div class="summary-value" id="total-cost">R$ 0,00</div>
+                </div>
+                <div class="summary-item">
+                    <div>Valor por Convidado</div>
+                    <div class="summary-value" id="cost-per-guest">R$ 0,00</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Convidados -->
+        <div id="guests" class="tab-content">
+            <h2>Lista de Convidados</h2>
+            
+            <div class="form-group">
+                <input type="text" id="guest-search" placeholder="Buscar convidado...">
+            </div>
+            
+            <button id="add-guest-btn">Adicionar Convidado</button>
+            
+            <div id="guests-list">
+                <div class="empty-state">
+                    <p>Nenhum convidado cadastrado ainda.</p>
+                    <p>Clique em "Adicionar Convidado" para começar.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Fornecedores -->
+        <div id="suppliers" class="tab-content">
+            <h2>Fornecedores</h2>
+            
+            <button id="add-supplier-btn">Adicionar Fornecedor</button>
+            
+            <div id="suppliers-list">
+                <div class="empty-state">
+                    <p>Nenhum fornecedor cadastrado ainda.</p>
+                    <p>Clique em "Adicionar Fornecedor" para começar.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Pagamentos -->
+        <div id="payments" class="tab-content">
+            <h2>Controle de Pagamentos</h2>
+            
+            <div class="summary">
+                <div class="summary-item">
+                    <div>Total Recebido</div>
+                    <div class="summary-value" id="total-received">R$ 0,00</div>
+                </div>
+                <div class="summary-item">
+                    <div>Total a Receber</div>
+                    <div class="summary-value" id="total-pending">R$ 0,00</div>
+                </div>
+            </div>
+            
+            <h3>Pagamentos Recebidos de Convidados</h3>
+            <div id="guest-payments-list">
+                <div class="empty-state">
+                    <p>Nenhum pagamento de convidado registrado ainda.</p>
+                </div>
+            </div>
+            
+            <h3>Pagamentos Efetuados a Fornecedores</h3>
+            <div id="supplier-payments-list">
+                <div class="empty-state">
+                    <p>Nenhum pagamento a fornecedor registrado ainda.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para Adicionar/Editar Convidado -->
+    <div id="guest-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="guest-modal-title">Adicionar Convidado</h3>
+                <button class="close" id="close-guest-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-name">Nome</label>
+                <input type="text" id="guest-name" placeholder="Nome completo">
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-email">E-mail</label>
+                <input type="email" id="guest-email" placeholder="exemplo@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-phone">Telefone</label>
+                <input type="tel" id="guest-phone" placeholder="(11) 99999-9999">
+            </div>
+            
+            <button id="save-guest">Salvar Convidado</button>
+        </div>
+    </div>
+    
+    <!-- Modal para Adicionar/Editar Fornecedor -->
+    <div id="supplier-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="supplier-modal-title">Adicionar Fornecedor</h3>
+                <button class="close" id="close-supplier-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-name">Nome/Razão Social</label>
+                <input type="text" id="supplier-name" placeholder="Nome do fornecedor">
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-service">Serviço Prestado</label>
+                <select id="supplier-service">
+                    <option value="">Selecione um serviço</option>
+                    <option value="food">Alimentação</option>
+                    <option value="music">Música</option>
+                    <option value="venue">Aluguel de Espaço</option>
+                    <option value="drinks">Bebidas</option>
+                    <option value="other">Outro</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-cost">Valor do Serviço (R$)</label>
+                <input type="number" id="supplier-cost" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-contact">Contato</label>
+                <input type="text" id="supplier-contact" placeholder="Nome e telefone do contato">
+            </div>
+            
+            <button id="save-supplier">Salvar Fornecedor</button>
+        </div>
+    </div>
+    
+    <!-- Modal para Registrar Pagamento -->
+    <div id="payment-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="payment-modal-title">Registrar Pagamento</h3>
+                <button class="close" id="close-payment-modal">&times;</button>
+            </div>
+            
+            <div id="payment-info">
+                <!-- Informações do pagamento serão preenchidas dinamicamente -->
+            </div>
+            
+            <div class="form-group">
+                <label for="payment-date">Data do Pagamento</label>
+                <input type="date" id="payment-date">
+            </div>
+            
+            <div class="form-group">
+                <label for="payment-amount">Valor Pago (R$)</label>
+                <input type="number" id="payment-amount" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="payment-method">Método de Pagamento</label>
+                <select id="payment-method">
+                    <option value="pix">PIX</option>
+                    <option value="cash">Dinheiro</option>
+                    <option value="card">Cartão</option>
+                    <option value="transfer">Transferência</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="payment-receipt">Comprovante (opcional)</label>
+                <input type="file" id="payment-receipt" class="file-input" accept="image/*">
+                <img id="receipt-preview" class="file-preview hidden">
+            </div>
+            
+            <button id="save-payment" class="success">Registrar Pagamento</button>
+        </div>
+    </div>
+    
+    <!-- Modal para Visualizar/Editar Recibo -->
+    <div id="receipt-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="receipt-modal-title">Recibo de Pagamento</h3>
+                <button class="close" id="close-receipt-modal">&times;</button>
+            </div>
+            
+            <div id="receipt-content">
+                <!-- Conteúdo do recibo será preenchido dinamicamente -->
+            </div>
+            
+            <div class="payment-actions">
+                <button id="print-receipt" class="success">Imprimir Recibo</button>
+                <button id="edit-payment" class="warning">Editar Pagamento</button>
+                <button id="delete-payment" class="danger">Excluir Pagamento</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados do sistema (simulando um banco de dados local)
+        let eventData = JSON.parse(localStorage.getItem('eventData')) || {
+            name: '',
+            date: '',
+            location: '',
+            costs: {
+                food: 0,
+                music: 0,
+                venue: 0,
+                drinks: 0,
+                other: 0
+            }
+        };
+        
+        let guests = JSON.parse(localStorage.getItem('guests')) || [];
+        let suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
+        let payments = JSON.parse(localStorage.getItem('payments')) || [];
+        
+        // Elementos da interface
+        const navTabs = document.querySelectorAll('.nav-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const dashboardCards = document.querySelectorAll('.dashboard-card');
+        
+        // Dashboard elements
+        const dashboardEventName = document.getElementById('dashboard-event-name');
+        const dashboardGuestCount = document.getElementById('dashboard-guest-count');
+        const dashboardSupplierCount = document.getElementById('dashboard-supplier-count');
+        const dashboardPaymentTotal = document.getElementById('dashboard-payment-total');
+        
+        // Aba Evento
+        const eventNameInput = document.getElementById('event-name');
+        const eventDateInput = document.getElementById('event-date');
+        const eventLocationInput = document.getElementById('event-location');
+        const foodCostInput = document.getElementById('food-cost');
+        const musicCostInput = document.getElementById('music-cost');
+        const venueCostInput = document.getElementById('venue-cost');
+        const drinksCostInput = document.getElementById('drinks-cost');
+        const otherCostsInput = document.getElementById('other-costs');
+        const saveEventBtn = document.getElementById('save-event');
+        const totalCostElement = document.getElementById('total-cost');
+        const costPerGuestElement = document.getElementById('cost-per-guest');
+        
+        // Aba Convidados
+        const addGuestBtn = document.getElementById('add-guest-btn');
+        const guestSearchInput = document.getElementById('guest-search');
+        const guestsListElement = document.getElementById('guests-list');
+        const guestModal = document.getElementById('guest-modal');
+        const guestModalTitle = document.getElementById('guest-modal-title');
+        const guestNameInput = document.getElementById('guest-name');
+        const guestEmailInput = document.getElementById('guest-email');
+        const guestPhoneInput = document.getElementById('guest-phone');
+        const saveGuestBtn = document.getElementById('save-guest');
+        const closeGuestModal = document.getElementById('close-guest-modal');
+        
+        // Aba Fornecedores
+        const addSupplierBtn = document.getElementById('add-supplier-btn');
+        const suppliersListElement = document.getElementById('suppliers-list');
+        const supplierModal = document.getElementById('supplier-modal');
+        const supplierModalTitle = document.getElementById('supplier-modal-title');
+        const supplierNameInput = document.getElementById('supplier-name');
+        const supplierServiceInput = document.getElementById('supplier-service');
+        const supplierCostInput = document.getElementById('supplier-cost');
+        const supplierContactInput = document.getElementById('supplier-contact');
+        const saveSupplierBtn = document.getElementById('save-supplier');
+        const closeSupplierModal = document.getElementById('close-supplier-modal');
+        
+        // Aba Pagamentos
+        const totalReceivedElement = document.getElementById('total-received');
+        const totalPendingElement = document.getElementById('total-pending');
+        const guestPaymentsListElement = document.getElementById('guest-payments-list');
+        const supplierPaymentsListElement = document.getElementById('supplier-payments-list');
+        const paymentModal = document.getElementById('payment-modal');
+        const paymentModalTitle = document.getElementById('payment-modal-title');
+        const paymentInfoElement = document.getElementById('payment-info');
+        const paymentDateInput = document.getElementById('payment-date');
+        const paymentAmountInput = document.getElementById('payment-amount');
+        const paymentMethodInput = document.getElementById('payment-method');
+        const paymentReceiptInput = document.getElementById('payment-receipt');
+        const receiptPreview = document.getElementById('receipt-preview');
+        const savePaymentBtn = document.getElementById('save-payment');
+        const closePaymentModal = document.getElementById('close-payment-modal');
+        
+        // Modal de Recibo
+        const receiptModal = document.getElementById('receipt-modal');
+        const receiptModalTitle = document.getElementById('receipt-modal-title');
+        const receiptContent = document.getElementById('receipt-content');
+        const printReceiptBtn = document.getElementById('print-receipt');
+        const editPaymentBtn = document.getElementById('edit-payment');
+        const deletePaymentBtn = document.getElementById('delete-payment');
+        const closeReceiptModal = document.getElementById('close-receipt-modal');
+        
+        // Variáveis para controle de estado
+        let currentEditingGuestId = null;
+        let currentEditingSupplierId = null;
+        let currentPaymentType = null; // 'guest' ou 'supplier'
+        let currentPaymentId = null;
+        let currentViewingPaymentId = null;
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEventData();
+            renderGuests();
+            renderSuppliers();
+            renderPayments();
+            updatePaymentSummary();
+            updateDashboard();
+            
+            // Configurar data atual como padrão para pagamentos
+            const today = new Date().toISOString().split('T')[0];
+            paymentDateInput.value = today;
+        });
+        
+        // Navegação entre abas
+        navTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Ativar aba selecionada
+                navTabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Mostrar conteúdo da aba selecionada
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === tabId) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+        
+        // Navegação por cards do dashboard
+        dashboardCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Ativar aba selecionada
+                navTabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Ativar a aba correspondente
+                document.querySelector(`.nav-tab[data-tab="${tabId}"]`).classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+                
+                // Scroll para a aba
+                document.getElementById(tabId).scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        
+        // Evento: Salvar configuração do evento
+        saveEventBtn.addEventListener('click', function() {
+            eventData.name = eventNameInput.value;
+            eventData.date = eventDateInput.value;
+            eventData.location = eventLocationInput.value;
+            eventData.costs.food = parseFloat(foodCostInput.value) || 0;
+            eventData.costs.music = parseFloat(musicCostInput.value) || 0;
+            eventData.costs.venue = parseFloat(venueCostInput.value) || 0;
+            eventData.costs.drinks = parseFloat(drinksCostInput.value) || 0;
+            eventData.costs.other = parseFloat(otherCostsInput.value) || 0;
+            
+            saveToLocalStorage();
+            updateCostSummary();
+            updateDashboard();
+            
+            alert('Configuração do evento salva com sucesso!');
+        });
+        
+        // Evento: Adicionar/Editar Convidado
+        addGuestBtn.addEventListener('click', function() {
+            currentEditingGuestId = null;
+            guestModalTitle.textContent = 'Adicionar Convidado';
+            guestNameInput.value = '';
+            guestEmailInput.value = '';
+            guestPhoneInput.value = '';
+            guestModal.classList.remove('hidden');
+        });
+        
+        saveGuestBtn.addEventListener('click', function() {
+            const guestName = guestNameInput.value.trim();
+            if (!guestName) {
+                alert('Por favor, informe o nome do convidado.');
+                return;
+            }
+            
+            const guest = {
+                name: guestName,
+                email: guestEmailInput.value.trim(),
+                phone: guestPhoneInput.value.trim(),
+                paid: false,
+                paymentAmount: 0
+            };
+            
+            if (currentEditingGuestId !== null) {
+                // Editar convidado existente
+                guests[currentEditingGuestId] = guest;
+            } else {
+                // Adicionar novo convidado
+                guests.push(guest);
+            }
+            
+            saveToLocalStorage();
+            renderGuests();
+            updateCostSummary();
+            updateDashboard();
+            guestModal.classList.add('hidden');
+        });
+        
+        closeGuestModal.addEventListener('click', function() {
+            guestModal.classList.add('hidden');
+        });
+        
+        // Evento: Adicionar/Editar Fornecedor
+        addSupplierBtn.addEventListener('click', function() {
+            currentEditingSupplierId = null;
+            supplierModalTitle.textContent = 'Adicionar Fornecedor';
+            supplierNameInput.value = '';
+            supplierServiceInput.value = '';
+            supplierCostInput.value = '';
+            supplierContactInput.value = '';
+            supplierModal.classList.remove('hidden');
+        });
+        
+        saveSupplierBtn.addEventListener('click', function() {
+            const supplierName = supplierNameInput.value.trim();
+            if (!supplierName) {
+                alert('Por favor, informe o nome do fornecedor.');
+                return;
+            }
+            
+            const supplierCost = parseFloat(supplierCostInput.value) || 0;
+            if (supplierCost <= 0) {
+                alert('Por favor, informe um valor válido para o serviço.');
+                return;
+            }
+            
+            const supplier = {
+                name: supplierName,
+                service: supplierServiceInput.value,
+                cost: supplierCost,
+                contact: supplierContactInput.value.trim(),
+                paid: false,
+                paymentAmount: 0
+            };
+            
+            if (currentEditingSupplierId !== null) {
+                // Editar fornecedor existente
+                suppliers[currentEditingSupplierId] = supplier;
+            } else {
+                // Adicionar novo fornecedor
+                suppliers.push(supplier);
+            }
+            
+            saveToLocalStorage();
+            renderSuppliers();
+            updateDashboard();
+            supplierModal.classList.add('hidden');
+        });
+        
+        closeSupplierModal.addEventListener('click', function() {
+            supplierModal.classList.add('hidden');
+        });
+        
+        // Evento: Registrar Pagamento
+        savePaymentBtn.addEventListener('click', function() {
+            const paymentAmount = parseFloat(paymentAmountInput.value) || 0;
+            if (paymentAmount <= 0) {
+                alert('Por favor, informe um valor válido para o pagamento.');
+                return;
+            }
+            
+            const payment = {
+                type: currentPaymentType,
+                id: currentPaymentId,
+                date: paymentDateInput.value,
+                amount: paymentAmount,
+                method: paymentMethodInput.value,
+                receipt: receiptPreview.src || '',
+                timestamp: new Date().toISOString()
+            };
+            
+            payments.push(payment);
+            
+            // Atualizar status de pagamento
+            if (currentPaymentType === 'guest') {
+                guests[currentPaymentId].paid = true;
+                guests[currentPaymentId].paymentAmount = payment.amount;
+                guests[currentPaymentId].paymentDate = payment.date;
+            } else if (currentPaymentType === 'supplier') {
+                suppliers[currentPaymentId].paid = true;
+                suppliers[currentPaymentId].paymentAmount = payment.amount;
+                suppliers[currentPaymentId].paymentDate = payment.date;
+            }
+            
+            saveToLocalStorage();
+            renderGuests();
+            renderSuppliers();
+            renderPayments();
+            updatePaymentSummary();
+            updateDashboard();
+            paymentModal.classList.add('hidden');
+            
+            // Limpar preview do comprovante
+            receiptPreview.classList.add('hidden');
+            receiptPreview.src = '';
+            paymentReceiptInput.value = '';
+        });
+        
+        closePaymentModal.addEventListener('click', function() {
+            paymentModal.classList.add('hidden');
+        });
+        
+        // Preview do comprovante
+        paymentReceiptInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    receiptPreview.src = e.target.result;
+                    receiptPreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Eventos do modal de recibo
+        printReceiptBtn.addEventListener('click', function() {
+            window.print();
+        });
+        
+        editPaymentBtn.addEventListener('click', function() {
+            // Implementar edição de pagamento
+            alert('Funcionalidade de edição será implementada em breve.');
+        });
+        
+        deletePaymentBtn.addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja excluir este pagamento?')) {
+                // Encontrar e remover o pagamento
+                const paymentIndex = payments.findIndex(p => p.timestamp === currentViewingPaymentId);
+                if (paymentIndex !== -1) {
+                    payments.splice(paymentIndex, 1);
+                    
+                    // Atualizar status de pagamento
+                    const payment = payments[paymentIndex];
+                    if (payment && payment.type === 'guest') {
+                        guests[payment.id].paid = false;
+                        guests[payment.id].paymentAmount = 0;
+                    } else if (payment && payment.type === 'supplier') {
+                        suppliers[payment.id].paid = false;
+                        suppliers[payment.id].paymentAmount = 0;
+                    }
+                    
+                    saveToLocalStorage();
+                    renderGuests();
+                    renderSuppliers();
+                    renderPayments();
+                    updatePaymentSummary();
+                    updateDashboard();
+                }
+                
+                receiptModal.classList.add('hidden');
+            }
+        });
+        
+        closeReceiptModal.addEventListener('click', function() {
+            receiptModal.classList.add('hidden');
+        });
+        
+        // Busca de convidados
+        guestSearchInput.addEventListener('input', function() {
+            renderGuests();
+        });
+        
+        // Funções auxiliares
+        function loadEventData() {
+            eventNameInput.value = eventData.name;
+            eventDateInput.value = eventData.date;
+            eventLocationInput.value = eventData.location;
+            foodCostInput.value = eventData.costs.food;
+            musicCostInput.value = eventData.costs.music;
+            venueCostInput.value = eventData.costs.venue;
+            drinksCostInput.value = eventData.costs.drinks;
+            otherCostsInput.value = eventData.costs.other;
+            
+            updateCostSummary();
+        }
+        
+        function updateCostSummary() {
+            const totalCost = eventData.costs.food + eventData.costs.music + 
+                             eventData.costs.venue + eventData.costs.drinks + 
+                             eventData.costs.other;
+            
+            // Calcular valor por convidado
+            const guestCount = guests.length;
+            const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
+            
+            totalCostElement.textContent = `R$ ${totalCost.toFixed(2)}`;
+            costPerGuestElement.textContent = `R$ ${costPerGuest.toFixed(2)}`;
+        }
+        
+        function updatePaymentSummary() {
+            let totalReceived = 0;
+            let totalPending = 0;
+            
+            // Calcular total recebido de convidados
+            guests.forEach(guest => {
+                if (guest.paid) {
+                    totalReceived += guest.paymentAmount;
+                } else {
+                    // Calcular valor que deveria ter sido pago
+                    const guestCount = guests.length;
+                    const totalCost = eventData.costs.food + eventData.costs.music + 
+                                     eventData.costs.venue + eventData.costs.drinks + 
+                                     eventData.costs.other;
+                    const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
+                    totalPending += costPerGuest;
+                }
+            });
+            
+            // Calcular total pago a fornecedores
+            suppliers.forEach(supplier => {
+                if (supplier.paid) {
+                    totalReceived -= supplier.paymentAmount;
+                } else {
+                    totalPending += supplier.cost;
+                }
+            });
+            
+            totalReceivedElement.textContent = `R$ ${totalReceived.toFixed(2)}`;
+            totalPendingElement.textContent = `R$ ${totalPending.toFixed(2)}`;
+        }
+        
+        function updateDashboard() {
+            // Atualizar nome do evento
+            dashboardEventName.textContent = eventData.name || 'Configurar';
+            
+            // Atualizar contagem de convidados
+            dashboardGuestCount.textContent = guests.length;
+            
+            // Atualizar contagem de fornecedores
+            dashboardSupplierCount.textContent = suppliers.length;
+            
+            // Calcular total de pagamentos
+            let totalPayments = 0;
+            guests.forEach(guest => {
+                if (guest.paid) {
+                    totalPayments += guest.paymentAmount;
+                }
+            });
+            dashboardPaymentTotal.textContent = `R$ ${totalPayments.toFixed(2)}`;
+        }
+        
+        function renderGuests() {
+            const searchTerm = guestSearchInput.value.toLowerCase();
+            const filteredGuests = guests.filter(guest => 
+                guest.name.toLowerCase().includes(searchTerm) ||
+                guest.email.toLowerCase().includes(searchTerm) ||
+                guest.phone.toLowerCase().includes(searchTerm)
+            );
+            
+            if (filteredGuests.length === 0) {
+                guestsListElement.innerHTML = `
+                    <div class="empty-state">
+                        <p>Nenhum convidado encontrado.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            guestsListElement.innerHTML = '';
+            
+            filteredGuests.forEach((guest, index) => {
+                const guestCard = document.createElement('div');
+                guestCard.className = 'card';
+                
+                const statusText = guest.paid ? 'Pago' : 'Pendente';
+                const statusClass = guest.paid ? 'paid' : 'pending';
+                
+                // Calcular valor sugerido para pagamento
+                const guestCount = guests.length;
+                const totalCost = eventData.costs.food + eventData.costs.music + 
+                                 eventData.costs.venue + eventData.costs.drinks + 
+                                 eventData.costs.other;
+                const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
+                
+                guestCard.innerHTML = `
+                    <div class="card-header">
+                        <h3>${guest.name}</h3>
+                        <span class="status ${statusClass}">${statusText}</span>
+                    </div>
+                    <p><strong>E-mail:</strong> ${guest.email || 'Não informado'}</p>
+                    <p><strong>Telefone:</strong> ${guest.phone || 'Não informado'}</p>
+                    <p><strong>Valor Sugerido:</strong> R$ ${costPerGuest.toFixed(2)}</p>
+                    ${guest.paid ? `<p><strong>Valor Pago:</strong> R$ ${guest.paymentAmount.toFixed(2)}</p>` : ''}
+                    <div class="actions">
+                        <button class="${guest.paid ? 'warning' : 'success'}" data-action="${guest.paid ? 'view' : 'pay'}" data-id="${index}">
+                            ${guest.paid ? 'Ver Recibo' : 'Registrar Pagamento'}
+                        </button>
+                        <button class="warning" data-action="edit" data-id="${index}">Editar</button>
+                        <button class="danger" data-action="delete" data-id="${index}">Excluir</button>
+                    </div>
+                `;
+                
+                guestsListElement.appendChild(guestCard);
+            });
+            
+            // Adicionar event listeners aos botões
+            document.querySelectorAll('#guests-list button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const action = this.getAttribute('data-action');
+                    const id = parseInt(this.getAttribute('data-id'));
+                    
+                    if (action === 'pay') {
+                        openPaymentModal('guest', id);
+                    } else if (action === 'view') {
+                        viewReceipt('guest', id);
+                    } else if (action === 'edit') {
+                        editGuest(id);
+                    } else if (action === 'delete') {
+                        deleteGuest(id);
+                    }
+                });
+            });
+        }
+        
+        function renderSuppliers() {
+            if (suppliers.length === 0) {
+                suppliersListElement.innerHTML = `
+                    <div class="empty-state">
+                        <p>Nenhum fornecedor cadastrado ainda.</p>
+                        <p>Clique em "Adicionar Fornecedor" para começar.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            suppliersListElement.innerHTML = '';
+            
+            suppliers.forEach((supplier, index) => {
+                const supplierCard = document.createElement('div');
+                supplierCard.className = 'card';
+                
+                const statusText = supplier.paid ? 'Pago' : 'Pendente';
+                const statusClass = supplier.paid ? 'paid' : 'pending';
+                
+                supplierCard.innerHTML = `
+                    <div class="card-header">
+                        <h3>${supplier.name}</h3>
+                        <span class="status ${statusClass}">${statusText}</span>
+                    </div>
+                    <p><strong>Serviço:</strong> ${getServiceName(supplier.service)}</p>
+                    <p><strong>Valor:</strong> R$ ${supplier.cost.toFixed(2)}</p>
+                    <p><strong>Contato:</strong> ${supplier.contact || 'Não informado'}</p>
+                    ${supplier.paid ? `<p><strong>Valor Pago:</strong> R$ ${supplier.paymentAmount.toFixed(2)}</p>` : ''}
+                    <div class="actions">
+                        <button class="${supplier.paid ? 'warning' : 'success'}" data-action="${supplier.paid ? 'view' : 'pay'}" data-id="${index}">
+                            ${supplier.paid ? 'Ver Recibo' : 'Registrar Pagamento'}
+                        </button>
+                        <button class="warning" data-action="edit" data-id="${index}">Editar</button>
+                        <button class="danger" data-action="delete" data-id="${index}">Excluir</button>
+                    </div>
+                `;
+                
+                suppliersListElement.appendChild(supplierCard);
+            });
+            
+            // Adicionar event listeners aos botões
+            document.querySelectorAll('#suppliers-list button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const action = this.getAttribute('data-action');
+                    const id = parseInt(this.getAttribute('data-id'));
+                    
+                    if (action === 'pay') {
+                        openPaymentModal('supplier', id);
+                    } else if (action === 'view') {
+                        viewReceipt('supplier', id);
+                    } else if (action === 'edit') {
+                        editSupplier(id);
+                    } else if (action === 'delete') {
+                        deleteSupplier(id);
+                    }
+                });
+            });
+        }
+        
+        function renderPayments() {
+            // Pagamentos de convidados
+            const guestPayments = payments.filter(p => p.type === 'guest');
+            
+            if (guestPayments.length === 0) {
+                guestPaymentsListElement.innerHTML = `
+                    <div class="empty-state">
+                        <p>Nenhum pagamento de convidado registrado ainda.</p>
+                    </div>
+                `;
+            } else {
+                guestPaymentsListElement.innerHTML = '';
+                
+                guestPayments.forEach(payment => {
+                    const guest = guests[payment.id];
+                    if (!guest) return;
+                    
+                    const paymentCard = document.createElement('div');
+                    paymentCard.className = 'card';
+                    
+                    paymentCard.innerHTML = `
+                        <div class="card-header">
+                            <h3>${guest.name}</h3>
+                            <span class="status paid">Pago</span>
+                        </div>
+                        <p><strong>Data:</strong> ${formatDate(payment.date)}</p>
+                        <p><strong>Valor:</strong> R$ ${payment.amount.toFixed(2)}</p>
+                        <p><strong>Método:</strong> ${getPaymentMethodName(payment.method)}</p>
+                        <div class="actions">
+                            <button class="success" data-action="view-receipt" data-timestamp="${payment.timestamp}">Ver Recibo</button>
+                        </div>
+                    `;
+                    
+                    guestPaymentsListElement.appendChild(paymentCard);
+                });
+            }
+            
+            // Pagamentos a fornecedores
+            const supplierPayments = payments.filter(p => p.type === 'supplier');
+            
+            if (supplierPayments.length === 0) {
+                supplierPaymentsListElement.innerHTML = `
+                    <div class="empty-state">
+                        <p>Nenhum pagamento a fornecedor registrado ainda.</p>
+                    </div>
+                `;
+            } else {
+                supplierPaymentsListElement.innerHTML = '';
+                
+                supplierPayments.forEach(payment => {
+                    const supplier = suppliers[payment.id];
+                    if (!supplier) return;
+                    
+                    const paymentCard = document.createElement('div');
+                    paymentCard.className = 'card';
+                    
+                    paymentCard.innerHTML = `
+                        <div class="card-header">
+                            <h3>${supplier.name}</h3>
+                            <span class="status paid">Pago</span>
+                        </div>
+                        <p><strong>Data:</strong> ${formatDate(payment.date)}</p>
+                        <p><strong>Valor:</strong> R$ ${payment.amount.toFixed(2)}</p>
+                        <p><strong>Método:</strong> ${getPaymentMethodName(payment.method)}</p>
+                        <div class="actions">
+                            <button class="success" data-action="view-receipt" data-timestamp="${payment.timestamp}">Ver Recibo</button>
+                        </div>
+                    `;
+                    
+                    supplierPaymentsListElement.appendChild(paymentCard);
+                });
+            }
+            
+            // Adicionar event listeners aos botões de ver recibo
+            document.querySelectorAll('#guest-payments-list button, #supplier-payments-list button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const timestamp = this.getAttribute('data-timestamp');
+                    viewReceiptByTimestamp(timestamp);
+                });
+            });
+        }
+        
+        function openPaymentModal(type, id) {
+            currentPaymentType = type;
+            currentPaymentId = id;
+            
+            let entity;
+            let title;
+            
+            if (type === 'guest') {
+                entity = guests[id];
+                title = `Registrar Pagamento - ${entity.name}`;
+                
+                // Calcular valor sugerido
+                const guestCount = guests.length;
+                const totalCost = eventData.costs.food + eventData.costs.music + 
+                                 eventData.costs.venue + eventData.costs.drinks + 
+                                 eventData.costs.other;
+                const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
+                
+                paymentAmountInput.value = costPerGuest.toFixed(2);
+            } else {
+                entity = suppliers[id];
+                title = `Registrar Pagamento - ${entity.name}`;
+                paymentAmountInput.value = entity.cost.toFixed(2);
+            }
+            
+            paymentModalTitle.textContent = title;
+            
+            // Limpar campos
+            paymentDateInput.value = new Date().toISOString().split('T')[0];
+            paymentMethodInput.value = 'pix';
+            
+            paymentModal.classList.remove('hidden');
+        }
+        
+        function viewReceipt(type, id) {
+            // Encontrar o pagamento correspondente
+            const payment = payments.find(p => p.type === type && p.id === id);
+            if (!payment) return;
+            
+            viewReceiptByTimestamp(payment.timestamp);
+        }
+        
+        function viewReceiptByTimestamp(timestamp) {
+            const payment = payments.find(p => p.timestamp === timestamp);
+            if (!payment) return;
+            
+            currentViewingPaymentId = timestamp;
+            
+            let entity;
+            if (payment.type === 'guest') {
+                entity = guests[payment.id];
+                receiptModalTitle.textContent = `Recibo - ${entity.name}`;
+            } else {
+                entity = suppliers[payment.id];
+                receiptModalTitle.textContent = `Recibo - ${entity.name}`;
+            }
+            
+            // Gerar conteúdo do recibo
+            receiptContent.innerHTML = `
+                <div class="receipt">
+                    <div class="receipt-header">
+                        <h2>RECIBO</h2>
+                        <p>Sistema de Controle de Eventos</p>
+                    </div>
+                    
+                    <div class="receipt-details">
+                        <div class="receipt-row">
+                            <span>Data:</span>
+                            <span>${formatDate(payment.date)}</span>
+                        </div>
+                        
+                        <div class="receipt-row">
+                            <span>${payment.type === 'guest' ? 'Convidado' : 'Fornecedor'}:</span>
+                            <span>${entity.name}</span>
+                        </div>
+                        
+                        ${payment.type === 'guest' ? 
+                            `<div class="receipt-row">
+                                <span>E-mail:</span>
+                                <span>${entity.email || 'Não informado'}</span>
+                            </div>` : 
+                            `<div class="receipt-row">
+                                <span>Serviço:</span>
+                                <span>${getServiceName(entity.service)}</span>
+                            </div>`
+                        }
+                        
+                        <div class="receipt-row">
+                            <span>Método de Pagamento:</span>
+                            <span>${getPaymentMethodName(payment.method)}</span>
+                        </div>
+                        
+                        <div class="receipt-row receipt-total">
+                            <span>Valor:</span>
+                            <span>R$ ${payment.amount.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="receipt-footer">
+                        <p>Este é um recibo gerado automaticamente pelo sistema.</p>
+                    </div>
+                </div>
+            `;
+            
+            receiptModal.classList.remove('hidden');
+        }
+        
+        function editGuest(id) {
+            const guest = guests[id];
+            currentEditingGuestId = id;
+            
+            guestModalTitle.textContent = 'Editar Convidado';
+            guestNameInput.value = guest.name;
+            guestEmailInput.value = guest.email || '';
+            guestPhoneInput.value = guest.phone || '';
+            
+            guestModal.classList.remove('hidden');
+        }
+        
+        function deleteGuest(id) {
+            if (confirm('Tem certeza que deseja excluir este convidado?')) {
+                guests.splice(id, 1);
+                saveToLocalStorage();
+                renderGuests();
+                updateCostSummary();
+                updateDashboard();
+            }
+        }
+        
+        function editSupplier(id) {
+            const supplier = suppliers[id];
+            currentEditingSupplierId = id;
+            
+            supplierModalTitle.textContent = 'Editar Fornecedor';
+            supplierNameInput.value = supplier.name;
+            supplierServiceInput.value = supplier.service;
+            supplierCostInput.value = supplier.cost;
+            supplierContactInput.value = supplier.contact || '';
+            
+            supplierModal.classList.remove('hidden');
+        }
+        
+        function deleteSupplier(id) {
+            if (confirm('Tem certeza que deseja excluir este fornecedor?')) {
+                suppliers.splice(id, 1);
+                saveToLocalStorage();
+                renderSuppliers();
+                updateDashboard();
+            }
+        }
+        
+        function getServiceName(service) {
+            const services = {
+                'food': 'Alimentação',
+                'music': 'Música',
+                'venue': 'Aluguel de Espaço',
+                'drinks': 'Bebidas',
+                'other': 'Outro'
+            };
+            
+            return services[service] || 'Não especificado';
+        }
+        
+        function getPaymentMethodName(method) {
+            const methods = {
+                'pix': 'PIX',
+                'cash': 'Dinheiro',
+                'card': 'Cartão',
+                'transfer': 'Transferência'
+            };
+            
+            return methods[method] || 'Não especificado';
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR');
+        }
+        
+        function saveToLocalStorage() {
+            localStorage.setItem('eventData', JSON.stringify(eventData));
+            localStorage.setItem('guests', JSON.stringify(guests));
+            localStorage.setItem('suppliers', JSON.stringify(suppliers));
+            localStorage.setItem('payments', JSON.stringify(payments));
+        }
+    </script>
+</body>
+</html>
