@@ -835,8 +835,9 @@
                         alert('O número de telefone é obrigatório para confirmar o pagamento e gerar o QR Code.');
                         return;
                     }
-                    if (suggestedValue === 0 || paidValue < suggestedValue) {
-                        alert('Para marcar como "Pago", o valor pago deve ser igual ao valor sugerido (e diferente de zero).');
+                    // CORREÇÃO: Lógica de validação ajustada para corresponder à intenção.
+                    if (suggestedValue === 0 || paidValue !== suggestedValue) {
+                        alert('Para marcar como "Pago", o valor pago deve ser exatamente igual ao valor sugerido (e o valor sugerido deve ser maior que zero).');
                         return;
                     }
                 }
@@ -854,6 +855,8 @@
                     
                     if (paymentStatus === 'paid') {
                         guest.qrCode = `EVENTPRO-${guest.phone.replace(/\D/g, '')}-${guest.regOrder}`;
+                    } else {
+                        guest.qrCode = ''; // Remove QR code if status is no longer 'paid'
                     }
                     guestToProcess = guest;
 
@@ -932,6 +935,13 @@
             
             // ===== LÓGICA DO QR CODE =====
             generateQRCodeImage(data, elementId) {
+                // CORREÇÃO: Adicionada verificação da biblioteca
+                if (typeof QRCode === 'undefined') {
+                    console.error("A biblioteca QRCode não foi carregada.");
+                    const qrElement = document.getElementById(elementId);
+                    if(qrElement) qrElement.innerHTML = `<p style="font-size:0.8rem; color:var(--danger-color);">Erro ao carregar lib.</p>`;
+                    return;
+                }
                 const qrElement = document.getElementById(elementId);
                 if (!qrElement) return;
                 qrElement.innerHTML = '';
@@ -1020,6 +1030,12 @@
 
             // ===== LÓGICA DE RELATÓRIOS E BACKUP =====
             async generateGuestReceipt(guest) {
+                 // CORREÇÃO: Adicionada verificação da biblioteca
+                if (typeof QRCode === 'undefined') {
+                    console.error("A biblioteca QRCode não foi carregada.");
+                    alert("Erro: A biblioteca de QR Code não pôde ser carregada. O recibo será gerado sem o código. Verifique sua conexão com a internet e tente novamente.");
+                }
+                
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
@@ -1043,14 +1059,16 @@
                 doc.setFontSize(16); doc.setTextColor('#12A454');
                 doc.text(formatCurrency(guest.paidValue), 20, 105);
 
-                try {
-                    const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400, errorCorrectionLevel: 'H' });
-                    doc.addImage(qrCodeDataUrl, 'PNG', 140, 70, 50, 50);
-                    doc.setFontSize(10); doc.setTextColor('#969CB2');
-                    doc.text('Apresente este QR Code na entrada', 165, 128, null, null, 'center');
-                } catch (err) {
-                    console.error('Falha ao gerar QR Code para o PDF:', err);
-                    doc.text('Erro ao gerar QR Code', 150, 90);
+                if (typeof QRCode !== 'undefined' && guest.qrCode) {
+                    try {
+                        const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400, errorCorrectionLevel: 'H' });
+                        doc.addImage(qrCodeDataUrl, 'PNG', 140, 70, 50, 50);
+                        doc.setFontSize(10); doc.setTextColor('#969CB2');
+                        doc.text('Apresente este QR Code na entrada', 165, 128, null, null, 'center');
+                    } catch (err) {
+                        console.error('Falha ao gerar QR Code para o PDF:', err);
+                        doc.text('Erro ao gerar QR Code', 150, 90);
+                    }
                 }
                 doc.save(`recibo-${guest.name.replace(/\s+/g, '_')}.pdf`);
             },
