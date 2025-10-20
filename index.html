@@ -210,22 +210,23 @@
         /* --- Dashboard --- */
         #dashboard-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 2rem;
         }
         
-        /* MELHORIA: Estilo "iPhone" para os cards do dashboard */
+        /* NOVO: Estilo "iPhone Widget" para os cards do dashboard */
         #dashboard-cards .card {
-            border-radius: 18px;
+            border-radius: 22px; /* Mais arredondado */
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0,0,0,0.05); /* Borda sutil */
         }
         
         #dashboard-cards .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: scale(1.03); /* Efeito de escala ao passar o mouse */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
         
         .card-header {
@@ -240,462 +241,104 @@
             font-size: 1.8rem;
         }
         
-        #dashboard-cards .event i {
-            color: var(--primary-color);
-        }
-        
-        #dashboard-cards .guests i {
-            color: var(--success-color);
-        }
-        
-        #dashboard-cards .suppliers i {
-            color: var(--secondary-color);
-        }
-        
-        #dashboard-cards .payments i {
-            color: var(--pending-color);
-        }
+        #dashboard-cards .event i { color: var(--primary-color); }
+        #dashboard-cards .guests i { color: var(--success-color); }
+        #dashboard-cards .suppliers i { color: var(--secondary-color); }
+        #dashboard-cards .payments i { color: var(--pending-color); }
         
         .card p {
             font-size: 2rem;
             font-weight: 500;
         }
         
-        .transaction-details {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .transaction-status {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-        
-        .transaction-status.paid {
-            background-color: var(--success-color);
-        }
-        
-        .transaction-status.pending {
-            background-color: var(--pending-color);
-        }
-        
-        .transaction-info span {
-            display: block;
-        }
-        
-        .transaction-info .description {
-            font-weight: 500;
-        }
-        
-        .transaction-info .details {
-            font-size: 0.8rem;
-            color: var(--text-light-color);
-        }
-        
-        .transaction-amount {
-            font-weight: 500;
-            font-size: 1.1rem;
-        }
-        
-        .transaction-amount.income {
-            color: var(--success-color);
-        }
-        
-        .transaction-amount.expense {
-            color: var(--danger-color);
-        }
-        
-        .list-item-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
+        .transaction-details { display: flex; align-items: center; gap: 1rem; }
+        .transaction-status { width: 10px; height: 10px; border-radius: 50%; }
+        .transaction-status.paid { background-color: var(--success-color); }
+        .transaction-status.pending { background-color: var(--pending-color); }
+        .transaction-info span { display: block; }
+        .transaction-info .description { font-weight: 500; }
+        .transaction-info .details { font-size: 0.8rem; color: var(--text-light-color); }
+        .transaction-amount { font-weight: 500; font-size: 1.1rem; }
+        .transaction-amount.income { color: var(--success-color); }
+        .transaction-amount.expense { color: var(--danger-color); }
+        .list-item-actions { display: flex; align-items: center; gap: 1rem; }
         
         /* --- Páginas de Gerenciamento --- */
-        .management-page .card {
-            margin-bottom: 2rem;
+        .management-page .card { margin-bottom: 2rem; }
+        .management-page form { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+        .management-page .form-control { flex-grow: 1; min-width: 200px; }
+        .management-page label { font-size: 0.9rem; margin-bottom: 0.25rem; display: block; }
+        .management-page input, .management-page select, .management-page textarea {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem;
         }
-        
-        .management-page form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: flex-end;
-        }
-        
-        .management-page .form-control {
-            flex-grow: 1;
-            min-width: 200px;
-        }
-        
-        .management-page label {
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-            display: block;
-        }
-        
-        .management-page input,
-        .management-page select,
-        .management-page textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        
-        .management-page .list-item i {
-            font-size: 1.2rem;
-            margin-right: 1rem;
-            color: var(--primary-color);
-        }
-        
-        .list-item-main {
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-        }
+        .management-page .list-item i { font-size: 1.2rem; margin-right: 1rem; color: var(--primary-color); }
+        .list-item-main { flex-grow: 1; display: flex; align-items: center; }
         
         /* --- Página QR Code --- */
-        .qr-code-container {
-            text-align: center;
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            background-color: white;
-        }
-        
-        .qr-code {
-            margin: 0 auto;
-            max-width: 200px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 150px; /* For canvas */
-        }
-        
-        .qr-info {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .qr-scanner-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 2rem auto;
-            text-align: center;
-        }
-        
+        .qr-code-container { text-align: center; margin: 20px 0; padding: 15px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: white; }
+        .qr-code { margin: 0 auto; max-width: 200px; display: flex; justify-content: center; align-items: center; height: 150px; }
+        .qr-info { margin-top: 15px; font-size: 14px; color: #666; }
+        .qr-scanner-container { width: 100%; max-width: 400px; margin: 2rem auto; text-align: center; }
         .qr-scanner {
-            width: 100%;
-            height: 300px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            position: relative;
+            width: 100%; height: 300px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 15px;
+            background-color: #f5f5f5; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; position: relative;
         }
-        
-        .qr-scanner video, .qr-scanner canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
+        .qr-scanner video, .qr-scanner canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         .hidden { display: none; }
-        
-        .qr-result {
-            margin-top: 15px;
-            padding: 15px;
-            border-radius: 10px;
-            background-color: #f8f9fa;
-            display: none; /* Hidden by default */
-        }
-        
-        .qr-result.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .qr-result.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .qr-result.pending {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
+        .qr-result { margin-top: 15px; padding: 15px; border-radius: 10px; background-color: #f8f9fa; display: none; }
+        .qr-result.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .qr-result.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .qr-result.pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
         
         /* --- Página Relatórios --- */
-        #reports-page .filters {
-            background-color: #fff;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border-radius: var(--border-radius);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-        }
-        
-        #reports-page .filters .form-control {
-            flex-grow: 1;
-            min-width: 200px;
-        }
-        
-        #reports-page .filters label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-        
-        #reports-page .filters input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        
-        #report-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .report-card p {
-            font-size: 1.5rem;
-        }
+        #reports-page .filters { background-color: #fff; padding: 1.5rem; margin-bottom: 2rem; border-radius: var(--border-radius); display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+        #reports-page .filters .form-control { flex-grow: 1; min-width: 200px; }
+        #reports-page .filters label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        #reports-page .filters input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        #report-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .report-card p { font-size: 1.5rem; }
         
         /* --- Modal e FAB --- */
-        .fab {
-            position: fixed;
-            bottom: 2rem;
-            right: 3rem;
-            width: 60px;
-            height: 60px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            cursor: pointer;
-            z-index: 101;
-        }
-        
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            z-index: 102;
-        }
-        
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-        
-        .modal-content {
-            background-color: var(--card-bg-color);
-            padding: 2rem;
-            border-radius: var(--border-radius);
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-        }
-        
-        .modal-content h3 {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-control {
-            margin-bottom: 1rem;
-        }
-        
-        .form-control label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-        
-        .form-control input,
-        .form-control select,
-        .form-control textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-        }
-        
-        .modal-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-        }
-        
-        .modal-actions .spacer {
-            flex-grow: 1;
-        }
+        .fab { position: fixed; bottom: 2rem; right: 3rem; width: 60px; height: 60px; background-color: var(--primary-color); color: white; border: none; border-radius: 50%; font-size: 2rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(0,0,0,0.2); cursor: pointer; z-index: 101; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 102; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content { background-color: var(--card-bg-color); padding: 2rem; border-radius: var(--border-radius); width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative; }
+        .modal-content h3 { margin-bottom: 1.5rem; }
+        .form-control { margin-bottom: 1rem; }
+        .form-control label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-control input, .form-control select, .form-control textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-family: 'Poppins', sans-serif; font-size: 1rem; }
+        .modal-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+        .modal-actions .spacer { flex-grow: 1; }
         
         /* --- Header Mobile --- */
-        .mobile-header {
-            display: none;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 1.5rem;
-            background-color: var(--card-bg-color);
-            box-shadow: var(--box-shadow);
-            margin-bottom: 1.5rem;
-        }
-        
-        .mobile-header #menu-toggle-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: var(--text-color);
-            cursor: pointer;
-        }
-        
-        .mobile-header h2 {
-            font-size: 1.25rem;
-            margin-bottom: 0;
-        }
-        
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 999;
-        }
-        
-        .sidebar-overlay.active {
-            display: block;
-        }
+        .mobile-header { display: none; align-items: center; gap: 1rem; padding: 1rem 1.5rem; background-color: var(--card-bg-color); box-shadow: var(--box-shadow); margin-bottom: 1.5rem; }
+        .mobile-header #menu-toggle-btn { background: none; border: none; font-size: 1.5rem; color: var(--text-color); cursor: pointer; }
+        .mobile-header h2 { font-size: 1.25rem; margin-bottom: 0; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 999; }
+        .sidebar-overlay.active { display: block; }
         
         /* --- Status --- */
-        .status {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        .status.paid {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status.pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        .status.partial {
-            background-color: #cce7ff;
-            color: #004085;
-        }
-        
-        .checkin-status {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .checkin-status.checked {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .checkin-status.not-checked {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+        .status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+        .status.paid { background-color: #d4edda; color: #155724; }
+        .status.pending { background-color: #fff3cd; color: #856404; }
+        .status.partial { background-color: #cce7ff; color: #004085; }
+        .checkin-status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .checkin-status.checked { background-color: #d4edda; color: #155724; }
+        .checkin-status.not-checked { background-color: #f8d7da; color: #721c24; }
         
         /* --- Responsividade --- */
         @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding: 0;
-            }
-            
-            .page-content {
-                padding: 0 1.5rem 1.5rem 1.5rem;
-            }
-            
-            header {
-                display: none;
-            }
-            
-            .mobile-header {
-                display: flex;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .fab {
-                right: 1.5rem;
-                bottom: 1.5rem;
-            }
-            
-            .list-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-            
-            .list-item-actions {
-                width: 100%;
-                justify-content: flex-end;
-            }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 0; }
+            .page-content { padding: 0 1.5rem 1.5rem 1.5rem; }
+            header { display: none; }
+            .mobile-header { display: flex; }
+            .form-grid { grid-template-columns: 1fr; }
+            .fab { right: 1.5rem; bottom: 1.5rem; }
+            .list-item { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .list-item-actions { width: 100%; justify-content: flex-end; }
         }
     </style>
 </head>
@@ -1338,28 +981,24 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
-                // Cabeçalho
                 doc.setFontSize(22);
-                doc.setTextColor(var_primary_color_hex); // Usando a cor primária
+                doc.setTextColor('#5636D3');
                 doc.text('Recibo de Pagamento', 105, 20, null, null, 'center');
 
-                // Informações do Evento
                 doc.setFontSize(14);
-                doc.setTextColor(var_text_color_hex);
+                doc.setTextColor('#363F5F');
                 doc.text(state.eventData.name || 'Nome do Evento', 105, 35, null, null, 'center');
                 doc.setFontSize(11);
-                doc.setTextColor(var_text_light_color_hex);
+                doc.setTextColor('#969CB2');
                 const eventDate = state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Data não definida';
                 doc.text(`Data: ${eventDate}`, 105, 42, null, null, 'center');
                 doc.text(`Local: ${state.eventData.location || 'Local não definido'}`, 105, 49, null, null, 'center');
 
-                // Linha divisória
-                doc.setDrawColor(var_primary_color_hex);
+                doc.setDrawColor('#5636D3');
                 doc.line(20, 60, 190, 60);
 
-                // Informações do Convidado
                 doc.setFontSize(12);
-                doc.setTextColor(var_text_color_hex);
+                doc.setTextColor('#363F5F');
                 doc.text('Recebemos de:', 20, 70);
                 doc.setFontSize(16);
                 doc.text(guest.name, 20, 80);
@@ -1367,15 +1006,14 @@
                 doc.setFontSize(12);
                 doc.text('Valor Pago:', 20, 95);
                 doc.setFontSize(16);
-                doc.setTextColor(var_success_color_hex);
+                doc.setTextColor('#12A454');
                 doc.text(formatCurrency(guest.paidValue), 20, 105);
 
-                // QR Code
                 try {
-                    const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400 });
+                    const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400, errorCorrectionLevel: 'H' });
                     doc.addImage(qrCodeDataUrl, 'PNG', 140, 70, 50, 50);
                     doc.setFontSize(10);
-                    doc.setTextColor(var_text_light_color_hex);
+                    doc.setTextColor('#969CB2');
                     doc.text('Apresente este QR Code na entrada', 165, 128, null, null, 'center');
                 } catch (err) {
                     console.error('Falha ao gerar QR Code para o PDF:', err);
@@ -1466,7 +1104,6 @@
             }
         });
         
-        // MELHORIA: Listener para os cards clicáveis do dashboard
         selectors.dashboardCardsContainer.addEventListener('click', (e) => {
             const card = e.target.closest('.card[data-page]');
             if (card && card.dataset.page) {
@@ -1507,15 +1144,8 @@
         };
         selectors.menuToggleBtn.addEventListener('click', toggleSidebar);
         selectors.sidebarOverlay.addEventListener('click', toggleSidebar);
-
-        // ===== INICIALIZAÇÃO DA APLICAÇÃO =====
-        // Cores para o PDF
-        const var_primary_color_hex = '#5636D3';
-        const var_text_color_hex = '#363F5F';
-        const var_text_light_color_hex = '#969CB2';
-        const var_success_color_hex = '#12A454';
         
-        window.app = app; // Expor o objeto app globalmente para os `onclick`
+        window.app = app; 
         initializeData();
         navigateTo(state.activePage);
     });
