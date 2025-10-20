@@ -781,4 +781,399 @@
                 document.getElementById('costs-form').innerHTML = `
                     <div class="form-grid">
                         <div class="form-control"><label for="cost-food">Alimentação</label><input type="number" id="cost-food" min="0" step="0.01"></div>
-                        <div class="form-control"><label for="cost-music">Música</label><input type="number
+                        <div class="form-control"><label for="cost-music">Música</label><input type="number" id="cost-music" min="0" step="0.01"></div>
+                        <div class="form-control"><label for="cost-venue">Aluguel</label><input type="number" id="cost-venue" min="0" step="0.01"></div>
+                        <div class="form-control"><label for="cost-drinks">Bebidas</label><input type="number" id="cost-drinks" min="0" step="0.01"></div>
+                    </div>
+                     <div class="form-control"><label for="cost-other">Outros Custos</label><input type="number" id="cost-other" min="0" step="0.01"></div>
+                    <div class="modal-actions"><button type="button" class="btn secondary" onclick="app.closeAllModals()">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>`;
+
+                Object.keys(state.eventData.costs).forEach(key => document.getElementById(`cost-${key}`).value = state.eventData.costs[key]);
+                openModal('costs-modal');
+            },
+            saveCosts(e) {
+                e.preventDefault();
+                Object.keys(state.eventData.costs).forEach(key => state.eventData.costs[key] = parseFloat(document.getElementById(`cost-${key}`).value) || 0);
+                this.closeAllModals(); this.updateUI();
+            },
+            openGuestModal(guestId = null) {
+                state.currentEditingId = guestId;
+                const guest = guestId ? state.guests.find(g => g.id === guestId) : null;
+                document.getElementById('guest-modal-title').textContent = guest ? 'Editar Convidado' : 'Adicionar Convidado';
+                document.getElementById('guest-form').innerHTML = `
+                    <div class="form-control"><label for="guest-name">Nome</label><input type="text" id="guest-name" required></div>
+                    <div class="form-grid">
+                        <div class="form-control"><label for="guest-email">E-mail</label><input type="email" id="guest-email"></div>
+                        <div class="form-control"><label for="guest-phone">Telefone (Obrigatório p/ Pagamento)</label><input type="tel" id="guest-phone" required></div>
+                    </div>
+                     <div class="form-grid">
+                        <div class="form-control"><label for="guest-suggested-value">Valor Sugerido</label><input type="number" id="guest-suggested-value" min="0" step="0.01"></div>
+                        <div class="form-control"><label for="guest-paid-value">Valor Pago</label><input type="number" id="guest-paid-value" min="0" step="0.01"></div>
+                    </div>
+                    <div class="form-control"><label for="guest-status">Status Pagamento</label><select id="guest-status"><option value="pending">Pendente</option><option value="partial">Parcial</option><option value="paid">Pago</option></select></div>
+                    <div class="modal-actions"><button type="button" class="btn secondary" onclick="app.closeAllModals()">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>`;
+                
+                if (guest) {
+                    document.getElementById('guest-name').value = guest.name; document.getElementById('guest-email').value = guest.email || '';
+                    document.getElementById('guest-phone').value = guest.phone || ''; document.getElementById('guest-suggested-value').value = guest.suggestedValue || 0;
+                    document.getElementById('guest-paid-value').value = guest.paidValue || 0; document.getElementById('guest-status').value = guest.paymentStatus || 'pending';
+                }
+                openModal('guest-modal');
+            },
+            async saveGuest(e) {
+                e.preventDefault();
+
+                const name = document.getElementById('guest-name').value;
+                const email = document.getElementById('guest-email').value;
+                const phone = document.getElementById('guest-phone').value;
+                const suggestedValue = parseFloat(document.getElementById('guest-suggested-value').value) || 0;
+                const paidValue = parseFloat(document.getElementById('guest-paid-value').value) || 0;
+                const paymentStatus = document.getElementById('guest-status').value;
+
+                if (paymentStatus === 'paid') {
+                    if (!phone) {
+                        alert('O número de telefone é obrigatório para confirmar o pagamento e gerar o QR Code.');
+                        return;
+                    }
+                    if (suggestedValue === 0 || paidValue < suggestedValue) {
+                        alert('Para marcar como "Pago", o valor pago deve ser igual ao valor sugerido (e diferente de zero).');
+                        return;
+                    }
+                }
+
+                const oldStatus = state.currentEditingId ? state.guests.find(g => g.id === state.currentEditingId)?.paymentStatus : null;
+                let guestToProcess;
+
+                if (state.currentEditingId) {
+                    const index = state.guests.findIndex(g => g.id === state.currentEditingId);
+                    if (index === -1) return;
+
+                    const guest = state.guests[index];
+                    guest.name = name; guest.email = email; guest.phone = phone;
+                    guest.suggestedValue = suggestedValue; guest.paidValue = paidValue; guest.paymentStatus = paymentStatus;
+                    
+                    if (paymentStatus === 'paid') {
+                        guest.qrCode = `EVENTPRO-${guest.phone.replace(/\D/g, '')}-${guest.regOrder}`;
+                    }
+                    guestToProcess = guest;
+
+                } else {
+                    const regOrder = state.guests.length + 1;
+                    const newGuest = {
+                        id: Date.now().toString(), name, email, phone, suggestedValue, paidValue, paymentStatus,
+                        checkIn: false, regOrder: regOrder, qrCode: ''
+                    };
+                    
+                    if (paymentStatus === 'paid') {
+                         newGuest.qrCode = `EVENTPRO-${newGuest.phone.replace(/\D/g, '')}-${newGuest.regOrder}`;
+                    }
+                    state.guests.push(newGuest);
+                    guestToProcess = newGuest;
+                }
+                
+                if (guestToProcess.paymentStatus === 'paid' && oldStatus !== 'paid') {
+                    await this.generateGuestReceipt(guestToProcess);
+                }
+
+                this.closeAllModals();
+                this.updateUI();
+            },
+            openSupplierModal(supplierId = null) {
+                state.currentEditingId = supplierId;
+                const supplier = supplierId ? state.suppliers.find(s => s.id === supplierId) : null;
+                document.getElementById('supplier-modal-title').textContent = supplier ? 'Editar Fornecedor' : 'Adicionar Fornecedor';
+                document.getElementById('supplier-form').innerHTML = `
+                    <div class="form-control"><label for="supplier-name">Nome</label><input type="text" id="supplier-name" required></div>
+                    <div class="form-control"><label for="supplier-service">Serviço</label><input type="text" id="supplier-service" required></div>
+                    <div class="form-grid">
+                        <div class="form-control"><label for="supplier-cost">Custo</label><input type="number" id="supplier-cost" min="0" step="0.01"></div>
+                        <div class="form-control"><label for="supplier-paid">Valor Pago</label><input type="number" id="supplier-paid" min="0" step="0.01"></div>
+                    </div>
+                    <div class="form-control"><label for="supplier-status">Status</label><select id="supplier-status"><option value="pending">Pendente</option><option value="partial">Parcial</option><option value="paid">Pago</option></select></div>
+                    <div class="modal-actions"><button type="button" class="btn secondary" onclick="app.closeAllModals()">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>`;
+
+                if(supplier) {
+                    document.getElementById('supplier-name').value = supplier.name; document.getElementById('supplier-service').value = supplier.service;
+                    document.getElementById('supplier-cost').value = supplier.cost || 0; document.getElementById('supplier-paid').value = supplier.paid || 0;
+                    document.getElementById('supplier-status').value = supplier.paymentStatus || 'pending';
+                }
+                openModal('supplier-modal');
+            },
+            saveSupplier(e) {
+                e.preventDefault();
+                const supplierData = {
+                    name: document.getElementById('supplier-name').value, service: document.getElementById('supplier-service').value,
+                    cost: parseFloat(document.getElementById('supplier-cost').value) || 0, paid: parseFloat(document.getElementById('supplier-paid').value) || 0,
+                    paymentStatus: document.getElementById('supplier-status').value
+                };
+                if(state.currentEditingId) {
+                    const index = state.suppliers.findIndex(s => s.id === state.currentEditingId);
+                    supplierData.id = state.currentEditingId; state.suppliers[index] = supplierData;
+                } else {
+                    supplierData.id = Date.now().toString(); state.suppliers.push(supplierData);
+                }
+                this.closeAllModals(); this.updateUI();
+            },
+            openDeleteModal(id, type, name) {
+                state.currentEditingId = id; state.currentEditingType = type;
+                document.getElementById('delete-modal-title').textContent = 'Confirmar Exclusão';
+                document.getElementById('delete-message').textContent = `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`;
+                openModal('delete-modal');
+            },
+            confirmDelete() {
+                if (state.currentEditingType === 'guest') state.guests = state.guests.filter(g => g.id !== state.currentEditingId);
+                else if (state.currentEditingType === 'supplier') state.suppliers = state.suppliers.filter(s => s.id !== state.currentEditingId);
+                this.closeAllModals(); this.updateUI();
+            },
+            closeAllModals() {
+                document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+                state.currentEditingId = null; state.currentEditingType = null;
+            },
+            
+            // ===== LÓGICA DO QR CODE =====
+            generateQRCodeImage(data, elementId) {
+                const qrElement = document.getElementById(elementId);
+                if (!qrElement) return;
+                qrElement.innerHTML = '';
+                const canvas = document.createElement('canvas');
+                qrElement.appendChild(canvas);
+                QRCode.toCanvas(canvas, data, { width: 150, margin: 1 }, (err) => { if(err) console.error(err); });
+            },
+            startQRScanner() {
+                const video = document.getElementById('qr-video');
+                const canvas = document.getElementById('qr-canvas');
+                const placeholder = document.getElementById('qr-scanner-placeholder');
+                
+                placeholder.style.display = 'none';
+                video.classList.remove('hidden');
+                document.getElementById('start-camera-btn').classList.add('hidden');
+                document.getElementById('stop-camera-btn').classList.remove('hidden');
+
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(stream => {
+                    state.qrScannerStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                    this.tickQRScanner();
+                }).catch(err => {
+                    console.error("Erro ao acessar a câmera: ", err);
+                    this.showQRResult('Erro ao acessar a câmera.', 'error');
+                });
+            },
+            tickQRScanner() {
+                const video = document.getElementById('qr-video');
+                const canvas = document.getElementById('qr-canvas');
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                    
+                    if (code) {
+                        this.processQRCode(code.data);
+                        return;
+                    }
+                }
+                state.qrScannerAnimationId = requestAnimationFrame(() => this.tickQRScanner());
+            },
+            stopQRScanner() {
+                if(state.qrScannerAnimationId) cancelAnimationFrame(state.qrScannerAnimationId);
+                if (state.qrScannerStream) {
+                    state.qrScannerStream.getTracks().forEach(track => track.stop());
+                    state.qrScannerStream = null;
+                }
+                document.getElementById('qr-video').classList.add('hidden');
+                document.getElementById('qr-scanner-placeholder').style.display = 'block';
+                document.getElementById('start-camera-btn').classList.remove('hidden');
+                document.getElementById('stop-camera-btn').classList.add('hidden');
+            },
+            processQRCode(data) {
+                if (!data.startsWith('EVENTPRO-')) {
+                    this.showQRResult('QR Code inválido.', 'error');
+                    setTimeout(() => this.stopQRScanner(), 3000);
+                    return;
+                }
+
+                const guest = state.guests.find(g => g.qrCode === data);
+                if (guest) {
+                    if (!guest.checkIn) {
+                        guest.checkIn = true;
+                        this.showQRResult(`Check-in confirmado para ${guest.name}!`, 'success');
+                        this.updateUI();
+                    } else {
+                        this.showQRResult(`${guest.name} já fez check-in.`, 'pending');
+                    }
+                } else {
+                    this.showQRResult('Convidado não encontrado.', 'error');
+                }
+                setTimeout(() => this.stopQRScanner(), 3000);
+            },
+            showQRResult(message, type) {
+                const resultDiv = document.getElementById('qr-result');
+                resultDiv.textContent = message;
+                resultDiv.className = `qr-result ${type}`;
+                resultDiv.style.display = 'block';
+                setTimeout(() => resultDiv.style.display = 'none', 3000);
+            },
+
+            // ===== LÓGICA DE RELATÓRIOS E BACKUP =====
+            async generateGuestReceipt(guest) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(22); doc.setTextColor('#5636D3');
+                doc.text('Recibo de Pagamento', 105, 20, null, null, 'center');
+
+                doc.setFontSize(14); doc.setTextColor('#363F5F');
+                doc.text(state.eventData.name || 'Nome do Evento', 105, 35, null, null, 'center');
+                doc.setFontSize(11); doc.setTextColor('#969CB2');
+                const eventDate = state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Data não definida';
+                doc.text(`Data: ${eventDate}`, 105, 42, null, null, 'center');
+                doc.text(`Local: ${state.eventData.location || 'Local não definido'}`, 105, 49, null, null, 'center');
+
+                doc.setDrawColor('#5636D3'); doc.line(20, 60, 190, 60);
+
+                doc.setFontSize(12); doc.setTextColor('#363F5F');
+                doc.text('Recebemos de:', 20, 70);
+                doc.setFontSize(16); doc.text(guest.name, 20, 80);
+
+                doc.setFontSize(12); doc.text('Valor Pago:', 20, 95);
+                doc.setFontSize(16); doc.setTextColor('#12A454');
+                doc.text(formatCurrency(guest.paidValue), 20, 105);
+
+                try {
+                    const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400, errorCorrectionLevel: 'H' });
+                    doc.addImage(qrCodeDataUrl, 'PNG', 140, 70, 50, 50);
+                    doc.setFontSize(10); doc.setTextColor('#969CB2');
+                    doc.text('Apresente este QR Code na entrada', 165, 128, null, null, 'center');
+                } catch (err) {
+                    console.error('Falha ao gerar QR Code para o PDF:', err);
+                    doc.text('Erro ao gerar QR Code', 150, 90);
+                }
+                doc.save(`recibo-${guest.name.replace(/\s+/g, '_')}.pdf`);
+            },
+            generatePDF(title, columns, rows, filename) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(18); doc.text(title, 14, 22);
+                doc.setFontSize(11); doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 14, 30);
+                doc.autoTable({ head: [columns], body: rows, startY: 35, theme: 'grid', headStyles: { fillColor: [86, 54, 211] } });
+                doc.save(filename);
+            },
+            generateGuestPaymentsReport() {
+                const rows = state.guests.map(g => [g.name, formatCurrency(g.suggestedValue), formatCurrency(g.paidValue), getPaymentStatusText(g.paymentStatus)]);
+                this.generatePDF('Pagamentos de Convidados', ['Nome', 'Sugerido', 'Pago', 'Status'], rows, 'relatorio_convidados.pdf');
+            },
+            generateExpensesReport() {
+                 const rows = state.suppliers.map(s => [`${s.name} (${s.service})`, formatCurrency(s.cost), formatCurrency(s.paid), getPaymentStatusText(s.paymentStatus)]);
+                 this.generatePDF('Despesas do Evento', ['Fornecedor/Serviço', 'Custo', 'Pago', 'Status'], rows, 'relatorio_despesas.pdf');
+            },
+            exportData(dataType = 'all') {
+                let data;
+                let filename = `backup_evento_${new Date().toISOString().split('T')[0]}.json`;
+
+                if(dataType === 'guests') {
+                    data = { guests: state.guests };
+                    filename = `convidados_${new Date().toISOString().split('T')[0]}.json`;
+                } else {
+                    data = { eventData: state.eventData, guests: state.guests, suppliers: state.suppliers };
+                }
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            },
+            importData() {
+                const file = document.getElementById('backup-file').files[0];
+                if (!file) { alert('Por favor, selecione um arquivo.'); return; }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.eventData && !state.eventData.name) state.eventData = data.eventData;
+                        if (data.guests) data.guests.forEach(g => { if(!state.guests.find(eg => eg.id === g.id)) state.guests.push(g); });
+                        if (data.suppliers) data.suppliers.forEach(s => { if(!state.suppliers.find(es => es.id === s.id)) state.suppliers.push(s); });
+                        
+                        this.updateUI();
+                        alert('Dados importados com sucesso!');
+                    } catch (error) {
+                        alert('Erro ao ler o arquivo de backup.');
+                        console.error(error);
+                    }
+                };
+                reader.readAsText(file);
+            },
+            clearAllData() {
+                if(confirm('ATENÇÃO! Isso apagará TODOS os dados do evento. Deseja continuar?')) {
+                    localStorage.removeItem('eventManagementData_v2');
+                    initializeData();
+                    this.updateUI();
+                    alert('Todos os dados foram removidos.');
+                }
+            },
+            updateUI() {
+                saveState();
+                this.renderActivePage();
+            }
+        };
+
+        // ===== EVENT LISTENERS (OUVINTE DE EVENTOS) =====
+        selectors.navLinks.addEventListener('click', e => {
+            const link = e.target.closest('a');
+            if (link?.dataset.page) {
+                e.preventDefault();
+                navigateTo(link.dataset.page);
+            }
+        });
+        
+        selectors.dashboardCardsContainer.addEventListener('click', (e) => {
+            const card = e.target.closest('.card[data-page]');
+            if (card && card.dataset.page) {
+                navigateTo(card.dataset.page);
+            }
+        });
+
+        selectors.fab.addEventListener('click', () => {
+            if (state.activePage === 'guests-page') app.openGuestModal();
+            else if (state.activePage === 'suppliers-page') app.openSupplierModal();
+        });
+
+        document.getElementById('event-form').addEventListener('submit', (e) => app.saveEvent(e));
+        document.getElementById('costs-form').addEventListener('submit', (e) => app.saveCosts(e));
+        document.getElementById('guest-form').addEventListener('submit', async (e) => await app.saveGuest(e));
+        document.getElementById('supplier-form').addEventListener('submit', (e) => app.saveSupplier(e));
+        document.getElementById('confirm-delete-btn').addEventListener('click', () => app.confirmDelete());
+        document.getElementById('cancel-delete-btn').addEventListener('click', () => app.closeAllModals());
+        
+        document.getElementById('edit-event-btn').addEventListener('click', () => app.openEventModal());
+        document.getElementById('edit-costs-btn').addEventListener('click', () => app.openCostsModal());
+        document.getElementById('guest-search').addEventListener('input', () => app.renderGuestsPage());
+        document.getElementById('start-camera-btn').addEventListener('click', () => app.startQRScanner());
+        document.getElementById('stop-camera-btn').addEventListener('click', () => app.stopQRScanner());
+        document.getElementById('generate-guest-payments-report-btn').addEventListener('click', () => app.generateGuestPaymentsReport());
+        document.getElementById('generate-expenses-report-btn').addEventListener('click', () => app.generateExpensesReport());
+        document.getElementById('export-data-btn').addEventListener('click', () => app.exportData('all'));
+        document.getElementById('export-guests-btn').addEventListener('click', () => app.exportData('guests'));
+        document.getElementById('import-data-btn').addEventListener('click', () => app.importData());
+        document.getElementById('clear-data-btn').addEventListener('click', () => app.clearAllData());
+
+        const toggleSidebar = () => {
+            selectors.sidebar.classList.toggle('open');
+            selectors.sidebarOverlay.classList.toggle('active');
+        };
+        selectors.menuToggleBtn.addEventListener('click', toggleSidebar);
+        selectors.sidebarOverlay.addEventListener('click', toggleSidebar);
+        
+        window.app = app; 
+        initializeData();
+        navigateTo(state.activePage);
+    });
+    </script>
+</body>
+</html>
