@@ -1,10 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Controle de Eventos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary-color: #4a6fa5;
@@ -139,6 +140,14 @@
             background: linear-gradient(135deg, var(--card-purple), #af52de);
         }
         
+        .card-reports {
+            background: linear-gradient(135deg, #ff6b6b, #ff4757);
+        }
+        
+        .card-backup {
+            background: linear-gradient(135deg, #5b6dff, #3a4bcc);
+        }
+        
         .card-icon {
             font-size: 24px;
             margin-bottom: 10px;
@@ -182,7 +191,6 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
-            width: 100%;
             transition: background-color 0.3s;
             margin-top: 10px;
         }
@@ -387,6 +395,122 @@
             flex: 1;
         }
         
+        /* Estilos para relatórios */
+        .reports-section {
+            margin-bottom: 30px;
+        }
+        
+        .report-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .report-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .report-actions button {
+            width: auto;
+            padding: 8px 15px;
+        }
+        
+        .report-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .report-summary-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .report-summary-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .report-table th, .report-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .report-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .report-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .positive {
+            color: var(--success-color);
+        }
+        
+        .negative {
+            color: var(--danger-color);
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        /* Estilos para backup */
+        .backup-section {
+            margin-bottom: 30px;
+        }
+        
+        .backup-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .backup-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .backup-actions button {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .backup-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
         @media (max-width: 480px) {
             .summary {
                 grid-template-columns: 1fr;
@@ -402,6 +526,29 @@
             
             .dashboard {
                 grid-template-columns: 1fr;
+            }
+            
+            .report-summary {
+                grid-template-columns: 1fr;
+            }
+            
+            .report-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .report-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .backup-actions {
+                flex-direction: column;
+            }
+            
+            .backup-actions button {
+                width: 100%;
             }
         }
         
@@ -462,6 +609,22 @@
                 </div>
                 <div class="card-value" id="dashboard-payment-total">R$ 0,00</div>
             </div>
+            
+            <div class="dashboard-card card-reports" data-tab="reports">
+                <div>
+                    <div class="card-icon">📊</div>
+                    <div class="card-title">Relatórios</div>
+                </div>
+                <div class="card-value">Financeiro</div>
+            </div>
+            
+            <div class="dashboard-card card-backup" data-tab="backup">
+                <div>
+                    <div class="card-icon">💾</div>
+                    <div class="card-title">Backup</div>
+                </div>
+                <div class="card-value">Dados</div>
+            </div>
         </div>
         
         <div class="nav-tabs">
@@ -469,11 +632,387 @@
             <button class="nav-tab" data-tab="guests">Convidados</button>
             <button class="nav-tab" data-tab="suppliers">Fornecedores</button>
             <button class="nav-tab" data-tab="payments">Pagamentos</button>
+            <button class="nav-tab" data-tab="reports">Relatórios</button>
+            <button class="nav-tab" data-tab="backup">Backup</button>
         </div>
         
         <!-- Aba de Configuração do Evento -->
         <div id="event" class="tab-content active">
             <h2>Configuração do Evento</h2>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Informações do Evento</h3>
+                    <button id="edit-event-btn" class="warning">Editar Evento</button>
+                </div>
+                
+                <div id="event-info">
+                    <p><strong>Nome do Evento:</strong> <span id="event-info-name">Não definido</span></p>
+                    <p><strong>Data do Evento:</strong> <span id="event-info-date">Não definida</span></p>
+                    <p><strong>Local do Evento:</strong> <span id="event-info-location">Não definido</span></p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Custos do Evento</h3>
+                    <button id="edit-costs-btn" class="warning">Editar Custos</button>
+                </div>
+                
+                <div id="costs-info">
+                    <p><strong>Alimentação:</strong> R$ <span id="cost-info-food">0,00</span></p>
+                    <p><strong>Música:</strong> R$ <span id="cost-info-music">0,00</span></p>
+                    <p><strong>Aluguel do Espaço:</strong> R$ <span id="cost-info-venue">0,00</span></p>
+                    <p><strong>Bebidas:</strong> R$ <span id="cost-info-drinks">0,00</span></p>
+                    <p><strong>Outros Custos:</strong> R$ <span id="cost-info-other">0,00</span></p>
+                </div>
+            </div>
+            
+            <div class="summary" id="cost-summary">
+                <div class="summary-item">
+                    <div>Custo Total</div>
+                    <div class="summary-value" id="total-cost">R$ 0,00</div>
+                </div>
+                <div class="summary-item">
+                    <div>Valor por Convidado</div>
+                    <div class="summary-value" id="cost-per-guest">R$ 0,00</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Convidados -->
+        <div id="guests" class="tab-content">
+            <h2>Lista de Convidados</h2>
+            
+            <div class="card">
+                <div class="form-group">
+                    <input type="text" id="guest-search" placeholder="Buscar convidado...">
+                </div>
+                
+                <button id="add-guest-btn" class="success">Adicionar Convidado</button>
+            </div>
+            
+            <div id="guests-list">
+                <div class="empty-state">
+                    <p>Nenhum convidado cadastrado ainda.</p>
+                    <p>Clique em "Adicionar Convidado" para começar.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Fornecedores -->
+        <div id="suppliers" class="tab-content">
+            <h2>Fornecedores</h2>
+            
+            <div class="card">
+                <button id="add-supplier-btn" class="success">Adicionar Fornecedor</button>
+            </div>
+            
+            <div id="suppliers-list">
+                <div class="empty-state">
+                    <p>Nenhum fornecedor cadastrado ainda.</p>
+                    <p>Clique em "Adicionar Fornecedor" para começar.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Pagamentos -->
+        <div id="payments" class="tab-content">
+            <h2>Controle de Pagamentos</h2>
+            
+            <div class="summary">
+                <div class="summary-item">
+                    <div>Total Recebido</div>
+                    <div class="summary-value" id="total-received">R$ 0,00</div>
+                </div>
+                <div class="summary-item">
+                    <div>Total a Receber</div>
+                    <div class="summary-value" id="total-pending">R$ 0,00</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Pagamentos Recebidos de Convidados</h3>
+                <div id="guest-payments-list">
+                    <div class="empty-state">
+                        <p>Nenhum pagamento de convidado registrado ainda.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Pagamentos Efetuados a Fornecedores</h3>
+                <div id="supplier-payments-list">
+                    <div class="empty-state">
+                        <p>Nenhum pagamento a fornecedor registrado ainda.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Relatórios -->
+        <div id="reports" class="tab-content">
+            <h2>Relatórios Financeiros</h2>
+            
+            <!-- Relatório de Balanço Geral -->
+            <div class="reports-section">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h3>Balanço Geral</h3>
+                        <div class="report-actions">
+                            <button class="success" id="generate-balance-report">Gerar PDF</button>
+                        </div>
+                    </div>
+                    
+                    <div class="report-summary">
+                        <div class="report-summary-item">
+                            <div>Total de Receitas</div>
+                            <div class="report-summary-value positive" id="total-income">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Total de Despesas</div>
+                            <div class="report-summary-value negative" id="total-expenses">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Saldo Final</div>
+                            <div class="report-summary-value" id="final-balance">R$ 0,00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-details">
+                        <h4>Detalhamento</h4>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Categoria</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="balance-details">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Relatório de Pagamentos de Convidados -->
+            <div class="reports-section">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h3>Pagamentos de Convidados</h3>
+                        <div class="report-actions">
+                            <button class="success" id="generate-guest-payments-report">Gerar PDF</button>
+                        </div>
+                    </div>
+                    
+                    <div class="report-summary">
+                        <div class="report-summary-item">
+                            <div>Total Recebido</div>
+                            <div class="report-summary-value positive" id="guest-payments-total">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Total Pendente</div>
+                            <div class="report-summary-value negative" id="guest-payments-pending">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Taxa de Pagamento</div>
+                            <div class="report-summary-value" id="guest-payment-rate">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-details">
+                        <h4>Detalhamento por Convidado</h4>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Convidado</th>
+                                    <th>Valor Sugerido</th>
+                                    <th>Valor Pago</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guest-payments-details">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Relatório de Despesas -->
+            <div class="reports-section">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h3>Despesas do Evento</h3>
+                        <div class="report-actions">
+                            <button class="success" id="generate-expenses-report">Gerar PDF</button>
+                        </div>
+                    </div>
+                    
+                    <div class="report-summary">
+                        <div class="report-summary-item">
+                            <div>Total de Despesas</div>
+                            <div class="report-summary-value negative" id="total-expenses-summary">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Total Pago</div>
+                            <div class="report-summary-value" id="total-expenses-paid">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Total Pendente</div>
+                            <div class="report-summary-value negative" id="total-expenses-pending">R$ 0,00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-details">
+                        <h4>Detalhamento por Categoria</h4>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Categoria</th>
+                                    <th>Valor Orçado</th>
+                                    <th>Valor Pago</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-details">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="report-details">
+                        <h4>Detalhamento por Fornecedor</h4>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Fornecedor</th>
+                                    <th>Serviço</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supplier-expenses-details">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Relatório Consolidado -->
+            <div class="reports-section">
+                <div class="report-card">
+                    <div class="report-header">
+                        <h3>Relatório Consolidado</h3>
+                        <div class="report-actions">
+                            <button class="success" id="generate-consolidated-report">Gerar PDF Completo</button>
+                        </div>
+                    </div>
+                    
+                    <div class="report-summary">
+                        <div class="report-summary-item">
+                            <div>Receitas Totais</div>
+                            <div class="report-summary-value positive" id="consolidated-income">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Despesas Totais</div>
+                            <div class="report-summary-value negative" id="consolidated-expenses">R$ 0,00</div>
+                        </div>
+                        <div class="report-summary-item">
+                            <div>Resultado</div>
+                            <div class="report-summary-value" id="consolidated-result">R$ 0,00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-details">
+                        <h4>Fluxo de Caixa</h4>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Entradas</th>
+                                    <th>Saídas</th>
+                                    <th>Saldo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cash-flow-details">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba de Backup -->
+        <div id="backup" class="tab-content">
+            <h2>Backup e Restauração de Dados</h2>
+            
+            <div class="backup-section">
+                <div class="backup-card">
+                    <h3>Fazer Backup dos Dados</h3>
+                    <p>Faça o backup de todos os dados do sistema para um arquivo JSON que pode ser salvo em seu computador.</p>
+                    
+                    <div class="backup-actions">
+                        <button id="create-backup" class="success">Criar Backup</button>
+                        <button id="download-backup" class="warning">Baixar Backup</button>
+                    </div>
+                    
+                    <div class="backup-info">
+                        <p><strong>Último backup:</strong> <span id="last-backup-date">Nunca</span></p>
+                        <p><strong>Total de dados salvos:</strong> <span id="backup-data-size">0 KB</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="backup-section">
+                <div class="backup-card">
+                    <h3>Restaurar Dados</h3>
+                    <p>Restaurar dados de um backup anterior. Isso substituirá todos os dados atuais.</p>
+                    
+                    <div class="form-group">
+                        <label for="backup-file">Selecionar arquivo de backup</label>
+                        <input type="file" id="backup-file" accept=".json">
+                    </div>
+                    
+                    <div class="backup-actions">
+                        <button id="restore-backup" class="warning">Restaurar Backup</button>
+                        <button id="reset-data" class="danger">Limpar Todos os Dados</button>
+                    </div>
+                    
+                    <div class="backup-info">
+                        <p><strong>Atenção:</strong> A restauração de backup substituirá todos os dados atuais. Faça um backup antes de restaurar.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="backup-section">
+                <div class="backup-card">
+                    <h3>Informações do Sistema</h3>
+                    
+                    <div class="backup-info">
+                        <p><strong>Eventos cadastrados:</strong> <span id="info-events">1</span></p>
+                        <p><strong>Convidados cadastrados:</strong> <span id="info-guests">0</span></p>
+                        <p><strong>Fornecedores cadastrados:</strong> <span id="info-suppliers">0</span></p>
+                        <p><strong>Pagamentos registrados:</strong> <span id="info-payments">0</span></p>
+                        <p><strong>Armazenamento utilizado:</strong> <span id="info-storage">0 KB</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para Configuração do Evento -->
+    <div id="event-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="event-modal-title">Configurar Evento</h3>
+                <button class="close" id="close-event-modal">&times;</button>
+            </div>
             
             <div class="form-group">
                 <label for="event-name">Nome do Evento</label>
@@ -517,80 +1056,7 @@
                 <input type="number" id="other-costs" placeholder="0.00" step="0.01" min="0">
             </div>
             
-            <button id="save-event">Salvar Configuração do Evento</button>
-            
-            <div class="summary" id="cost-summary">
-                <div class="summary-item">
-                    <div>Custo Total</div>
-                    <div class="summary-value" id="total-cost">R$ 0,00</div>
-                </div>
-                <div class="summary-item">
-                    <div>Valor por Convidado</div>
-                    <div class="summary-value" id="cost-per-guest">R$ 0,00</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Aba de Convidados -->
-        <div id="guests" class="tab-content">
-            <h2>Lista de Convidados</h2>
-            
-            <div class="form-group">
-                <input type="text" id="guest-search" placeholder="Buscar convidado...">
-            </div>
-            
-            <button id="add-guest-btn">Adicionar Convidado</button>
-            
-            <div id="guests-list">
-                <div class="empty-state">
-                    <p>Nenhum convidado cadastrado ainda.</p>
-                    <p>Clique em "Adicionar Convidado" para começar.</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Aba de Fornecedores -->
-        <div id="suppliers" class="tab-content">
-            <h2>Fornecedores</h2>
-            
-            <button id="add-supplier-btn">Adicionar Fornecedor</button>
-            
-            <div id="suppliers-list">
-                <div class="empty-state">
-                    <p>Nenhum fornecedor cadastrado ainda.</p>
-                    <p>Clique em "Adicionar Fornecedor" para começar.</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Aba de Pagamentos -->
-        <div id="payments" class="tab-content">
-            <h2>Controle de Pagamentos</h2>
-            
-            <div class="summary">
-                <div class="summary-item">
-                    <div>Total Recebido</div>
-                    <div class="summary-value" id="total-received">R$ 0,00</div>
-                </div>
-                <div class="summary-item">
-                    <div>Total a Receber</div>
-                    <div class="summary-value" id="total-pending">R$ 0,00</div>
-                </div>
-            </div>
-            
-            <h3>Pagamentos Recebidos de Convidados</h3>
-            <div id="guest-payments-list">
-                <div class="empty-state">
-                    <p>Nenhum pagamento de convidado registrado ainda.</p>
-                </div>
-            </div>
-            
-            <h3>Pagamentos Efetuados a Fornecedores</h3>
-            <div id="supplier-payments-list">
-                <div class="empty-state">
-                    <p>Nenhum pagamento a fornecedor registrado ainda.</p>
-                </div>
-            </div>
+            <button id="save-event" class="success">Salvar Configuração do Evento</button>
         </div>
     </div>
     
@@ -603,8 +1069,8 @@
             </div>
             
             <div class="form-group">
-                <label for="guest-name">Nome</label>
-                <input type="text" id="guest-name" placeholder="Nome completo">
+                <label for="guest-name">Nome do Convidado</label>
+                <input type="text" id="guest-name" placeholder="Ex: João Silva">
             </div>
             
             <div class="form-group">
@@ -617,7 +1083,25 @@
                 <input type="tel" id="guest-phone" placeholder="(11) 99999-9999">
             </div>
             
-            <button id="save-guest">Salvar Convidado</button>
+            <div class="form-group">
+                <label for="guest-suggested-value">Valor Sugerido (R$)</label>
+                <input type="number" id="guest-suggested-value" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-confirmed">Confirmado</label>
+                <select id="guest-confirmed">
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-notes">Observações</label>
+                <textarea id="guest-notes" rows="3" placeholder="Observações sobre o convidado..."></textarea>
+            </div>
+            
+            <button id="save-guest" class="success">Salvar Convidado</button>
         </div>
     </div>
     
@@ -630,20 +1114,18 @@
             </div>
             
             <div class="form-group">
-                <label for="supplier-name">Nome/Razão Social</label>
-                <input type="text" id="supplier-name" placeholder="Nome do fornecedor">
+                <label for="supplier-name">Nome do Fornecedor</label>
+                <input type="text" id="supplier-name" placeholder="Ex: Buffet Sabor & Arte">
             </div>
             
             <div class="form-group">
                 <label for="supplier-service">Serviço Prestado</label>
-                <select id="supplier-service">
-                    <option value="">Selecione um serviço</option>
-                    <option value="food">Alimentação</option>
-                    <option value="music">Música</option>
-                    <option value="venue">Aluguel de Espaço</option>
-                    <option value="drinks">Bebidas</option>
-                    <option value="other">Outro</option>
-                </select>
+                <input type="text" id="supplier-service" placeholder="Ex: Buffet">
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-contact">Contato</label>
+                <input type="text" id="supplier-contact" placeholder="Ex: (11) 99999-9999">
             </div>
             
             <div class="form-group">
@@ -652,61 +1134,139 @@
             </div>
             
             <div class="form-group">
-                <label for="supplier-contact">Contato</label>
-                <input type="text" id="supplier-contact" placeholder="Nome e telefone do contato">
-            </div>
-            
-            <button id="save-supplier">Salvar Fornecedor</button>
-        </div>
-    </div>
-    
-    <!-- Modal para Registrar Pagamento -->
-    <div id="payment-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="payment-modal-title">Registrar Pagamento</h3>
-                <button class="close" id="close-payment-modal">&times;</button>
-            </div>
-            
-            <div id="payment-info">
-                <!-- Informações do pagamento serão preenchidas dinamicamente -->
+                <label for="supplier-paid">Valor Pago (R$)</label>
+                <input type="number" id="supplier-paid" placeholder="0.00" step="0.01" min="0">
             </div>
             
             <div class="form-group">
-                <label for="payment-date">Data do Pagamento</label>
-                <input type="date" id="payment-date">
-            </div>
-            
-            <div class="form-group">
-                <label for="payment-amount">Valor Pago (R$)</label>
-                <input type="number" id="payment-amount" placeholder="0.00" step="0.01" min="0">
-            </div>
-            
-            <div class="form-group">
-                <label for="payment-method">Método de Pagamento</label>
-                <select id="payment-method">
-                    <option value="pix">PIX</option>
-                    <option value="cash">Dinheiro</option>
-                    <option value="card">Cartão</option>
-                    <option value="transfer">Transferência</option>
+                <label for="supplier-status">Status</label>
+                <select id="supplier-status">
+                    <option value="pending">Pendente</option>
+                    <option value="partial">Parcial</option>
+                    <option value="paid">Pago</option>
                 </select>
             </div>
             
             <div class="form-group">
-                <label for="payment-receipt">Comprovante (opcional)</label>
-                <input type="file" id="payment-receipt" class="file-input" accept="image/*">
-                <img id="receipt-preview" class="file-preview hidden">
+                <label for="supplier-notes">Observações</label>
+                <textarea id="supplier-notes" rows="3" placeholder="Observações sobre o fornecedor..."></textarea>
             </div>
             
-            <button id="save-payment" class="success">Registrar Pagamento</button>
+            <button id="save-supplier" class="success">Salvar Fornecedor</button>
         </div>
     </div>
     
-    <!-- Modal para Visualizar/Editar Recibo -->
+    <!-- Modal para Registrar Pagamento de Convidado -->
+    <div id="guest-payment-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="guest-payment-modal-title">Registrar Pagamento</h3>
+                <button class="close" id="close-guest-payment-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-payment-name">Convidado</label>
+                <input type="text" id="guest-payment-name" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-payment-suggested">Valor Sugerido</label>
+                <input type="text" id="guest-payment-suggested" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-payment-amount">Valor Pago (R$)</label>
+                <input type="number" id="guest-payment-amount" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-payment-date">Data do Pagamento</label>
+                <input type="date" id="guest-payment-date">
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-payment-method">Método de Pagamento</label>
+                <select id="guest-payment-method">
+                    <option value="pix">PIX</option>
+                    <option value="cash">Dinheiro</option>
+                    <option value="card">Cartão</option>
+                    <option value="transfer">Transferência</option>
+                    <option value="other">Outro</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="guest-payment-notes">Observações</label>
+                <textarea id="guest-payment-notes" rows="3" placeholder="Observações sobre o pagamento..."></textarea>
+            </div>
+            
+            <button id="save-guest-payment" class="success">Registrar Pagamento</button>
+        </div>
+    </div>
+    
+    <!-- Modal para Registrar Pagamento a Fornecedor -->
+    <div id="supplier-payment-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="supplier-payment-modal-title">Registrar Pagamento</h3>
+                <button class="close" id="close-supplier-payment-modal">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-name">Fornecedor</label>
+                <input type="text" id="supplier-payment-name" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-service">Serviço</label>
+                <input type="text" id="supplier-payment-service" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-total">Valor Total do Serviço</label>
+                <input type="text" id="supplier-payment-total" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-paid">Valor Já Pago</label>
+                <input type="text" id="supplier-payment-paid" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-amount">Valor a Pagar (R$)</label>
+                <input type="number" id="supplier-payment-amount" placeholder="0.00" step="0.01" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-date">Data do Pagamento</label>
+                <input type="date" id="supplier-payment-date">
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-method">Método de Pagamento</label>
+                <select id="supplier-payment-method">
+                    <option value="pix">PIX</option>
+                    <option value="cash">Dinheiro</option>
+                    <option value="card">Cartão</option>
+                    <option value="transfer">Transferência</option>
+                    <option value="other">Outro</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="supplier-payment-notes">Observações</label>
+                <textarea id="supplier-payment-notes" rows="3" placeholder="Observações sobre o pagamento..."></textarea>
+            </div>
+            
+            <button id="save-supplier-payment" class="success">Registrar Pagamento</button>
+        </div>
+    </div>
+    
+    <!-- Modal para Visualizar Recibo -->
     <div id="receipt-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="receipt-modal-title">Recibo de Pagamento</h3>
+                <h3>Recibo de Pagamento</h3>
                 <button class="close" id="close-receipt-modal">&times;</button>
             </div>
             
@@ -715,19 +1275,18 @@
             </div>
             
             <div class="payment-actions">
-                <button id="print-receipt" class="success">Imprimir Recibo</button>
-                <button id="edit-payment" class="warning">Editar Pagamento</button>
-                <button id="delete-payment" class="danger">Excluir Pagamento</button>
+                <button id="print-receipt" class="warning">Imprimir Recibo</button>
+                <button id="close-receipt" class="success">Fechar</button>
             </div>
         </div>
     </div>
-
+    
     <script>
-        // Dados do sistema (simulando um banco de dados local)
-        let eventData = JSON.parse(localStorage.getItem('eventData')) || {
-            name: '',
-            date: '',
-            location: '',
+        // Dados do sistema
+        let eventData = {
+            name: "Meu Evento",
+            date: "",
+            location: "",
             costs: {
                 food: 0,
                 music: 0,
@@ -737,519 +1296,617 @@
             }
         };
         
-        let guests = JSON.parse(localStorage.getItem('guests')) || [];
-        let suppliers = JSON.parse(localStorage.getItem('suppliers')) || [];
-        let payments = JSON.parse(localStorage.getItem('payments')) || [];
+        let guests = [];
+        let suppliers = [];
+        let guestPayments = [];
+        let supplierPayments = [];
         
-        // Elementos da interface
+        // Elementos do DOM
+        const dashboardCards = document.querySelectorAll('.dashboard-card');
         const navTabs = document.querySelectorAll('.nav-tab');
         const tabContents = document.querySelectorAll('.tab-content');
-        const dashboardCards = document.querySelectorAll('.dashboard-card');
         
-        // Dashboard elements
-        const dashboardEventName = document.getElementById('dashboard-event-name');
-        const dashboardGuestCount = document.getElementById('dashboard-guest-count');
-        const dashboardSupplierCount = document.getElementById('dashboard-supplier-count');
-        const dashboardPaymentTotal = document.getElementById('dashboard-payment-total');
-        
-        // Aba Evento
-        const eventNameInput = document.getElementById('event-name');
-        const eventDateInput = document.getElementById('event-date');
-        const eventLocationInput = document.getElementById('event-location');
-        const foodCostInput = document.getElementById('food-cost');
-        const musicCostInput = document.getElementById('music-cost');
-        const venueCostInput = document.getElementById('venue-cost');
-        const drinksCostInput = document.getElementById('drinks-cost');
-        const otherCostsInput = document.getElementById('other-costs');
-        const saveEventBtn = document.getElementById('save-event');
-        const totalCostElement = document.getElementById('total-cost');
-        const costPerGuestElement = document.getElementById('cost-per-guest');
-        
-        // Aba Convidados
-        const addGuestBtn = document.getElementById('add-guest-btn');
-        const guestSearchInput = document.getElementById('guest-search');
-        const guestsListElement = document.getElementById('guests-list');
+        // Modais
+        const eventModal = document.getElementById('event-modal');
         const guestModal = document.getElementById('guest-modal');
-        const guestModalTitle = document.getElementById('guest-modal-title');
-        const guestNameInput = document.getElementById('guest-name');
-        const guestEmailInput = document.getElementById('guest-email');
-        const guestPhoneInput = document.getElementById('guest-phone');
-        const saveGuestBtn = document.getElementById('save-guest');
-        const closeGuestModal = document.getElementById('close-guest-modal');
-        
-        // Aba Fornecedores
-        const addSupplierBtn = document.getElementById('add-supplier-btn');
-        const suppliersListElement = document.getElementById('suppliers-list');
         const supplierModal = document.getElementById('supplier-modal');
-        const supplierModalTitle = document.getElementById('supplier-modal-title');
-        const supplierNameInput = document.getElementById('supplier-name');
-        const supplierServiceInput = document.getElementById('supplier-service');
-        const supplierCostInput = document.getElementById('supplier-cost');
-        const supplierContactInput = document.getElementById('supplier-contact');
-        const saveSupplierBtn = document.getElementById('save-supplier');
-        const closeSupplierModal = document.getElementById('close-supplier-modal');
-        
-        // Aba Pagamentos
-        const totalReceivedElement = document.getElementById('total-received');
-        const totalPendingElement = document.getElementById('total-pending');
-        const guestPaymentsListElement = document.getElementById('guest-payments-list');
-        const supplierPaymentsListElement = document.getElementById('supplier-payments-list');
-        const paymentModal = document.getElementById('payment-modal');
-        const paymentModalTitle = document.getElementById('payment-modal-title');
-        const paymentInfoElement = document.getElementById('payment-info');
-        const paymentDateInput = document.getElementById('payment-date');
-        const paymentAmountInput = document.getElementById('payment-amount');
-        const paymentMethodInput = document.getElementById('payment-method');
-        const paymentReceiptInput = document.getElementById('payment-receipt');
-        const receiptPreview = document.getElementById('receipt-preview');
-        const savePaymentBtn = document.getElementById('save-payment');
-        const closePaymentModal = document.getElementById('close-payment-modal');
-        
-        // Modal de Recibo
+        const guestPaymentModal = document.getElementById('guest-payment-modal');
+        const supplierPaymentModal = document.getElementById('supplier-payment-modal');
         const receiptModal = document.getElementById('receipt-modal');
-        const receiptModalTitle = document.getElementById('receipt-modal-title');
-        const receiptContent = document.getElementById('receipt-content');
-        const printReceiptBtn = document.getElementById('print-receipt');
-        const editPaymentBtn = document.getElementById('edit-payment');
-        const deletePaymentBtn = document.getElementById('delete-payment');
-        const closeReceiptModal = document.getElementById('close-receipt-modal');
         
-        // Variáveis para controle de estado
-        let currentEditingGuestId = null;
-        let currentEditingSupplierId = null;
-        let currentPaymentType = null; // 'guest' ou 'supplier'
-        let currentPaymentId = null;
-        let currentViewingPaymentId = null;
+        // Botões para abrir modais
+        document.getElementById('edit-event-btn').addEventListener('click', () => openEventModal());
+        document.getElementById('edit-costs-btn').addEventListener('click', () => openEventModal());
+        document.getElementById('add-guest-btn').addEventListener('click', () => openGuestModal());
+        document.getElementById('add-supplier-btn').addEventListener('click', () => openSupplierModal());
+        
+        // Botões para fechar modais
+        document.getElementById('close-event-modal').addEventListener('click', () => closeModal(eventModal));
+        document.getElementById('close-guest-modal').addEventListener('click', () => closeModal(guestModal));
+        document.getElementById('close-supplier-modal').addEventListener('click', () => closeModal(supplierModal));
+        document.getElementById('close-guest-payment-modal').addEventListener('click', () => closeModal(guestPaymentModal));
+        document.getElementById('close-supplier-payment-modal').addEventListener('click', () => closeModal(supplierPaymentModal));
+        document.getElementById('close-receipt-modal').addEventListener('click', () => closeModal(receiptModal));
+        document.getElementById('close-receipt').addEventListener('click', () => closeModal(receiptModal));
+        
+        // Botões para salvar dados
+        document.getElementById('save-event').addEventListener('click', saveEventData);
+        document.getElementById('save-guest').addEventListener('click', saveGuest);
+        document.getElementById('save-supplier').addEventListener('click', saveSupplier);
+        document.getElementById('save-guest-payment').addEventListener('click', saveGuestPayment);
+        document.getElementById('save-supplier-payment').addEventListener('click', saveSupplierPayment);
+        document.getElementById('print-receipt').addEventListener('click', printReceipt);
+        
+        // Botões de backup
+        document.getElementById('create-backup').addEventListener('click', createBackup);
+        document.getElementById('download-backup').addEventListener('click', downloadBackup);
+        document.getElementById('restore-backup').addEventListener('click', restoreBackup);
+        document.getElementById('reset-data').addEventListener('click', resetData);
+        
+        // Botões de relatórios
+        document.getElementById('generate-balance-report').addEventListener('click', () => generateBalanceReport());
+        document.getElementById('generate-guest-payments-report').addEventListener('click', () => generateGuestPaymentsReport());
+        document.getElementById('generate-expenses-report').addEventListener('click', () => generateExpensesReport());
+        document.getElementById('generate-consolidated-report').addEventListener('click', () => generateConsolidatedReport());
+        
+        // Fechar modal ao clicar fora
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target);
+            }
+        });
+        
+        // Navegação por abas
+        dashboardCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const tabId = card.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+        
+        navTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+        
+        // Busca de convidados
+        document.getElementById('guest-search').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filterGuests(searchTerm);
+        });
         
         // Inicialização
-        document.addEventListener('DOMContentLoaded', function() {
-            loadEventData();
-            renderGuests();
-            renderSuppliers();
-            renderPayments();
-            updatePaymentSummary();
-            updateDashboard();
-            
-            // Configurar data atual como padrão para pagamentos
-            const today = new Date().toISOString().split('T')[0];
-            paymentDateInput.value = today;
-        });
+        loadData();
+        updateDashboard();
+        updateEventInfo();
+        renderGuests();
+        renderSuppliers();
+        renderPayments();
+        updateReports();
+        updateBackupInfo();
         
-        // Navegação entre abas
-        navTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-                
-                // Ativar aba selecionada
-                navTabs.forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Mostrar conteúdo da aba selecionada
-                tabContents.forEach(content => {
+        // Funções de navegação
+        function switchTab(tabId) {
+            // Atualizar navegação
+            navTabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Atualizar conteúdo
+            tabContents.forEach(content => {
+                if (content.id === tabId) {
+                    content.classList.add('active');
+                } else {
                     content.classList.remove('active');
-                    if (content.id === tabId) {
-                        content.classList.add('active');
-                    }
-                });
+                }
             });
-        });
+        }
         
-        // Navegação por cards do dashboard
-        dashboardCards.forEach(card => {
-            card.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-                
-                // Ativar aba selecionada
-                navTabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-                
-                // Ativar a aba correspondente
-                document.querySelector(`.nav-tab[data-tab="${tabId}"]`).classList.add('active');
-                document.getElementById(tabId).classList.add('active');
-                
-                // Scroll para a aba
-                document.getElementById(tabId).scrollIntoView({ behavior: 'smooth' });
-            });
-        });
-        
-        // Evento: Salvar configuração do evento
-        saveEventBtn.addEventListener('click', function() {
-            eventData.name = eventNameInput.value;
-            eventData.date = eventDateInput.value;
-            eventData.location = eventLocationInput.value;
-            eventData.costs.food = parseFloat(foodCostInput.value) || 0;
-            eventData.costs.music = parseFloat(musicCostInput.value) || 0;
-            eventData.costs.venue = parseFloat(venueCostInput.value) || 0;
-            eventData.costs.drinks = parseFloat(drinksCostInput.value) || 0;
-            eventData.costs.other = parseFloat(otherCostsInput.value) || 0;
+        // Funções de modal
+        function openEventModal() {
+            // Preencher dados atuais
+            document.getElementById('event-name').value = eventData.name;
+            document.getElementById('event-date').value = eventData.date;
+            document.getElementById('event-location').value = eventData.location;
+            document.getElementById('food-cost').value = eventData.costs.food;
+            document.getElementById('music-cost').value = eventData.costs.music;
+            document.getElementById('venue-cost').value = eventData.costs.venue;
+            document.getElementById('drinks-cost').value = eventData.costs.drinks;
+            document.getElementById('other-costs').value = eventData.costs.other;
             
-            saveToLocalStorage();
-            updateCostSummary();
-            updateDashboard();
-            
-            alert('Configuração do evento salva com sucesso!');
-        });
+            document.getElementById('event-modal-title').textContent = 'Configurar Evento';
+            eventModal.classList.remove('hidden');
+        }
         
-        // Evento: Adicionar/Editar Convidado
-        addGuestBtn.addEventListener('click', function() {
-            currentEditingGuestId = null;
-            guestModalTitle.textContent = 'Adicionar Convidado';
-            guestNameInput.value = '';
-            guestEmailInput.value = '';
-            guestPhoneInput.value = '';
+        function openGuestModal(guestId = null) {
+            const modalTitle = document.getElementById('guest-modal-title');
+            const guestName = document.getElementById('guest-name');
+            const guestEmail = document.getElementById('guest-email');
+            const guestPhone = document.getElementById('guest-phone');
+            const guestSuggestedValue = document.getElementById('guest-suggested-value');
+            const guestConfirmed = document.getElementById('guest-confirmed');
+            const guestNotes = document.getElementById('guest-notes');
+            
+            if (guestId !== null) {
+                // Modo edição
+                const guest = guests.find(g => g.id === guestId);
+                if (guest) {
+                    modalTitle.textContent = 'Editar Convidado';
+                    guestName.value = guest.name;
+                    guestEmail.value = guest.email || '';
+                    guestPhone.value = guest.phone || '';
+                    guestSuggestedValue.value = guest.suggestedValue || '';
+                    guestConfirmed.value = guest.confirmed ? 'true' : 'false';
+                    guestNotes.value = guest.notes || '';
+                    
+                    // Armazenar ID para referência
+                    guestModal.dataset.editId = guestId;
+                }
+            } else {
+                // Modo adição
+                modalTitle.textContent = 'Adicionar Convidado';
+                guestName.value = '';
+                guestEmail.value = '';
+                guestPhone.value = '';
+                guestSuggestedValue.value = '';
+                guestConfirmed.value = 'false';
+                guestNotes.value = '';
+                
+                // Remover ID se existir
+                if (guestModal.dataset.editId) {
+                    delete guestModal.dataset.editId;
+                }
+            }
+            
             guestModal.classList.remove('hidden');
-        });
+        }
         
-        saveGuestBtn.addEventListener('click', function() {
-            const guestName = guestNameInput.value.trim();
-            if (!guestName) {
+        function openSupplierModal(supplierId = null) {
+            const modalTitle = document.getElementById('supplier-modal-title');
+            const supplierName = document.getElementById('supplier-name');
+            const supplierService = document.getElementById('supplier-service');
+            const supplierContact = document.getElementById('supplier-contact');
+            const supplierCost = document.getElementById('supplier-cost');
+            const supplierPaid = document.getElementById('supplier-paid');
+            const supplierStatus = document.getElementById('supplier-status');
+            const supplierNotes = document.getElementById('supplier-notes');
+            
+            if (supplierId !== null) {
+                // Modo edição
+                const supplier = suppliers.find(s => s.id === supplierId);
+                if (supplier) {
+                    modalTitle.textContent = 'Editar Fornecedor';
+                    supplierName.value = supplier.name;
+                    supplierService.value = supplier.service;
+                    supplierContact.value = supplier.contact || '';
+                    supplierCost.value = supplier.cost;
+                    supplierPaid.value = supplier.paid || 0;
+                    supplierStatus.value = supplier.status;
+                    supplierNotes.value = supplier.notes || '';
+                    
+                    // Armazenar ID para referência
+                    supplierModal.dataset.editId = supplierId;
+                }
+            } else {
+                // Modo adição
+                modalTitle.textContent = 'Adicionar Fornecedor';
+                supplierName.value = '';
+                supplierService.value = '';
+                supplierContact.value = '';
+                supplierCost.value = '';
+                supplierPaid.value = '';
+                supplierStatus.value = 'pending';
+                supplierNotes.value = '';
+                
+                // Remover ID se existir
+                if (supplierModal.dataset.editId) {
+                    delete supplierModal.dataset.editId;
+                }
+            }
+            
+            supplierModal.classList.remove('hidden');
+        }
+        
+        function openGuestPaymentModal(guestId) {
+            const guest = guests.find(g => g.id === guestId);
+            if (!guest) return;
+            
+            document.getElementById('guest-payment-name').value = guest.name;
+            document.getElementById('guest-payment-suggested').value = formatCurrency(guest.suggestedValue || 0);
+            document.getElementById('guest-payment-amount').value = '';
+            document.getElementById('guest-payment-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('guest-payment-method').value = 'pix';
+            document.getElementById('guest-payment-notes').value = '';
+            
+            // Armazenar ID para referência
+            guestPaymentModal.dataset.guestId = guestId;
+            
+            guestPaymentModal.classList.remove('hidden');
+        }
+        
+        function openSupplierPaymentModal(supplierId) {
+            const supplier = suppliers.find(s => s.id === supplierId);
+            if (!supplier) return;
+            
+            document.getElementById('supplier-payment-name').value = supplier.name;
+            document.getElementById('supplier-payment-service').value = supplier.service;
+            document.getElementById('supplier-payment-total').value = formatCurrency(supplier.cost);
+            document.getElementById('supplier-payment-paid').value = formatCurrency(supplier.paid || 0);
+            document.getElementById('supplier-payment-amount').value = '';
+            document.getElementById('supplier-payment-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('supplier-payment-method').value = 'pix';
+            document.getElementById('supplier-payment-notes').value = '';
+            
+            // Armazenar ID para referência
+            supplierPaymentModal.dataset.supplierId = supplierId;
+            
+            supplierPaymentModal.classList.remove('hidden');
+        }
+        
+        function openReceiptModal(payment, type) {
+            const receiptContent = document.getElementById('receipt-content');
+            
+            let receiptHTML = `
+                <div class="receipt">
+                    <div class="receipt-header">
+                        <h2>Recibo de Pagamento</h2>
+                        <p>Evento: ${eventData.name}</p>
+                        <p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    
+                    <div class="receipt-details">
+            `;
+            
+            if (type === 'guest') {
+                const guest = guests.find(g => g.id === payment.guestId);
+                receiptHTML += `
+                    <div class="receipt-row">
+                        <div>Convidado:</div>
+                        <div>${guest ? guest.name : 'N/A'}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div>Valor Pago:</div>
+                        <div>${formatCurrency(payment.amount)}</div>
+                    </div>
+                `;
+            } else {
+                const supplier = suppliers.find(s => s.id === payment.supplierId);
+                receiptHTML += `
+                    <div class="receipt-row">
+                        <div>Fornecedor:</div>
+                        <div>${supplier ? supplier.name : 'N/A'}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div>Serviço:</div>
+                        <div>${supplier ? supplier.service : 'N/A'}</div>
+                    </div>
+                    <div class="receipt-row">
+                        <div>Valor Pago:</div>
+                        <div>${formatCurrency(payment.amount)}</div>
+                    </div>
+                `;
+            }
+            
+            receiptHTML += `
+                        <div class="receipt-row">
+                            <div>Data do Pagamento:</div>
+                            <div>${new Date(payment.date).toLocaleDateString('pt-BR')}</div>
+                        </div>
+                        <div class="receipt-row">
+                            <div>Método de Pagamento:</div>
+                            <div>${formatPaymentMethod(payment.method)}</div>
+                        </div>
+                        ${payment.notes ? `
+                        <div class="receipt-row">
+                            <div>Observações:</div>
+                            <div>${payment.notes}</div>
+                        </div>
+                        ` : ''}
+                        <div class="receipt-row receipt-total">
+                            <div>Total:</div>
+                            <div>${formatCurrency(payment.amount)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="receipt-footer">
+                        <p>Este recibo foi gerado automaticamente pelo Sistema de Controle de Eventos</p>
+                    </div>
+                </div>
+            `;
+            
+            receiptContent.innerHTML = receiptHTML;
+            receiptModal.classList.remove('hidden');
+        }
+        
+        function closeModal(modal) {
+            modal.classList.add('hidden');
+        }
+        
+        // Funções de salvamento de dados
+        function saveEventData() {
+            eventData.name = document.getElementById('event-name').value;
+            eventData.date = document.getElementById('event-date').value;
+            eventData.location = document.getElementById('event-location').value;
+            eventData.costs.food = parseFloat(document.getElementById('food-cost').value) || 0;
+            eventData.costs.music = parseFloat(document.getElementById('music-cost').value) || 0;
+            eventData.costs.venue = parseFloat(document.getElementById('venue-cost').value) || 0;
+            eventData.costs.drinks = parseFloat(document.getElementById('drinks-cost').value) || 0;
+            eventData.costs.other = parseFloat(document.getElementById('other-costs').value) || 0;
+            
+            updateEventInfo();
+            updateDashboard();
+            updateReports();
+            saveData();
+            closeModal(eventModal);
+        }
+        
+        function saveGuest() {
+            const name = document.getElementById('guest-name').value;
+            const email = document.getElementById('guest-email').value;
+            const phone = document.getElementById('guest-phone').value;
+            const suggestedValue = parseFloat(document.getElementById('guest-suggested-value').value) || 0;
+            const confirmed = document.getElementById('guest-confirmed').value === 'true';
+            const notes = document.getElementById('guest-notes').value;
+            
+            if (!name) {
                 alert('Por favor, informe o nome do convidado.');
                 return;
             }
             
-            const guest = {
-                name: guestName,
-                email: guestEmailInput.value.trim(),
-                phone: guestPhoneInput.value.trim(),
-                paid: false,
-                paymentAmount: 0
-            };
-            
-            if (currentEditingGuestId !== null) {
+            if (guestModal.dataset.editId) {
                 // Editar convidado existente
-                guests[currentEditingGuestId] = guest;
+                const guestId = guestModal.dataset.editId;
+                const guestIndex = guests.findIndex(g => g.id === guestId);
+                
+                if (guestIndex !== -1) {
+                    guests[guestIndex] = {
+                        ...guests[guestIndex],
+                        name,
+                        email,
+                        phone,
+                        suggestedValue,
+                        confirmed,
+                        notes
+                    };
+                }
             } else {
                 // Adicionar novo convidado
-                guests.push(guest);
+                const newGuest = {
+                    id: generateId(),
+                    name,
+                    email,
+                    phone,
+                    suggestedValue,
+                    confirmed,
+                    notes,
+                    dateAdded: new Date().toISOString()
+                };
+                
+                guests.push(newGuest);
             }
             
-            saveToLocalStorage();
             renderGuests();
-            updateCostSummary();
             updateDashboard();
-            guestModal.classList.add('hidden');
-        });
+            updateReports();
+            saveData();
+            closeModal(guestModal);
+        }
         
-        closeGuestModal.addEventListener('click', function() {
-            guestModal.classList.add('hidden');
-        });
-        
-        // Evento: Adicionar/Editar Fornecedor
-        addSupplierBtn.addEventListener('click', function() {
-            currentEditingSupplierId = null;
-            supplierModalTitle.textContent = 'Adicionar Fornecedor';
-            supplierNameInput.value = '';
-            supplierServiceInput.value = '';
-            supplierCostInput.value = '';
-            supplierContactInput.value = '';
-            supplierModal.classList.remove('hidden');
-        });
-        
-        saveSupplierBtn.addEventListener('click', function() {
-            const supplierName = supplierNameInput.value.trim();
-            if (!supplierName) {
-                alert('Por favor, informe o nome do fornecedor.');
+        function saveSupplier() {
+            const name = document.getElementById('supplier-name').value;
+            const service = document.getElementById('supplier-service').value;
+            const contact = document.getElementById('supplier-contact').value;
+            const cost = parseFloat(document.getElementById('supplier-cost').value) || 0;
+            const paid = parseFloat(document.getElementById('supplier-paid').value) || 0;
+            const status = document.getElementById('supplier-status').value;
+            const notes = document.getElementById('supplier-notes').value;
+            
+            if (!name || !service) {
+                alert('Por favor, informe o nome do fornecedor e o serviço prestado.');
                 return;
             }
             
-            const supplierCost = parseFloat(supplierCostInput.value) || 0;
-            if (supplierCost <= 0) {
-                alert('Por favor, informe um valor válido para o serviço.');
-                return;
-            }
-            
-            const supplier = {
-                name: supplierName,
-                service: supplierServiceInput.value,
-                cost: supplierCost,
-                contact: supplierContactInput.value.trim(),
-                paid: false,
-                paymentAmount: 0
-            };
-            
-            if (currentEditingSupplierId !== null) {
+            if (supplierModal.dataset.editId) {
                 // Editar fornecedor existente
-                suppliers[currentEditingSupplierId] = supplier;
+                const supplierId = supplierModal.dataset.editId;
+                const supplierIndex = suppliers.findIndex(s => s.id === supplierId);
+                
+                if (supplierIndex !== -1) {
+                    suppliers[supplierIndex] = {
+                        ...suppliers[supplierIndex],
+                        name,
+                        service,
+                        contact,
+                        cost,
+                        paid,
+                        status,
+                        notes
+                    };
+                }
             } else {
                 // Adicionar novo fornecedor
-                suppliers.push(supplier);
+                const newSupplier = {
+                    id: generateId(),
+                    name,
+                    service,
+                    contact,
+                    cost,
+                    paid,
+                    status,
+                    notes,
+                    dateAdded: new Date().toISOString()
+                };
+                
+                suppliers.push(newSupplier);
             }
             
-            saveToLocalStorage();
             renderSuppliers();
             updateDashboard();
-            supplierModal.classList.add('hidden');
-        });
+            updateReports();
+            saveData();
+            closeModal(supplierModal);
+        }
         
-        closeSupplierModal.addEventListener('click', function() {
-            supplierModal.classList.add('hidden');
-        });
-        
-        // Evento: Registrar Pagamento
-        savePaymentBtn.addEventListener('click', function() {
-            const paymentAmount = parseFloat(paymentAmountInput.value) || 0;
-            if (paymentAmount <= 0) {
+        function saveGuestPayment() {
+            const guestId = guestPaymentModal.dataset.guestId;
+            const amount = parseFloat(document.getElementById('guest-payment-amount').value) || 0;
+            const date = document.getElementById('guest-payment-date').value;
+            const method = document.getElementById('guest-payment-method').value;
+            const notes = document.getElementById('guest-payment-notes').value;
+            
+            if (!guestId || amount <= 0) {
                 alert('Por favor, informe um valor válido para o pagamento.');
                 return;
             }
             
-            const payment = {
-                type: currentPaymentType,
-                id: currentPaymentId,
-                date: paymentDateInput.value,
-                amount: paymentAmount,
-                method: paymentMethodInput.value,
-                receipt: receiptPreview.src || '',
+            const newPayment = {
+                id: generateId(),
+                guestId,
+                amount,
+                date,
+                method,
+                notes,
+                type: 'guest',
                 timestamp: new Date().toISOString()
             };
             
-            payments.push(payment);
+            guestPayments.push(newPayment);
             
-            // Atualizar status de pagamento
-            if (currentPaymentType === 'guest') {
-                guests[currentPaymentId].paid = true;
-                guests[currentPaymentId].paymentAmount = payment.amount;
-                guests[currentPaymentId].paymentDate = payment.date;
-            } else if (currentPaymentType === 'supplier') {
-                suppliers[currentPaymentId].paid = true;
-                suppliers[currentPaymentId].paymentAmount = payment.amount;
-                suppliers[currentPaymentId].paymentDate = payment.date;
+            // Atualizar o convidado com o valor pago
+            const guest = guests.find(g => g.id === guestId);
+            if (guest) {
+                guest.totalPaid = (guest.totalPaid || 0) + amount;
             }
             
-            saveToLocalStorage();
-            renderGuests();
-            renderSuppliers();
             renderPayments();
-            updatePaymentSummary();
             updateDashboard();
-            paymentModal.classList.add('hidden');
+            updateReports();
+            saveData();
+            closeModal(guestPaymentModal);
             
-            // Limpar preview do comprovante
-            receiptPreview.classList.add('hidden');
-            receiptPreview.src = '';
-            paymentReceiptInput.value = '';
-        });
+            // Mostrar recibo
+            openReceiptModal(newPayment, 'guest');
+        }
         
-        closePaymentModal.addEventListener('click', function() {
-            paymentModal.classList.add('hidden');
-        });
-        
-        // Preview do comprovante
-        paymentReceiptInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    receiptPreview.src = e.target.result;
-                    receiptPreview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
+        function saveSupplierPayment() {
+            const supplierId = supplierPaymentModal.dataset.supplierId;
+            const amount = parseFloat(document.getElementById('supplier-payment-amount').value) || 0;
+            const date = document.getElementById('supplier-payment-date').value;
+            const method = document.getElementById('supplier-payment-method').value;
+            const notes = document.getElementById('supplier-payment-notes').value;
+            
+            if (!supplierId || amount <= 0) {
+                alert('Por favor, informe um valor válido para o pagamento.');
+                return;
             }
-        });
-        
-        // Eventos do modal de recibo
-        printReceiptBtn.addEventListener('click', function() {
-            window.print();
-        });
-        
-        editPaymentBtn.addEventListener('click', function() {
-            // Implementar edição de pagamento
-            alert('Funcionalidade de edição será implementada em breve.');
-        });
-        
-        deletePaymentBtn.addEventListener('click', function() {
-            if (confirm('Tem certeza que deseja excluir este pagamento?')) {
-                // Encontrar e remover o pagamento
-                const paymentIndex = payments.findIndex(p => p.timestamp === currentViewingPaymentId);
-                if (paymentIndex !== -1) {
-                    payments.splice(paymentIndex, 1);
-                    
-                    // Atualizar status de pagamento
-                    const payment = payments[paymentIndex];
-                    if (payment && payment.type === 'guest') {
-                        guests[payment.id].paid = false;
-                        guests[payment.id].paymentAmount = 0;
-                    } else if (payment && payment.type === 'supplier') {
-                        suppliers[payment.id].paid = false;
-                        suppliers[payment.id].paymentAmount = 0;
-                    }
-                    
-                    saveToLocalStorage();
-                    renderGuests();
-                    renderSuppliers();
-                    renderPayments();
-                    updatePaymentSummary();
-                    updateDashboard();
-                }
-                
-                receiptModal.classList.add('hidden');
+            
+            const supplier = suppliers.find(s => s.id === supplierId);
+            if (!supplier) return;
+            
+            // Verificar se o valor a pagar não excede o valor restante
+            const remaining = supplier.cost - (supplier.paid || 0);
+            if (amount > remaining) {
+                alert(`O valor informado (${formatCurrency(amount)}) excede o valor restante (${formatCurrency(remaining)}).`);
+                return;
             }
-        });
-        
-        closeReceiptModal.addEventListener('click', function() {
-            receiptModal.classList.add('hidden');
-        });
-        
-        // Busca de convidados
-        guestSearchInput.addEventListener('input', function() {
-            renderGuests();
-        });
-        
-        // Funções auxiliares
-        function loadEventData() {
-            eventNameInput.value = eventData.name;
-            eventDateInput.value = eventData.date;
-            eventLocationInput.value = eventData.location;
-            foodCostInput.value = eventData.costs.food;
-            musicCostInput.value = eventData.costs.music;
-            venueCostInput.value = eventData.costs.venue;
-            drinksCostInput.value = eventData.costs.drinks;
-            otherCostsInput.value = eventData.costs.other;
             
-            updateCostSummary();
+            const newPayment = {
+                id: generateId(),
+                supplierId,
+                amount,
+                date,
+                method,
+                notes,
+                type: 'supplier',
+                timestamp: new Date().toISOString()
+            };
+            
+            supplierPayments.push(newPayment);
+            
+            // Atualizar o fornecedor com o valor pago
+            supplier.paid = (supplier.paid || 0) + amount;
+            
+            // Atualizar status do fornecedor
+            if (supplier.paid >= supplier.cost) {
+                supplier.status = 'paid';
+            } else if (supplier.paid > 0) {
+                supplier.status = 'partial';
+            }
+            
+            renderPayments();
+            renderSuppliers();
+            updateDashboard();
+            updateReports();
+            saveData();
+            closeModal(supplierPaymentModal);
+            
+            // Mostrar recibo
+            openReceiptModal(newPayment, 'supplier');
         }
         
-        function updateCostSummary() {
-            const totalCost = eventData.costs.food + eventData.costs.music + 
-                             eventData.costs.venue + eventData.costs.drinks + 
-                             eventData.costs.other;
-            
-            // Calcular valor por convidado
-            const guestCount = guests.length;
-            const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
-            
-            totalCostElement.textContent = `R$ ${totalCost.toFixed(2)}`;
-            costPerGuestElement.textContent = `R$ ${costPerGuest.toFixed(2)}`;
-        }
-        
-        function updatePaymentSummary() {
-            let totalReceived = 0;
-            let totalPending = 0;
-            
-            // Calcular total recebido de convidados
-            guests.forEach(guest => {
-                if (guest.paid) {
-                    totalReceived += guest.paymentAmount;
-                } else {
-                    // Calcular valor que deveria ter sido pago
-                    const guestCount = guests.length;
-                    const totalCost = eventData.costs.food + eventData.costs.music + 
-                                     eventData.costs.venue + eventData.costs.drinks + 
-                                     eventData.costs.other;
-                    const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
-                    totalPending += costPerGuest;
-                }
-            });
-            
-            // Calcular total pago a fornecedores
-            suppliers.forEach(supplier => {
-                if (supplier.paid) {
-                    totalReceived -= supplier.paymentAmount;
-                } else {
-                    totalPending += supplier.cost;
-                }
-            });
-            
-            totalReceivedElement.textContent = `R$ ${totalReceived.toFixed(2)}`;
-            totalPendingElement.textContent = `R$ ${totalPending.toFixed(2)}`;
-        }
-        
-        function updateDashboard() {
-            // Atualizar nome do evento
-            dashboardEventName.textContent = eventData.name || 'Configurar';
-            
-            // Atualizar contagem de convidados
-            dashboardGuestCount.textContent = guests.length;
-            
-            // Atualizar contagem de fornecedores
-            dashboardSupplierCount.textContent = suppliers.length;
-            
-            // Calcular total de pagamentos
-            let totalPayments = 0;
-            guests.forEach(guest => {
-                if (guest.paid) {
-                    totalPayments += guest.paymentAmount;
-                }
-            });
-            dashboardPaymentTotal.textContent = `R$ ${totalPayments.toFixed(2)}`;
-        }
-        
+        // Funções de renderização
         function renderGuests() {
-            const searchTerm = guestSearchInput.value.toLowerCase();
-            const filteredGuests = guests.filter(guest => 
-                guest.name.toLowerCase().includes(searchTerm) ||
-                guest.email.toLowerCase().includes(searchTerm) ||
-                guest.phone.toLowerCase().includes(searchTerm)
-            );
+            const guestsList = document.getElementById('guests-list');
             
-            if (filteredGuests.length === 0) {
-                guestsListElement.innerHTML = `
+            if (guests.length === 0) {
+                guestsList.innerHTML = `
                     <div class="empty-state">
-                        <p>Nenhum convidado encontrado.</p>
+                        <p>Nenhum convidado cadastrado ainda.</p>
+                        <p>Clique em "Adicionar Convidado" para começar.</p>
                     </div>
                 `;
                 return;
             }
             
-            guestsListElement.innerHTML = '';
+            let guestsHTML = '';
             
-            filteredGuests.forEach((guest, index) => {
-                const guestCard = document.createElement('div');
-                guestCard.className = 'card';
+            guests.forEach(guest => {
+                const totalPaid = guestPayments
+                    .filter(p => p.guestId === guest.id)
+                    .reduce((sum, p) => sum + p.amount, 0);
                 
-                const statusText = guest.paid ? 'Pago' : 'Pendente';
-                const statusClass = guest.paid ? 'paid' : 'pending';
+                const suggestedValue = guest.suggestedValue || 0;
+                const paymentStatus = suggestedValue > 0 ? (totalPaid / suggestedValue) * 100 : 0;
                 
-                // Calcular valor sugerido para pagamento
-                const guestCount = guests.length;
-                const totalCost = eventData.costs.food + eventData.costs.music + 
-                                 eventData.costs.venue + eventData.costs.drinks + 
-                                 eventData.costs.other;
-                const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
-                
-                guestCard.innerHTML = `
-                    <div class="card-header">
-                        <h3>${guest.name}</h3>
-                        <span class="status ${statusClass}">${statusText}</span>
-                    </div>
-                    <p><strong>E-mail:</strong> ${guest.email || 'Não informado'}</p>
-                    <p><strong>Telefone:</strong> ${guest.phone || 'Não informado'}</p>
-                    <p><strong>Valor Sugerido:</strong> R$ ${costPerGuest.toFixed(2)}</p>
-                    ${guest.paid ? `<p><strong>Valor Pago:</strong> R$ ${guest.paymentAmount.toFixed(2)}</p>` : ''}
-                    <div class="actions">
-                        <button class="${guest.paid ? 'warning' : 'success'}" data-action="${guest.paid ? 'view' : 'pay'}" data-id="${index}">
-                            ${guest.paid ? 'Ver Recibo' : 'Registrar Pagamento'}
-                        </button>
-                        <button class="warning" data-action="edit" data-id="${index}">Editar</button>
-                        <button class="danger" data-action="delete" data-id="${index}">Excluir</button>
+                guestsHTML += `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>${guest.name}</h3>
+                            <span class="status ${guest.confirmed ? 'paid' : 'pending'}">
+                                ${guest.confirmed ? 'Confirmado' : 'Pendente'}
+                            </span>
+                        </div>
+                        
+                        <p><strong>Contato:</strong> ${guest.email || 'N/A'} | ${guest.phone || 'N/A'}</p>
+                        <p><strong>Valor Sugerido:</strong> ${formatCurrency(suggestedValue)}</p>
+                        <p><strong>Valor Pago:</strong> ${formatCurrency(totalPaid)}</p>
+                        <p><strong>Status de Pagamento:</strong> ${paymentStatus.toFixed(1)}%</p>
+                        
+                        ${guest.notes ? `<p><strong>Observações:</strong> ${guest.notes}</p>` : ''}
+                        
+                        <div class="actions">
+                            <button class="warning" onclick="openGuestModal('${guest.id}')">Editar</button>
+                            <button class="success" onclick="openGuestPaymentModal('${guest.id}')">Registrar Pagamento</button>
+                            <button class="danger" onclick="deleteGuest('${guest.id}')">Excluir</button>
+                        </div>
                     </div>
                 `;
-                
-                guestsListElement.appendChild(guestCard);
             });
             
-            // Adicionar event listeners aos botões
-            document.querySelectorAll('#guests-list button').forEach(button => {
-                button.addEventListener('click', function() {
-                    const action = this.getAttribute('data-action');
-                    const id = parseInt(this.getAttribute('data-id'));
-                    
-                    if (action === 'pay') {
-                        openPaymentModal('guest', id);
-                    } else if (action === 'view') {
-                        viewReceipt('guest', id);
-                    } else if (action === 'edit') {
-                        editGuest(id);
-                    } else if (action === 'delete') {
-                        deleteGuest(id);
-                    }
-                });
-            });
+            guestsList.innerHTML = guestsHTML;
         }
         
         function renderSuppliers() {
+            const suppliersList = document.getElementById('suppliers-list');
+            
             if (suppliers.length === 0) {
-                suppliersListElement.innerHTML = `
+                suppliersList.innerHTML = `
                     <div class="empty-state">
                         <p>Nenhum fornecedor cadastrado ainda.</p>
                         <p>Clique em "Adicionar Fornecedor" para começar.</p>
@@ -1258,321 +1915,1069 @@
                 return;
             }
             
-            suppliersListElement.innerHTML = '';
+            let suppliersHTML = '';
             
-            suppliers.forEach((supplier, index) => {
-                const supplierCard = document.createElement('div');
-                supplierCard.className = 'card';
+            suppliers.forEach(supplier => {
+                const paid = supplier.paid || 0;
+                const remaining = supplier.cost - paid;
+                const paymentStatus = supplier.cost > 0 ? (paid / supplier.cost) * 100 : 0;
                 
-                const statusText = supplier.paid ? 'Pago' : 'Pendente';
-                const statusClass = supplier.paid ? 'paid' : 'pending';
-                
-                supplierCard.innerHTML = `
-                    <div class="card-header">
-                        <h3>${supplier.name}</h3>
-                        <span class="status ${statusClass}">${statusText}</span>
-                    </div>
-                    <p><strong>Serviço:</strong> ${getServiceName(supplier.service)}</p>
-                    <p><strong>Valor:</strong> R$ ${supplier.cost.toFixed(2)}</p>
-                    <p><strong>Contato:</strong> ${supplier.contact || 'Não informado'}</p>
-                    ${supplier.paid ? `<p><strong>Valor Pago:</strong> R$ ${supplier.paymentAmount.toFixed(2)}</p>` : ''}
-                    <div class="actions">
-                        <button class="${supplier.paid ? 'warning' : 'success'}" data-action="${supplier.paid ? 'view' : 'pay'}" data-id="${index}">
-                            ${supplier.paid ? 'Ver Recibo' : 'Registrar Pagamento'}
-                        </button>
-                        <button class="warning" data-action="edit" data-id="${index}">Editar</button>
-                        <button class="danger" data-action="delete" data-id="${index}">Excluir</button>
+                suppliersHTML += `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>${supplier.name}</h3>
+                            <span class="status ${supplier.status}">
+                                ${supplier.status === 'paid' ? 'Pago' : 
+                                  supplier.status === 'partial' ? 'Parcial' : 'Pendente'}
+                            </span>
+                        </div>
+                        
+                        <p><strong>Serviço:</strong> ${supplier.service}</p>
+                        <p><strong>Contato:</strong> ${supplier.contact || 'N/A'}</p>
+                        <p><strong>Valor Total:</strong> ${formatCurrency(supplier.cost)}</p>
+                        <p><strong>Valor Pago:</strong> ${formatCurrency(paid)}</p>
+                        <p><strong>Valor Restante:</strong> ${formatCurrency(remaining)}</p>
+                        <p><strong>Status de Pagamento:</strong> ${paymentStatus.toFixed(1)}%</p>
+                        
+                        ${supplier.notes ? `<p><strong>Observações:</strong> ${supplier.notes}</p>` : ''}
+                        
+                        <div class="actions">
+                            <button class="warning" onclick="openSupplierModal('${supplier.id}')">Editar</button>
+                            <button class="success" onclick="openSupplierPaymentModal('${supplier.id}')">Registrar Pagamento</button>
+                            <button class="danger" onclick="deleteSupplier('${supplier.id}')">Excluir</button>
+                        </div>
                     </div>
                 `;
-                
-                suppliersListElement.appendChild(supplierCard);
             });
             
-            // Adicionar event listeners aos botões
-            document.querySelectorAll('#suppliers-list button').forEach(button => {
-                button.addEventListener('click', function() {
-                    const action = this.getAttribute('data-action');
-                    const id = parseInt(this.getAttribute('data-id'));
-                    
-                    if (action === 'pay') {
-                        openPaymentModal('supplier', id);
-                    } else if (action === 'view') {
-                        viewReceipt('supplier', id);
-                    } else if (action === 'edit') {
-                        editSupplier(id);
-                    } else if (action === 'delete') {
-                        deleteSupplier(id);
-                    }
-                });
-            });
+            suppliersList.innerHTML = suppliersHTML;
         }
         
         function renderPayments() {
-            // Pagamentos de convidados
-            const guestPayments = payments.filter(p => p.type === 'guest');
+            const guestPaymentsList = document.getElementById('guest-payments-list');
+            const supplierPaymentsList = document.getElementById('supplier-payments-list');
             
+            // Pagamentos de convidados
             if (guestPayments.length === 0) {
-                guestPaymentsListElement.innerHTML = `
+                guestPaymentsList.innerHTML = `
                     <div class="empty-state">
                         <p>Nenhum pagamento de convidado registrado ainda.</p>
                     </div>
                 `;
             } else {
-                guestPaymentsListElement.innerHTML = '';
+                let guestPaymentsHTML = '';
                 
                 guestPayments.forEach(payment => {
-                    const guest = guests[payment.id];
-                    if (!guest) return;
+                    const guest = guests.find(g => g.id === payment.guestId);
                     
-                    const paymentCard = document.createElement('div');
-                    paymentCard.className = 'card';
-                    
-                    paymentCard.innerHTML = `
-                        <div class="card-header">
-                            <h3>${guest.name}</h3>
-                            <span class="status paid">Pago</span>
-                        </div>
-                        <p><strong>Data:</strong> ${formatDate(payment.date)}</p>
-                        <p><strong>Valor:</strong> R$ ${payment.amount.toFixed(2)}</p>
-                        <p><strong>Método:</strong> ${getPaymentMethodName(payment.method)}</p>
-                        <div class="actions">
-                            <button class="success" data-action="view-receipt" data-timestamp="${payment.timestamp}">Ver Recibo</button>
+                    guestPaymentsHTML += `
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>${guest ? guest.name : 'Convidado não encontrado'}</h3>
+                                <span class="status paid">Pago</span>
+                            </div>
+                            
+                            <p><strong>Valor:</strong> ${formatCurrency(payment.amount)}</p>
+                            <p><strong>Data:</strong> ${new Date(payment.date).toLocaleDateString('pt-BR')}</p>
+                            <p><strong>Método:</strong> ${formatPaymentMethod(payment.method)}</p>
+                            
+                            ${payment.notes ? `<p><strong>Observações:</strong> ${payment.notes}</p>` : ''}
+                            
+                            <div class="actions">
+                                <button class="warning" onclick="viewReceipt('${payment.id}', 'guest')">Ver Recibo</button>
+                                <button class="danger" onclick="deletePayment('${payment.id}', 'guest')">Excluir</button>
+                            </div>
                         </div>
                     `;
-                    
-                    guestPaymentsListElement.appendChild(paymentCard);
                 });
+                
+                guestPaymentsList.innerHTML = guestPaymentsHTML;
             }
             
             // Pagamentos a fornecedores
-            const supplierPayments = payments.filter(p => p.type === 'supplier');
-            
             if (supplierPayments.length === 0) {
-                supplierPaymentsListElement.innerHTML = `
+                supplierPaymentsList.innerHTML = `
                     <div class="empty-state">
                         <p>Nenhum pagamento a fornecedor registrado ainda.</p>
                     </div>
                 `;
             } else {
-                supplierPaymentsListElement.innerHTML = '';
+                let supplierPaymentsHTML = '';
                 
                 supplierPayments.forEach(payment => {
-                    const supplier = suppliers[payment.id];
-                    if (!supplier) return;
+                    const supplier = suppliers.find(s => s.id === payment.supplierId);
                     
-                    const paymentCard = document.createElement('div');
-                    paymentCard.className = 'card';
-                    
-                    paymentCard.innerHTML = `
-                        <div class="card-header">
-                            <h3>${supplier.name}</h3>
-                            <span class="status paid">Pago</span>
-                        </div>
-                        <p><strong>Data:</strong> ${formatDate(payment.date)}</p>
-                        <p><strong>Valor:</strong> R$ ${payment.amount.toFixed(2)}</p>
-                        <p><strong>Método:</strong> ${getPaymentMethodName(payment.method)}</p>
-                        <div class="actions">
-                            <button class="success" data-action="view-receipt" data-timestamp="${payment.timestamp}">Ver Recibo</button>
+                    supplierPaymentsHTML += `
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>${supplier ? supplier.name : 'Fornecedor não encontrado'}</h3>
+                                <span class="status paid">Pago</span>
+                            </div>
+                            
+                            <p><strong>Serviço:</strong> ${supplier ? supplier.service : 'N/A'}</p>
+                            <p><strong>Valor:</strong> ${formatCurrency(payment.amount)}</p>
+                            <p><strong>Data:</strong> ${new Date(payment.date).toLocaleDateString('pt-BR')}</p>
+                            <p><strong>Método:</strong> ${formatPaymentMethod(payment.method)}</p>
+                            
+                            ${payment.notes ? `<p><strong>Observações:</strong> ${payment.notes}</p>` : ''}
+                            
+                            <div class="actions">
+                                <button class="warning" onclick="viewReceipt('${payment.id}', 'supplier')">Ver Recibo</button>
+                                <button class="danger" onclick="deletePayment('${payment.id}', 'supplier')">Excluir</button>
+                            </div>
                         </div>
                     `;
-                    
-                    supplierPaymentsListElement.appendChild(paymentCard);
                 });
-            }
-            
-            // Adicionar event listeners aos botões de ver recibo
-            document.querySelectorAll('#guest-payments-list button, #supplier-payments-list button').forEach(button => {
-                button.addEventListener('click', function() {
-                    const timestamp = this.getAttribute('data-timestamp');
-                    viewReceiptByTimestamp(timestamp);
-                });
-            });
-        }
-        
-        function openPaymentModal(type, id) {
-            currentPaymentType = type;
-            currentPaymentId = id;
-            
-            let entity;
-            let title;
-            
-            if (type === 'guest') {
-                entity = guests[id];
-                title = `Registrar Pagamento - ${entity.name}`;
                 
-                // Calcular valor sugerido
-                const guestCount = guests.length;
-                const totalCost = eventData.costs.food + eventData.costs.music + 
-                                 eventData.costs.venue + eventData.costs.drinks + 
-                                 eventData.costs.other;
-                const costPerGuest = guestCount > 0 ? totalCost / guestCount : 0;
-                
-                paymentAmountInput.value = costPerGuest.toFixed(2);
-            } else {
-                entity = suppliers[id];
-                title = `Registrar Pagamento - ${entity.name}`;
-                paymentAmountInput.value = entity.cost.toFixed(2);
+                supplierPaymentsList.innerHTML = supplierPaymentsHTML;
             }
             
-            paymentModalTitle.textContent = title;
-            
-            // Limpar campos
-            paymentDateInput.value = new Date().toISOString().split('T')[0];
-            paymentMethodInput.value = 'pix';
-            
-            paymentModal.classList.remove('hidden');
+            // Atualizar totais
+            updatePaymentTotals();
         }
         
-        function viewReceipt(type, id) {
-            // Encontrar o pagamento correspondente
-            const payment = payments.find(p => p.type === type && p.id === id);
-            if (!payment) return;
+        // Funções de atualização
+        function updateEventInfo() {
+            document.getElementById('event-info-name').textContent = eventData.name || 'Não definido';
+            document.getElementById('event-info-date').textContent = eventData.date ? 
+                new Date(eventData.date).toLocaleDateString('pt-BR') : 'Não definida';
+            document.getElementById('event-info-location').textContent = eventData.location || 'Não definido';
             
-            viewReceiptByTimestamp(payment.timestamp);
+            document.getElementById('cost-info-food').textContent = formatCurrency(eventData.costs.food);
+            document.getElementById('cost-info-music').textContent = formatCurrency(eventData.costs.music);
+            document.getElementById('cost-info-venue').textContent = formatCurrency(eventData.costs.venue);
+            document.getElementById('cost-info-drinks').textContent = formatCurrency(eventData.costs.drinks);
+            document.getElementById('cost-info-other').textContent = formatCurrency(eventData.costs.other);
+            
+            // Calcular totais
+            const totalCost = Object.values(eventData.costs).reduce((sum, cost) => sum + cost, 0);
+            const confirmedGuests = guests.filter(g => g.confirmed).length;
+            const costPerGuest = confirmedGuests > 0 ? totalCost / confirmedGuests : 0;
+            
+            document.getElementById('total-cost').textContent = formatCurrency(totalCost);
+            document.getElementById('cost-per-guest').textContent = formatCurrency(costPerGuest);
         }
         
-        function viewReceiptByTimestamp(timestamp) {
-            const payment = payments.find(p => p.timestamp === timestamp);
-            if (!payment) return;
+        function updateDashboard() {
+            // Evento
+            document.getElementById('dashboard-event-name').textContent = eventData.name || 'Configurar';
             
-            currentViewingPaymentId = timestamp;
+            // Convidados
+            document.getElementById('dashboard-guest-count').textContent = guests.length;
             
-            let entity;
-            if (payment.type === 'guest') {
-                entity = guests[payment.id];
-                receiptModalTitle.textContent = `Recibo - ${entity.name}`;
-            } else {
-                entity = suppliers[payment.id];
-                receiptModalTitle.textContent = `Recibo - ${entity.name}`;
-            }
+            // Fornecedores
+            document.getElementById('dashboard-supplier-count').textContent = suppliers.length;
             
-            // Gerar conteúdo do recibo
-            receiptContent.innerHTML = `
-                <div class="receipt">
-                    <div class="receipt-header">
-                        <h2>RECIBO</h2>
-                        <p>Sistema de Controle de Eventos</p>
-                    </div>
-                    
-                    <div class="receipt-details">
-                        <div class="receipt-row">
-                            <span>Data:</span>
-                            <span>${formatDate(payment.date)}</span>
-                        </div>
-                        
-                        <div class="receipt-row">
-                            <span>${payment.type === 'guest' ? 'Convidado' : 'Fornecedor'}:</span>
-                            <span>${entity.name}</span>
-                        </div>
-                        
-                        ${payment.type === 'guest' ? 
-                            `<div class="receipt-row">
-                                <span>E-mail:</span>
-                                <span>${entity.email || 'Não informado'}</span>
-                            </div>` : 
-                            `<div class="receipt-row">
-                                <span>Serviço:</span>
-                                <span>${getServiceName(entity.service)}</span>
-                            </div>`
-                        }
-                        
-                        <div class="receipt-row">
-                            <span>Método de Pagamento:</span>
-                            <span>${getPaymentMethodName(payment.method)}</span>
-                        </div>
-                        
-                        <div class="receipt-row receipt-total">
-                            <span>Valor:</span>
-                            <span>R$ ${payment.amount.toFixed(2)}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="receipt-footer">
-                        <p>Este é um recibo gerado automaticamente pelo sistema.</p>
-                    </div>
-                </div>
+            // Pagamentos
+            const totalGuestPayments = guestPayments.reduce((sum, p) => sum + p.amount, 0);
+            document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalGuestPayments);
+        }
+        
+        function updatePaymentTotals() {
+            const totalReceived = guestPayments.reduce((sum, p) => sum + p.amount, 0);
+            const totalSuggested = guests.reduce((sum, g) => sum + (g.suggestedValue || 0), 0);
+            const totalPending = totalSuggested - totalReceived;
+            
+            document.getElementById('total-received').textContent = formatCurrency(totalReceived);
+            document.getElementById('total-pending').textContent = formatCurrency(totalPending > 0 ? totalPending : 0);
+        }
+        
+        function updateReports() {
+            // Balanço Geral
+            const totalIncome = guestPayments.reduce((sum, p) => sum + p.amount, 0);
+            const totalExpenses = suppliers.reduce((sum, s) => sum + (s.paid || 0), 0);
+            const finalBalance = totalIncome - totalExpenses;
+            
+            document.getElementById('total-income').textContent = formatCurrency(totalIncome);
+            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('final-balance').textContent = formatCurrency(finalBalance);
+            
+            // Detalhes do balanço
+            const balanceDetails = document.getElementById('balance-details');
+            balanceDetails.innerHTML = `
+                <tr>
+                    <td>Receitas de Convidados</td>
+                    <td>${formatCurrency(totalIncome)}</td>
+                    <td class="positive">Recebido</td>
+                </tr>
+                <tr>
+                    <td>Despesas com Fornecedores</td>
+                    <td>${formatCurrency(totalExpenses)}</td>
+                    <td class="negative">Pago</td>
+                </tr>
             `;
             
-            receiptModal.classList.remove('hidden');
+            // Pagamentos de Convidados
+            const totalSuggested = guests.reduce((sum, g) => sum + (g.suggestedValue || 0), 0);
+            const paymentRate = totalSuggested > 0 ? (totalIncome / totalSuggested) * 100 : 0;
+            
+            document.getElementById('guest-payments-total').textContent = formatCurrency(totalIncome);
+            document.getElementById('guest-payments-pending').textContent = formatCurrency(totalSuggested - totalIncome);
+            document.getElementById('guest-payment-rate').textContent = `${paymentRate.toFixed(1)}%`;
+            
+            // Detalhes dos pagamentos de convidados
+            const guestPaymentsDetails = document.getElementById('guest-payments-details');
+            let guestPaymentsHTML = '';
+            
+            guests.forEach(guest => {
+                const totalPaid = guestPayments
+                    .filter(p => p.guestId === guest.id)
+                    .reduce((sum, p) => sum + p.amount, 0);
+                
+                const suggestedValue = guest.suggestedValue || 0;
+                const status = totalPaid >= suggestedValue ? 'Pago' : 
+                              totalPaid > 0 ? 'Parcial' : 'Pendente';
+                
+                guestPaymentsHTML += `
+                    <tr>
+                        <td>${guest.name}</td>
+                        <td>${formatCurrency(suggestedValue)}</td>
+                        <td>${formatCurrency(totalPaid)}</td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            });
+            
+            guestPaymentsDetails.innerHTML = guestPaymentsHTML;
+            
+            // Despesas
+            const totalExpensesSummary = suppliers.reduce((sum, s) => sum + s.cost, 0);
+            const totalExpensesPaid = suppliers.reduce((sum, s) => sum + (s.paid || 0), 0);
+            const totalExpensesPending = totalExpensesSummary - totalExpensesPaid;
+            
+            document.getElementById('total-expenses-summary').textContent = formatCurrency(totalExpensesSummary);
+            document.getElementById('total-expenses-paid').textContent = formatCurrency(totalExpensesPaid);
+            document.getElementById('total-expenses-pending').textContent = formatCurrency(totalExpensesPending);
+            
+            // Detalhes das despesas por categoria
+            const expensesDetails = document.getElementById('expenses-details');
+            let expensesHTML = '';
+            
+            // Agrupar despesas por categoria (serviço)
+            const expensesByCategory = {};
+            suppliers.forEach(supplier => {
+                if (!expensesByCategory[supplier.service]) {
+                    expensesByCategory[supplier.service] = {
+                        total: 0,
+                        paid: 0
+                    };
+                }
+                
+                expensesByCategory[supplier.service].total += supplier.cost;
+                expensesByCategory[supplier.service].paid += (supplier.paid || 0);
+            });
+            
+            for (const [category, data] of Object.entries(expensesByCategory)) {
+                const status = data.paid >= data.total ? 'Pago' : 
+                              data.paid > 0 ? 'Parcial' : 'Pendente';
+                
+                expensesHTML += `
+                    <tr>
+                        <td>${category}</td>
+                        <td>${formatCurrency(data.total)}</td>
+                        <td>${formatCurrency(data.paid)}</td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            }
+            
+            expensesDetails.innerHTML = expensesHTML;
+            
+            // Detalhes das despesas por fornecedor
+            const supplierExpensesDetails = document.getElementById('supplier-expenses-details');
+            let supplierExpensesHTML = '';
+            
+            suppliers.forEach(supplier => {
+                const status = supplier.status === 'paid' ? 'Pago' : 
+                              supplier.status === 'partial' ? 'Parcial' : 'Pendente';
+                
+                supplierExpensesHTML += `
+                    <tr>
+                        <td>${supplier.name}</td>
+                        <td>${supplier.service}</td>
+                        <td>${formatCurrency(supplier.cost)}</td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            });
+            
+            supplierExpensesDetails.innerHTML = supplierExpensesHTML;
+            
+            // Relatório Consolidado
+            document.getElementById('consolidated-income').textContent = formatCurrency(totalIncome);
+            document.getElementById('consolidated-expenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('consolidated-result').textContent = formatCurrency(finalBalance);
+            
+            // Fluxo de Caixa
+            const cashFlowDetails = document.getElementById('cash-flow-details');
+            let cashFlowHTML = '';
+            let runningBalance = 0;
+            
+            // Combinar todos os pagamentos e ordenar por data
+            const allPayments = [
+                ...guestPayments.map(p => ({ ...p, type: 'income', description: `Pagamento de convidado` })),
+                ...supplierPayments.map(p => ({ ...p, type: 'expense', description: `Pagamento a fornecedor` }))
+            ].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Adicionar evento inicial
+            cashFlowHTML += `
+                <tr>
+                    <td>${eventData.date ? new Date(eventData.date).toLocaleDateString('pt-BR') : 'N/A'}</td>
+                    <td>Evento: ${eventData.name}</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>${formatCurrency(0)}</td>
+                </tr>
+            `;
+            
+            // Adicionar transações
+            allPayments.forEach(payment => {
+                if (payment.type === 'income') {
+                    runningBalance += payment.amount;
+                    cashFlowHTML += `
+                        <tr>
+                            <td>${new Date(payment.date).toLocaleDateString('pt-BR')}</td>
+                            <td>${payment.description}</td>
+                            <td class="positive">${formatCurrency(payment.amount)}</td>
+                            <td>-</td>
+                            <td>${formatCurrency(runningBalance)}</td>
+                        </tr>
+                    `;
+                } else {
+                    runningBalance -= payment.amount;
+                    cashFlowHTML += `
+                        <tr>
+                            <td>${new Date(payment.date).toLocaleDateString('pt-BR')}</td>
+                            <td>${payment.description}</td>
+                            <td>-</td>
+                            <td class="negative">${formatCurrency(payment.amount)}</td>
+                            <td>${formatCurrency(runningBalance)}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            cashFlowDetails.innerHTML = cashFlowHTML;
         }
         
-        function editGuest(id) {
-            const guest = guests[id];
-            currentEditingGuestId = id;
+        function updateBackupInfo() {
+            document.getElementById('info-events').textContent = eventData.name ? 1 : 0;
+            document.getElementById('info-guests').textContent = guests.length;
+            document.getElementById('info-suppliers').textContent = suppliers.length;
+            document.getElementById('info-payments').textContent = guestPayments.length + supplierPayments.length;
             
-            guestModalTitle.textContent = 'Editar Convidado';
-            guestNameInput.value = guest.name;
-            guestEmailInput.value = guest.email || '';
-            guestPhoneInput.value = guest.phone || '';
+            // Calcular tamanho dos dados
+            const dataSize = JSON.stringify({
+                eventData,
+                guests,
+                suppliers,
+                guestPayments,
+                supplierPayments
+            }).length;
             
-            guestModal.classList.remove('hidden');
+            document.getElementById('info-storage').textContent = `${(dataSize / 1024).toFixed(2)} KB`;
+            document.getElementById('backup-data-size').textContent = `${(dataSize / 1024).toFixed(2)} KB`;
+            
+            // Último backup
+            const lastBackup = localStorage.getItem('lastBackupDate');
+            document.getElementById('last-backup-date').textContent = lastBackup ? 
+                new Date(lastBackup).toLocaleDateString('pt-BR') : 'Nunca';
         }
         
-        function deleteGuest(id) {
+        // Funções de exclusão
+        function deleteGuest(guestId) {
             if (confirm('Tem certeza que deseja excluir este convidado?')) {
-                guests.splice(id, 1);
-                saveToLocalStorage();
+                // Remover convidado
+                guests = guests.filter(g => g.id !== guestId);
+                
+                // Remover pagamentos associados
+                guestPayments = guestPayments.filter(p => p.guestId !== guestId);
+                
                 renderGuests();
-                updateCostSummary();
+                renderPayments();
                 updateDashboard();
+                updateReports();
+                saveData();
             }
         }
         
-        function editSupplier(id) {
-            const supplier = suppliers[id];
-            currentEditingSupplierId = id;
-            
-            supplierModalTitle.textContent = 'Editar Fornecedor';
-            supplierNameInput.value = supplier.name;
-            supplierServiceInput.value = supplier.service;
-            supplierCostInput.value = supplier.cost;
-            supplierContactInput.value = supplier.contact || '';
-            
-            supplierModal.classList.remove('hidden');
+        function deleteSupplier(supplierId) {
+            if (confirm('Tem certeza que deseja excluir este fornecedor?')) {
+                // Remover fornecedor
+                suppliers = suppliers.filter(s => s.id !== supplierId);
+                
+                // Remover pagamentos associados
+                supplierPayments = supplierPayments.filter(p => p.supplierId !== supplierId);
+                
+                renderSuppliers();
+                renderPayments();
+                updateDashboard();
+                updateReports();
+                saveData();
+            }
         }
         
-        function deleteSupplier(id) {
-            if (confirm('Tem certeza que deseja excluir este fornecedor?')) {
-                suppliers.splice(id, 1);
-                saveToLocalStorage();
+        function deletePayment(paymentId, type) {
+            if (confirm('Tem certeza que deseja excluir este pagamento?')) {
+                if (type === 'guest') {
+                    const payment = guestPayments.find(p => p.id === paymentId);
+                    if (payment) {
+                        // Atualizar convidado
+                        const guest = guests.find(g => g.id === payment.guestId);
+                        if (guest) {
+                            guest.totalPaid = (guest.totalPaid || 0) - payment.amount;
+                        }
+                        
+                        // Remover pagamento
+                        guestPayments = guestPayments.filter(p => p.id !== paymentId);
+                    }
+                } else {
+                    const payment = supplierPayments.find(p => p.id === paymentId);
+                    if (payment) {
+                        // Atualizar fornecedor
+                        const supplier = suppliers.find(s => s.id === payment.supplierId);
+                        if (supplier) {
+                            supplier.paid = (supplier.paid || 0) - payment.amount;
+                            
+                            // Atualizar status
+                            if (supplier.paid <= 0) {
+                                supplier.status = 'pending';
+                            } else if (supplier.paid < supplier.cost) {
+                                supplier.status = 'partial';
+                            }
+                        }
+                        
+                        // Remover pagamento
+                        supplierPayments = supplierPayments.filter(p => p.id !== paymentId);
+                    }
+                }
+                
+                renderPayments();
                 renderSuppliers();
                 updateDashboard();
+                updateReports();
+                saveData();
             }
         }
         
-        function getServiceName(service) {
-            const services = {
-                'food': 'Alimentação',
-                'music': 'Música',
-                'venue': 'Aluguel de Espaço',
-                'drinks': 'Bebidas',
-                'other': 'Outro'
+        // Funções de backup
+        function createBackup() {
+            const backupData = {
+                eventData,
+                guests,
+                suppliers,
+                guestPayments,
+                supplierPayments,
+                backupDate: new Date().toISOString()
             };
             
-            return services[service] || 'Não especificado';
+            localStorage.setItem('eventSystemBackup', JSON.stringify(backupData));
+            localStorage.setItem('lastBackupDate', new Date().toISOString());
+            
+            alert('Backup criado com sucesso!');
+            updateBackupInfo();
         }
         
-        function getPaymentMethodName(method) {
+        function downloadBackup() {
+            const backupData = {
+                eventData,
+                guests,
+                suppliers,
+                guestPayments,
+                supplierPayments,
+                backupDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `backup-evento-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            localStorage.setItem('lastBackupDate', new Date().toISOString());
+            updateBackupInfo();
+        }
+        
+        function restoreBackup() {
+            const fileInput = document.getElementById('backup-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Por favor, selecione um arquivo de backup.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backupData = JSON.parse(e.target.result);
+                    
+                    if (confirm('Isso substituirá todos os dados atuais. Tem certeza?')) {
+                        eventData = backupData.eventData || eventData;
+                        guests = backupData.guests || [];
+                        suppliers = backupData.suppliers || [];
+                        guestPayments = backupData.guestPayments || [];
+                        supplierPayments = backupData.supplierPayments || [];
+                        
+                        // Atualizar interface
+                        updateEventInfo();
+                        updateDashboard();
+                        renderGuests();
+                        renderSuppliers();
+                        renderPayments();
+                        updateReports();
+                        updateBackupInfo();
+                        saveData();
+                        
+                        alert('Backup restaurado com sucesso!');
+                    }
+                } catch (error) {
+                    alert('Erro ao restaurar backup. O arquivo pode estar corrompido.');
+                    console.error(error);
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function resetData() {
+            if (confirm('Isso apagará TODOS os dados do sistema. Tem certeza?')) {
+                if (confirm('Esta ação não pode ser desfeita. Continuar?')) {
+                    eventData = {
+                        name: "Meu Evento",
+                        date: "",
+                        location: "",
+                        costs: {
+                            food: 0,
+                            music: 0,
+                            venue: 0,
+                            drinks: 0,
+                            other: 0
+                        }
+                    };
+                    
+                    guests = [];
+                    suppliers = [];
+                    guestPayments = [];
+                    supplierPayments = [];
+                    
+                    // Atualizar interface
+                    updateEventInfo();
+                    updateDashboard();
+                    renderGuests();
+                    renderSuppliers();
+                    renderPayments();
+                    updateReports();
+                    updateBackupInfo();
+                    saveData();
+                    
+                    alert('Todos os dados foram resetados.');
+                }
+            }
+        }
+        
+        // Funções de relatórios
+        function generateBalanceReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Título
+            doc.setFontSize(20);
+            doc.text('Relatório de Balanço Geral', 20, 20);
+            
+            // Data do relatório
+            doc.setFontSize(12);
+            doc.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 30);
+            
+            // Informações do evento
+            doc.text(`Evento: ${eventData.name}`, 20, 40);
+            doc.text(`Data do evento: ${eventData.date ? new Date(eventData.date).toLocaleDateString('pt-BR') : 'N/A'}`, 20, 47);
+            doc.text(`Local: ${eventData.location || 'N/A'}`, 20, 54);
+            
+            // Resumo
+            const totalIncome = guestPayments.reduce((sum, p) => sum + p.amount, 0);
+            const totalExpenses = suppliers.reduce((sum, s) => sum + (s.paid || 0), 0);
+            const finalBalance = totalIncome - totalExpenses;
+            
+            doc.setFontSize(16);
+            doc.text('Resumo Financeiro', 20, 70);
+            
+            doc.setFontSize(12);
+            doc.text(`Total de Receitas: ${formatCurrency(totalIncome)}`, 20, 80);
+            doc.text(`Total de Despesas: ${formatCurrency(totalExpenses)}`, 20, 87);
+            doc.text(`Saldo Final: ${formatCurrency(finalBalance)}`, 20, 94);
+            
+            // Detalhamento
+            doc.setFontSize(16);
+            doc.text('Detalhamento', 20, 110);
+            
+            let yPosition = 120;
+            doc.setFontSize(10);
+            
+            // Receitas
+            doc.text('Receitas de Convidados:', 20, yPosition);
+            yPosition += 7;
+            
+            guests.forEach(guest => {
+                const totalPaid = guestPayments
+                    .filter(p => p.guestId === guest.id)
+                    .reduce((sum, p) => sum + p.amount, 0);
+                
+                if (totalPaid > 0) {
+                    doc.text(`- ${guest.name}: ${formatCurrency(totalPaid)}`, 25, yPosition);
+                    yPosition += 5;
+                    
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                }
+            });
+            
+            yPosition += 5;
+            
+            // Despesas
+            doc.text('Despesas com Fornecedores:', 20, yPosition);
+            yPosition += 7;
+            
+            suppliers.forEach(supplier => {
+                const paid = supplier.paid || 0;
+                
+                if (paid > 0) {
+                    doc.text(`- ${supplier.name} (${supplier.service}): ${formatCurrency(paid)}`, 25, yPosition);
+                    yPosition += 5;
+                    
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                }
+            });
+            
+            // Salvar PDF
+            doc.save(`relatorio-balanco-${eventData.name}-${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+        
+        function generateGuestPaymentsReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Título
+            doc.setFontSize(20);
+            doc.text('Relatório de Pagamentos de Convidados', 20, 20);
+            
+            // Data do relatório
+            doc.setFontSize(12);
+            doc.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 30);
+            doc.text(`Evento: ${eventData.name}`, 20, 37);
+            
+            // Resumo
+            const totalIncome = guestPayments.reduce((sum, p) => sum + p.amount, 0);
+            const totalSuggested = guests.reduce((sum, g) => sum + (g.suggestedValue || 0), 0);
+            const totalPending = totalSuggested - totalIncome;
+            const paymentRate = totalSuggested > 0 ? (totalIncome / totalSuggested) * 100 : 0;
+            
+            doc.setFontSize(16);
+            doc.text('Resumo de Pagamentos', 20, 55);
+            
+            doc.setFontSize(12);
+            doc.text(`Total Recebido: ${formatCurrency(totalIncome)}`, 20, 65);
+            doc.text(`Total Pendente: ${formatCurrency(totalPending)}`, 20, 72);
+            doc.text(`Taxa de Pagamento: ${paymentRate.toFixed(1)}%`, 20, 79);
+            
+            // Detalhamento
+            doc.setFontSize(16);
+            doc.text('Detalhamento por Convidado', 20, 95);
+            
+            let yPosition = 105;
+            doc.setFontSize(10);
+            
+            // Cabeçalho da tabela
+            doc.text('Convidado', 20, yPosition);
+            doc.text('Valor Sugerido', 80, yPosition);
+            doc.text('Valor Pago', 130, yPosition);
+            doc.text('Status', 170, yPosition);
+            
+            yPosition += 7;
+            doc.line(20, yPosition, 190, yPosition);
+            yPosition += 5;
+            
+            // Dados dos convidados
+            guests.forEach(guest => {
+                const totalPaid = guestPayments
+                    .filter(p => p.guestId === guest.id)
+                    .reduce((sum, p) => sum + p.amount, 0);
+                
+                const suggestedValue = guest.suggestedValue || 0;
+                const status = totalPaid >= suggestedValue ? 'Pago' : 
+                              totalPaid > 0 ? 'Parcial' : 'Pendente';
+                
+                doc.text(guest.name, 20, yPosition);
+                doc.text(formatCurrency(suggestedValue), 80, yPosition);
+                doc.text(formatCurrency(totalPaid), 130, yPosition);
+                doc.text(status, 170, yPosition);
+                
+                yPosition += 5;
+                
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+                    
+                    // Cabeçalho da tabela na nova página
+                    doc.setFontSize(10);
+                    doc.text('Convidado', 20, yPosition);
+                    doc.text('Valor Sugerido', 80, yPosition);
+                    doc.text('Valor Pago', 130, yPosition);
+                    doc.text('Status', 170, yPosition);
+                    
+                    yPosition += 7;
+                    doc.line(20, yPosition, 190, yPosition);
+                    yPosition += 5;
+                }
+            });
+            
+            // Salvar PDF
+            doc.save(`relatorio-pagamentos-${eventData.name}-${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+        
+        function generateExpensesReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Título
+            doc.setFontSize(20);
+            doc.text('Relatório de Despesas do Evento', 20, 20);
+            
+            // Data do relatório
+            doc.setFontSize(12);
+            doc.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 30);
+            doc.text(`Evento: ${eventData.name}`, 20, 37);
+            
+            // Resumo
+            const totalExpenses = suppliers.reduce((sum, s) => sum + s.cost, 0);
+            const totalPaid = suppliers.reduce((sum, s) => sum + (s.paid || 0), 0);
+            const totalPending = totalExpenses - totalPaid;
+            
+            doc.setFontSize(16);
+            doc.text('Resumo de Despesas', 20, 55);
+            
+            doc.setFontSize(12);
+            doc.text(`Total de Despesas: ${formatCurrency(totalExpenses)}`, 20, 65);
+            doc.text(`Total Pago: ${formatCurrency(totalPaid)}`, 20, 72);
+            doc.text(`Total Pendente: ${formatCurrency(totalPending)}`, 20, 79);
+            
+            // Detalhamento por categoria
+            doc.setFontSize(16);
+            doc.text('Despesas por Categoria', 20, 95);
+            
+            let yPosition = 105;
+            doc.setFontSize(10);
+            
+            // Agrupar despesas por categoria (serviço)
+            const expensesByCategory = {};
+            suppliers.forEach(supplier => {
+                if (!expensesByCategory[supplier.service]) {
+                    expensesByCategory[supplier.service] = {
+                        total: 0,
+                        paid: 0
+                    };
+                }
+                
+                expensesByCategory[supplier.service].total += supplier.cost;
+                expensesByCategory[supplier.service].paid += (supplier.paid || 0);
+            });
+            
+            // Cabeçalho da tabela
+            doc.text('Categoria', 20, yPosition);
+            doc.text('Valor Total', 80, yPosition);
+            doc.text('Valor Pago', 130, yPosition);
+            doc.text('Valor Pendente', 170, yPosition);
+            
+            yPosition += 7;
+            doc.line(20, yPosition, 190, yPosition);
+            yPosition += 5;
+            
+            // Dados das categorias
+            for (const [category, data] of Object.entries(expensesByCategory)) {
+                const pending = data.total - data.paid;
+                
+                doc.text(category, 20, yPosition);
+                doc.text(formatCurrency(data.total), 80, yPosition);
+                doc.text(formatCurrency(data.paid), 130, yPosition);
+                doc.text(formatCurrency(pending), 170, yPosition);
+                
+                yPosition += 5;
+                
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+                    
+                    // Cabeçalho da tabela na nova página
+                    doc.setFontSize(10);
+                    doc.text('Categoria', 20, yPosition);
+                    doc.text('Valor Total', 80, yPosition);
+                    doc.text('Valor Pago', 130, yPosition);
+                    doc.text('Valor Pendente', 170, yPosition);
+                    
+                    yPosition += 7;
+                    doc.line(20, yPosition, 190, yPosition);
+                    yPosition += 5;
+                }
+            }
+            
+            // Detalhamento por fornecedor
+            yPosition += 10;
+            if (yPosition > 250) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            doc.setFontSize(16);
+            doc.text('Despesas por Fornecedor', 20, yPosition);
+            
+            yPosition += 10;
+            doc.setFontSize(10);
+            
+            // Cabeçalho da tabela
+            doc.text('Fornecedor', 20, yPosition);
+            doc.text('Serviço', 80, yPosition);
+            doc.text('Valor Total', 130, yPosition);
+            doc.text('Valor Pago', 170, yPosition);
+            
+            yPosition += 7;
+            doc.line(20, yPosition, 190, yPosition);
+            yPosition += 5;
+            
+            // Dados dos fornecedores
+            suppliers.forEach(supplier => {
+                const paid = supplier.paid || 0;
+                
+                doc.text(supplier.name, 20, yPosition);
+                doc.text(supplier.service, 80, yPosition);
+                doc.text(formatCurrency(supplier.cost), 130, yPosition);
+                doc.text(formatCurrency(paid), 170, yPosition);
+                
+                yPosition += 5;
+                
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+                    
+                    // Cabeçalho da tabela na nova página
+                    doc.setFontSize(10);
+                    doc.text('Fornecedor', 20, yPosition);
+                    doc.text('Serviço', 80, yPosition);
+                    doc.text('Valor Total', 130, yPosition);
+                    doc.text('Valor Pago', 170, yPosition);
+                    
+                    yPosition += 7;
+                    doc.line(20, yPosition, 190, yPosition);
+                    yPosition += 5;
+                }
+            });
+            
+            // Salvar PDF
+            doc.save(`relatorio-despesas-${eventData.name}-${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+        
+        function generateConsolidatedReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Título
+            doc.setFontSize(20);
+            doc.text('Relatório Consolidado do Evento', 20, 20);
+            
+            // Data do relatório
+            doc.setFontSize(12);
+            doc.text(`Data do relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 30);
+            doc.text(`Evento: ${eventData.name}`, 20, 37);
+            doc.text(`Data do evento: ${eventData.date ? new Date(eventData.date).toLocaleDateString('pt-BR') : 'N/A'}`, 20, 44);
+            doc.text(`Local: ${eventData.location || 'N/A'}`, 20, 51);
+            
+            // Resumo consolidado
+            const totalIncome = guestPayments.reduce((sum, p) => sum + p.amount, 0);
+            const totalExpenses = suppliers.reduce((sum, s) => sum + (s.paid || 0), 0);
+            const finalBalance = totalIncome - totalExpenses;
+            
+            doc.setFontSize(16);
+            doc.text('Resumo Consolidado', 20, 70);
+            
+            doc.setFontSize(12);
+            doc.text(`Receitas Totais: ${formatCurrency(totalIncome)}`, 20, 80);
+            doc.text(`Despesas Totais: ${formatCurrency(totalExpenses)}`, 20, 87);
+            doc.text(`Resultado: ${formatCurrency(finalBalance)}`, 20, 94);
+            
+            // Fluxo de caixa
+            doc.setFontSize(16);
+            doc.text('Fluxo de Caixa', 20, 110);
+            
+            let yPosition = 120;
+            doc.setFontSize(10);
+            
+            // Cabeçalho da tabela
+            doc.text('Data', 20, yPosition);
+            doc.text('Descrição', 50, yPosition);
+            doc.text('Entradas', 120, yPosition);
+            doc.text('Saídas', 150, yPosition);
+            doc.text('Saldo', 180, yPosition);
+            
+            yPosition += 7;
+            doc.line(20, yPosition, 190, yPosition);
+            yPosition += 5;
+            
+            // Dados do fluxo de caixa
+            let runningBalance = 0;
+            
+            // Combinar todos os pagamentos e ordenar por data
+            const allPayments = [
+                ...guestPayments.map(p => ({ ...p, type: 'income', description: `Pagamento de convidado` })),
+                ...supplierPayments.map(p => ({ ...p, type: 'expense', description: `Pagamento a fornecedor` }))
+            ].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Adicionar evento inicial
+            doc.text(eventData.date ? new Date(eventData.date).toLocaleDateString('pt-BR') : 'N/A', 20, yPosition);
+            doc.text(`Evento: ${eventData.name}`, 50, yPosition);
+            doc.text('-', 120, yPosition);
+            doc.text('-', 150, yPosition);
+            doc.text(formatCurrency(0), 180, yPosition);
+            
+            yPosition += 5;
+            
+            // Adicionar transações
+            allPayments.forEach(payment => {
+                if (payment.type === 'income') {
+                    runningBalance += payment.amount;
+                    
+                    doc.text(new Date(payment.date).toLocaleDateString('pt-BR'), 20, yPosition);
+                    doc.text(payment.description, 50, yPosition);
+                    doc.text(formatCurrency(payment.amount), 120, yPosition);
+                    doc.text('-', 150, yPosition);
+                    doc.text(formatCurrency(runningBalance), 180, yPosition);
+                } else {
+                    runningBalance -= payment.amount;
+                    
+                    doc.text(new Date(payment.date).toLocaleDateString('pt-BR'), 20, yPosition);
+                    doc.text(payment.description, 50, yPosition);
+                    doc.text('-', 120, yPosition);
+                    doc.text(formatCurrency(payment.amount), 150, yPosition);
+                    doc.text(formatCurrency(runningBalance), 180, yPosition);
+                }
+                
+                yPosition += 5;
+                
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+                    
+                    // Cabeçalho da tabela na nova página
+                    doc.setFontSize(10);
+                    doc.text('Data', 20, yPosition);
+                    doc.text('Descrição', 50, yPosition);
+                    doc.text('Entradas', 120, yPosition);
+                    doc.text('Saídas', 150, yPosition);
+                    doc.text('Saldo', 180, yPosition);
+                    
+                    yPosition += 7;
+                    doc.line(20, yPosition, 190, yPosition);
+                    yPosition += 5;
+                }
+            });
+            
+            // Salvar PDF
+            doc.save(`relatorio-consolidado-${eventData.name}-${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+        
+        // Funções utilitárias
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+        
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
+        
+        function formatPaymentMethod(method) {
             const methods = {
                 'pix': 'PIX',
                 'cash': 'Dinheiro',
                 'card': 'Cartão',
-                'transfer': 'Transferência'
+                'transfer': 'Transferência',
+                'other': 'Outro'
             };
             
-            return methods[method] || 'Não especificado';
+            return methods[method] || method;
         }
         
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR');
+        function filterGuests(searchTerm) {
+            const guestCards = document.querySelectorAll('#guests-list .card');
+            
+            guestCards.forEach(card => {
+                const guestName = card.querySelector('h3').textContent.toLowerCase();
+                if (guestName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
         }
         
-        function saveToLocalStorage() {
-            localStorage.setItem('eventData', JSON.stringify(eventData));
-            localStorage.setItem('guests', JSON.stringify(guests));
-            localStorage.setItem('suppliers', JSON.stringify(suppliers));
-            localStorage.setItem('payments', JSON.stringify(payments));
+        function viewReceipt(paymentId, type) {
+            let payment;
+            
+            if (type === 'guest') {
+                payment = guestPayments.find(p => p.id === paymentId);
+            } else {
+                payment = supplierPayments.find(p => p.id === paymentId);
+            }
+            
+            if (payment) {
+                openReceiptModal(payment, type);
+            }
+        }
+        
+        function printReceipt() {
+            window.print();
+        }
+        
+        // Funções de persistência de dados
+        function saveData() {
+            const data = {
+                eventData,
+                guests,
+                suppliers,
+                guestPayments,
+                supplierPayments
+            };
+            
+            localStorage.setItem('eventSystemData', JSON.stringify(data));
+        }
+        
+        function loadData() {
+            const savedData = localStorage.getItem('eventSystemData');
+            
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    
+                    eventData = data.eventData || eventData;
+                    guests = data.guests || [];
+                    suppliers = data.suppliers || [];
+                    guestPayments = data.guestPayments || [];
+                    supplierPayments = data.supplierPayments || [];
+                } catch (error) {
+                    console.error('Erro ao carregar dados salvos:', error);
+                }
+            }
         }
     </script>
 </body>
