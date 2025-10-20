@@ -215,7 +215,7 @@
             margin-bottom: 2rem;
         }
         
-        /* NOVO: Estilo "iPhone Widget" para os cards do dashboard */
+        /* Estilo "iPhone Widget" para os cards do dashboard */
         #dashboard-cards .card {
             border-radius: 22px; /* Mais arredondado */
             cursor: pointer;
@@ -562,6 +562,15 @@
             if (savedData) {
                 state.eventData = savedData.eventData || { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
                 state.guests = savedData.guests || [];
+                // Migração de dados para garantir que convidados antigos tenham as novas propriedades
+                state.guests.forEach((guest, index) => {
+                    if (!guest.regOrder) {
+                        guest.regOrder = index + 1;
+                    }
+                    if (!guest.qrCode) {
+                        guest.qrCode = ''; 
+                    }
+                });
                 state.suppliers = savedData.suppliers || [];
             } else {
                  state.eventData = { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
@@ -708,7 +717,8 @@
             },
             renderQRPage() {
                 const listEl = document.getElementById('qr-codes-list');
-                listEl.innerHTML = state.guests.map(g => `
+                const guestsWithQr = state.guests.filter(g => g.qrCode);
+                listEl.innerHTML = guestsWithQr.map(g => `
                     <div class="card" style="width: 220px; text-align: center;">
                         <h4>${g.name}</h4>
                         <div class="qr-code-container">
@@ -718,9 +728,9 @@
                             </div>
                         </div>
                     </div>
-                `).join('');
-                // Gerar as imagens do QR Code após a renderização do HTML
-                state.guests.forEach(g => this.generateQRCodeImage(g.qrCode, `qr-${g.id}`));
+                `).join('') || `<div style="text-align:center; width:100%;">Nenhum QR Code gerado. QR Codes são criados quando um pagamento integral é confirmado.</div>`;
+                
+                guestsWithQr.forEach(g => this.generateQRCodeImage(g.qrCode, `qr-${g.id}`));
             },
             renderReportsPage() {
                 const totalIncome = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
@@ -730,7 +740,6 @@
                 document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
                 document.getElementById('final-balance').textContent = formatCurrency(finalBalance);
 
-                // As tabelas são geradas dinamicamente para simplicidade. Poderiam ser mais detalhadas.
                 document.getElementById('balance-details').innerHTML = `<tr><td style="padding: 8px;">Receitas</td><td>${formatCurrency(totalIncome)}</td></tr><tr><td style="padding: 8px;">Despesas</td><td>${formatCurrency(totalExpenses)}</td></tr><tr><td style="padding: 8px;"><strong>Saldo</strong></td><td><strong>${formatCurrency(finalBalance)}</strong></td></tr>`;
                 document.getElementById('guest-payments-details').innerHTML = state.guests.map(g => `<tr><td style="padding: 8px;">${g.name}</td><td>${formatCurrency(g.paidValue)}</td><td><span class="status ${g.paymentStatus}">${getPaymentStatusText(g.paymentStatus)}</span></td></tr>`).join('');
                 document.getElementById('expenses-details').innerHTML = state.suppliers.map(s => `<tr><td style="padding: 8px;">${s.name}</td><td>${formatCurrency(s.paid)} de ${formatCurrency(s.cost)}</td><td><span class="status ${s.paymentStatus}">${getPaymentStatusText(s.paymentStatus)}</span></td></tr>`).join('');
@@ -795,7 +804,7 @@
                     <div class="form-control"><label for="guest-name">Nome</label><input type="text" id="guest-name" required></div>
                     <div class="form-grid">
                         <div class="form-control"><label for="guest-email">E-mail</label><input type="email" id="guest-email"></div>
-                        <div class="form-control"><label for="guest-phone">Telefone</label><input type="tel" id="guest-phone"></div>
+                        <div class="form-control"><label for="guest-phone">Telefone (Obrigatório p/ Pagamento)</label><input type="tel" id="guest-phone" required></div>
                     </div>
                      <div class="form-grid">
                         <div class="form-control"><label for="guest-suggested-value">Valor Sugerido</label><input type="number" id="guest-suggested-value" min="0" step="0.01"></div>
@@ -813,34 +822,61 @@
             },
             async saveGuest(e) {
                 e.preventDefault();
-                const oldStatus = state.currentEditingId ? state.guests.find(g => g.id === state.currentEditingId)?.paymentStatus : null;
 
-                const guestData = {
-                    name: document.getElementById('guest-name').value, email: document.getElementById('guest-email').value, phone: document.getElementById('guest-phone').value,
-                    suggestedValue: parseFloat(document.getElementById('guest-suggested-value').value) || 0, paidValue: parseFloat(document.getElementById('guest-paid-value').value) || 0,
-                    paymentStatus: document.getElementById('guest-status').value, checkIn: false
-                };
+                const name = document.getElementById('guest-name').value;
+                const email = document.getElementById('guest-email').value;
+                const phone = document.getElementById('guest-phone').value;
+                const suggestedValue = parseFloat(document.getElementById('guest-suggested-value').value) || 0;
+                const paidValue = parseFloat(document.getElementById('guest-paid-value').value) || 0;
+                const paymentStatus = document.getElementById('guest-status').value;
+
+                if (paymentStatus === 'paid') {
+                    if (!phone) {
+                        alert('O número de telefone é obrigatório para confirmar o pagamento e gerar o QR Code.');
+                        return;
+                    }
+                    if (suggestedValue === 0 || paidValue < suggestedValue) {
+                        alert('Para marcar como "Pago", o valor pago deve ser igual ao valor sugerido (e diferente de zero).');
+                        return;
+                    }
+                }
+
+                const oldStatus = state.currentEditingId ? state.guests.find(g => g.id === state.currentEditingId)?.paymentStatus : null;
+                let guestToProcess;
 
                 if (state.currentEditingId) {
                     const index = state.guests.findIndex(g => g.id === state.currentEditingId);
-                    guestData.id = state.currentEditingId;
-                    guestData.checkIn = state.guests[index].checkIn; // Manter check-in
-                    guestData.qrCode = state.guests[index].qrCode;
-                    state.guests[index] = guestData;
+                    if (index === -1) return;
+
+                    const guest = state.guests[index];
+                    guest.name = name; guest.email = email; guest.phone = phone;
+                    guest.suggestedValue = suggestedValue; guest.paidValue = paidValue; guest.paymentStatus = paymentStatus;
+                    
+                    if (paymentStatus === 'paid') {
+                        guest.qrCode = `EVENTPRO-${guest.phone.replace(/\D/g, '')}-${guest.regOrder}`;
+                    }
+                    guestToProcess = guest;
+
                 } else {
-                    guestData.id = Date.now().toString();
-                    guestData.qrCode = `GUEST-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                    state.guests.push(guestData);
+                    const regOrder = state.guests.length + 1;
+                    const newGuest = {
+                        id: Date.now().toString(), name, email, phone, suggestedValue, paidValue, paymentStatus,
+                        checkIn: false, regOrder: regOrder, qrCode: ''
+                    };
+                    
+                    if (paymentStatus === 'paid') {
+                         newGuest.qrCode = `EVENTPRO-${newGuest.phone.replace(/\D/g, '')}-${newGuest.regOrder}`;
+                    }
+                    state.guests.push(newGuest);
+                    guestToProcess = newGuest;
                 }
                 
-                const newStatus = guestData.paymentStatus;
-                const justPaid = newStatus === 'paid' && oldStatus !== 'paid';
-                
-                if (justPaid) {
-                    await this.generateGuestReceipt(guestData);
+                if (guestToProcess.paymentStatus === 'paid' && oldStatus !== 'paid') {
+                    await this.generateGuestReceipt(guestToProcess);
                 }
 
-                this.closeAllModals(); this.updateUI();
+                this.closeAllModals();
+                this.updateUI();
             },
             openSupplierModal(supplierId = null) {
                 state.currentEditingId = supplierId;
@@ -937,7 +973,7 @@
                     
                     if (code) {
                         this.processQRCode(code.data);
-                        return; // Stop scanning after a code is found
+                        return;
                     }
                 }
                 state.qrScannerAnimationId = requestAnimationFrame(() => this.tickQRScanner());
@@ -954,6 +990,12 @@
                 document.getElementById('stop-camera-btn').classList.add('hidden');
             },
             processQRCode(data) {
+                if (!data.startsWith('EVENTPRO-')) {
+                    this.showQRResult('QR Code inválido.', 'error');
+                    setTimeout(() => this.stopQRScanner(), 3000);
+                    return;
+                }
+
                 const guest = state.guests.find(g => g.qrCode === data);
                 if (guest) {
                     if (!guest.checkIn) {
@@ -964,7 +1006,7 @@
                         this.showQRResult(`${guest.name} já fez check-in.`, 'pending');
                     }
                 } else {
-                    this.showQRResult('QR Code inválido ou não encontrado.', 'error');
+                    this.showQRResult('Convidado não encontrado.', 'error');
                 }
                 setTimeout(() => this.stopQRScanner(), 3000);
             },
@@ -981,54 +1023,42 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
-                doc.setFontSize(22);
-                doc.setTextColor('#5636D3');
+                doc.setFontSize(22); doc.setTextColor('#5636D3');
                 doc.text('Recibo de Pagamento', 105, 20, null, null, 'center');
 
-                doc.setFontSize(14);
-                doc.setTextColor('#363F5F');
+                doc.setFontSize(14); doc.setTextColor('#363F5F');
                 doc.text(state.eventData.name || 'Nome do Evento', 105, 35, null, null, 'center');
-                doc.setFontSize(11);
-                doc.setTextColor('#969CB2');
+                doc.setFontSize(11); doc.setTextColor('#969CB2');
                 const eventDate = state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Data não definida';
                 doc.text(`Data: ${eventDate}`, 105, 42, null, null, 'center');
                 doc.text(`Local: ${state.eventData.location || 'Local não definido'}`, 105, 49, null, null, 'center');
 
-                doc.setDrawColor('#5636D3');
-                doc.line(20, 60, 190, 60);
+                doc.setDrawColor('#5636D3'); doc.line(20, 60, 190, 60);
 
-                doc.setFontSize(12);
-                doc.setTextColor('#363F5F');
+                doc.setFontSize(12); doc.setTextColor('#363F5F');
                 doc.text('Recebemos de:', 20, 70);
-                doc.setFontSize(16);
-                doc.text(guest.name, 20, 80);
+                doc.setFontSize(16); doc.text(guest.name, 20, 80);
 
-                doc.setFontSize(12);
-                doc.text('Valor Pago:', 20, 95);
-                doc.setFontSize(16);
-                doc.setTextColor('#12A454');
+                doc.setFontSize(12); doc.text('Valor Pago:', 20, 95);
+                doc.setFontSize(16); doc.setTextColor('#12A454');
                 doc.text(formatCurrency(guest.paidValue), 20, 105);
 
                 try {
                     const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400, errorCorrectionLevel: 'H' });
                     doc.addImage(qrCodeDataUrl, 'PNG', 140, 70, 50, 50);
-                    doc.setFontSize(10);
-                    doc.setTextColor('#969CB2');
+                    doc.setFontSize(10); doc.setTextColor('#969CB2');
                     doc.text('Apresente este QR Code na entrada', 165, 128, null, null, 'center');
                 } catch (err) {
                     console.error('Falha ao gerar QR Code para o PDF:', err);
                     doc.text('Erro ao gerar QR Code', 150, 90);
                 }
-
                 doc.save(`recibo-${guest.name.replace(/\s+/g, '_')}.pdf`);
             },
             generatePDF(title, columns, rows, filename) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                doc.setFontSize(18);
-                doc.text(title, 14, 22);
-                doc.setFontSize(11);
-                doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 14, 30);
+                doc.setFontSize(18); doc.text(title, 14, 22);
+                doc.setFontSize(11); doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 14, 30);
                 doc.autoTable({ head: [columns], body: rows, startY: 35, theme: 'grid', headStyles: { fillColor: [86, 54, 211] } });
                 doc.save(filename);
             },
@@ -1082,13 +1112,11 @@
             clearAllData() {
                 if(confirm('ATENÇÃO! Isso apagará TODOS os dados do evento. Deseja continuar?')) {
                     localStorage.removeItem('eventManagementData_v2');
-                    initializeData(); // Reseta o state para o padrão
+                    initializeData();
                     this.updateUI();
                     alert('Todos os dados foram removidos.');
                 }
             },
-
-            // ===== ATUALIZAÇÃO GERAL =====
             updateUI() {
                 saveState();
                 this.renderActivePage();
@@ -1116,7 +1144,6 @@
             else if (state.activePage === 'suppliers-page') app.openSupplierModal();
         });
 
-        // Modais e formulários
         document.getElementById('event-form').addEventListener('submit', (e) => app.saveEvent(e));
         document.getElementById('costs-form').addEventListener('submit', (e) => app.saveCosts(e));
         document.getElementById('guest-form').addEventListener('submit', async (e) => await app.saveGuest(e));
@@ -1124,7 +1151,6 @@
         document.getElementById('confirm-delete-btn').addEventListener('click', () => app.confirmDelete());
         document.getElementById('cancel-delete-btn').addEventListener('click', () => app.closeAllModals());
         
-        // Ações de páginas
         document.getElementById('edit-event-btn').addEventListener('click', () => app.openEventModal());
         document.getElementById('edit-costs-btn').addEventListener('click', () => app.openCostsModal());
         document.getElementById('guest-search').addEventListener('input', () => app.renderGuestsPage());
@@ -1137,7 +1163,6 @@
         document.getElementById('import-data-btn').addEventListener('click', () => app.importData());
         document.getElementById('clear-data-btn').addEventListener('click', () => app.clearAllData());
 
-        // Menu mobile
         const toggleSidebar = () => {
             selectors.sidebar.classList.toggle('open');
             selectors.sidebarOverlay.classList.toggle('active');
