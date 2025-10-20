@@ -215,6 +215,19 @@
             margin-bottom: 2rem;
         }
         
+        /* MELHORIA: Estilo "iPhone" para os cards do dashboard */
+        #dashboard-cards .card {
+            border-radius: 18px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        #dashboard-cards .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
         .card-header {
             display: flex;
             justify-content: space-between;
@@ -717,19 +730,19 @@
         <section id="dashboard-page" class="page-content active">
             <header><h2>Dashboard</h2></header>
             <div id="dashboard-cards">
-                <div class="card event">
+                <div class="card event" data-page="event-page">
                     <div class="card-header"><span>Evento</span><i class="fa-solid fa-calendar-alt"></i></div>
                     <p id="dashboard-event-name">Configurar</p>
                 </div>
-                <div class="card guests">
+                <div class="card guests" data-page="guests-page">
                     <div class="card-header"><span>Convidados</span><i class="fa-solid fa-users"></i></div>
                     <p id="dashboard-guest-count">0</p>
                 </div>
-                <div class="card suppliers">
+                <div class="card suppliers" data-page="suppliers-page">
                     <div class="card-header"><span>Fornecedores</span><i class="fa-solid fa-truck"></i></div>
                     <p id="dashboard-supplier-count">0</p>
                 </div>
-                <div class="card payments">
+                <div class="card payments" data-page="payments-page">
                     <div class="card-header"><span>Total Recebido</span><i class="fa-solid fa-arrow-up"></i></div>
                     <p id="dashboard-payment-total">R$ 0,00</p>
                 </div>
@@ -842,7 +855,6 @@
                 <div class="modal-actions">
                     <button class="btn success" id="export-data-btn">Exportar Tudo</button>
                     <button class="btn success" id="export-guests-btn">Exportar Convidados</button>
-                    <button class="btn success" id="export-payments-btn">Exportar Pagamentos</button>
                 </div>
             </div>
             <div class="card">
@@ -891,7 +903,8 @@
             sidebarOverlay: document.getElementById('sidebar-overlay'),
             menuToggleBtn: document.getElementById('menu-toggle-btn'),
             mobilePageTitle: document.getElementById('mobile-page-title'),
-            fab: document.getElementById('fab-add-btn')
+            fab: document.getElementById('fab-add-btn'),
+            dashboardCardsContainer: document.getElementById('dashboard-cards')
         };
         
         // ===== FUNÇÕES AUXILIARES =====
@@ -1155,8 +1168,10 @@
                 }
                 openModal('guest-modal');
             },
-            saveGuest(e) {
+            async saveGuest(e) {
                 e.preventDefault();
+                const oldStatus = state.currentEditingId ? state.guests.find(g => g.id === state.currentEditingId)?.paymentStatus : null;
+
                 const guestData = {
                     name: document.getElementById('guest-name').value, email: document.getElementById('guest-email').value, phone: document.getElementById('guest-phone').value,
                     suggestedValue: parseFloat(document.getElementById('guest-suggested-value').value) || 0, paidValue: parseFloat(document.getElementById('guest-paid-value').value) || 0,
@@ -1174,6 +1189,14 @@
                     guestData.qrCode = `GUEST-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                     state.guests.push(guestData);
                 }
+                
+                const newStatus = guestData.paymentStatus;
+                const justPaid = newStatus === 'paid' && oldStatus !== 'paid';
+                
+                if (justPaid) {
+                    await this.generateGuestReceipt(guestData);
+                }
+
                 this.closeAllModals(); this.updateUI();
             },
             openSupplierModal(supplierId = null) {
@@ -1311,6 +1334,56 @@
             },
 
             // ===== LÓGICA DE RELATÓRIOS E BACKUP =====
+            async generateGuestReceipt(guest) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Cabeçalho
+                doc.setFontSize(22);
+                doc.setTextColor(var_primary_color_hex); // Usando a cor primária
+                doc.text('Recibo de Pagamento', 105, 20, null, null, 'center');
+
+                // Informações do Evento
+                doc.setFontSize(14);
+                doc.setTextColor(var_text_color_hex);
+                doc.text(state.eventData.name || 'Nome do Evento', 105, 35, null, null, 'center');
+                doc.setFontSize(11);
+                doc.setTextColor(var_text_light_color_hex);
+                const eventDate = state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Data não definida';
+                doc.text(`Data: ${eventDate}`, 105, 42, null, null, 'center');
+                doc.text(`Local: ${state.eventData.location || 'Local não definido'}`, 105, 49, null, null, 'center');
+
+                // Linha divisória
+                doc.setDrawColor(var_primary_color_hex);
+                doc.line(20, 60, 190, 60);
+
+                // Informações do Convidado
+                doc.setFontSize(12);
+                doc.setTextColor(var_text_color_hex);
+                doc.text('Recebemos de:', 20, 70);
+                doc.setFontSize(16);
+                doc.text(guest.name, 20, 80);
+
+                doc.setFontSize(12);
+                doc.text('Valor Pago:', 20, 95);
+                doc.setFontSize(16);
+                doc.setTextColor(var_success_color_hex);
+                doc.text(formatCurrency(guest.paidValue), 20, 105);
+
+                // QR Code
+                try {
+                    const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400 });
+                    doc.addImage(qrCodeDataUrl, 'PNG', 140, 70, 50, 50);
+                    doc.setFontSize(10);
+                    doc.setTextColor(var_text_light_color_hex);
+                    doc.text('Apresente este QR Code na entrada', 165, 128, null, null, 'center');
+                } catch (err) {
+                    console.error('Falha ao gerar QR Code para o PDF:', err);
+                    doc.text('Erro ao gerar QR Code', 150, 90);
+                }
+
+                doc.save(`recibo-${guest.name.replace(/\s+/g, '_')}.pdf`);
+            },
             generatePDF(title, columns, rows, filename) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -1336,9 +1409,6 @@
                 if(dataType === 'guests') {
                     data = { guests: state.guests };
                     filename = `convidados_${new Date().toISOString().split('T')[0]}.json`;
-                } else if(dataType === 'payments') {
-                    data = { guestPayments: state.guests.map(g => ({name: g.name, paidValue: g.paidValue})), supplierPayments: state.suppliers.map(s => ({name: s.name, paid: s.paid})) };
-                    filename = `pagamentos_${new Date().toISOString().split('T')[0]}.json`;
                 } else {
                     data = { eventData: state.eventData, guests: state.guests, suppliers: state.suppliers };
                 }
@@ -1358,7 +1428,6 @@
                 reader.onload = (e) => {
                     try {
                         const data = JSON.parse(e.target.result);
-                        // Merge logic: Add new, don't overwrite
                         if (data.eventData && !state.eventData.name) state.eventData = data.eventData;
                         if (data.guests) data.guests.forEach(g => { if(!state.guests.find(eg => eg.id === g.id)) state.guests.push(g); });
                         if (data.suppliers) data.suppliers.forEach(s => { if(!state.suppliers.find(es => es.id === s.id)) state.suppliers.push(s); });
@@ -1397,6 +1466,14 @@
             }
         });
         
+        // MELHORIA: Listener para os cards clicáveis do dashboard
+        selectors.dashboardCardsContainer.addEventListener('click', (e) => {
+            const card = e.target.closest('.card[data-page]');
+            if (card && card.dataset.page) {
+                navigateTo(card.dataset.page);
+            }
+        });
+
         selectors.fab.addEventListener('click', () => {
             if (state.activePage === 'guests-page') app.openGuestModal();
             else if (state.activePage === 'suppliers-page') app.openSupplierModal();
@@ -1405,7 +1482,7 @@
         // Modais e formulários
         document.getElementById('event-form').addEventListener('submit', (e) => app.saveEvent(e));
         document.getElementById('costs-form').addEventListener('submit', (e) => app.saveCosts(e));
-        document.getElementById('guest-form').addEventListener('submit', (e) => app.saveGuest(e));
+        document.getElementById('guest-form').addEventListener('submit', async (e) => await app.saveGuest(e));
         document.getElementById('supplier-form').addEventListener('submit', (e) => app.saveSupplier(e));
         document.getElementById('confirm-delete-btn').addEventListener('click', () => app.confirmDelete());
         document.getElementById('cancel-delete-btn').addEventListener('click', () => app.closeAllModals());
@@ -1420,7 +1497,6 @@
         document.getElementById('generate-expenses-report-btn').addEventListener('click', () => app.generateExpensesReport());
         document.getElementById('export-data-btn').addEventListener('click', () => app.exportData('all'));
         document.getElementById('export-guests-btn').addEventListener('click', () => app.exportData('guests'));
-        document.getElementById('export-payments-btn').addEventListener('click', () => app.exportData('payments'));
         document.getElementById('import-data-btn').addEventListener('click', () => app.importData());
         document.getElementById('clear-data-btn').addEventListener('click', () => app.clearAllData());
 
@@ -1433,6 +1509,12 @@
         selectors.sidebarOverlay.addEventListener('click', toggleSidebar);
 
         // ===== INICIALIZAÇÃO DA APLICAÇÃO =====
+        // Cores para o PDF
+        const var_primary_color_hex = '#5636D3';
+        const var_text_color_hex = '#363F5F';
+        const var_text_light_color_hex = '#969CB2';
+        const var_success_color_hex = '#12A454';
+        
         window.app = app; // Expor o objeto app globalmente para os `onclick`
         initializeData();
         navigateTo(state.activePage);
