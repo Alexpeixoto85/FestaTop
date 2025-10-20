@@ -618,579 +618,903 @@
                 document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalReceived);
 
                 const totalCost = calculateTotalCost();
-                const costPerGuest = state.guests.length > 0 ? totalCost / state.guests.length : 0;
-                const totalPending = state.guests.reduce((s, g) => s + Math.max(0, (g.suggestedValue || 0) - (g.paidValue || 0)), 0);
-                
                 document.getElementById('total-cost').textContent = formatCurrency(totalCost);
-                document.getElementById('cost-per-guest').textContent = formatCurrency(costPerGuest);
+                document.getElementById('cost-per-guest').textContent = formatCurrency(state.guests.length ? totalCost / state.guests.length : 0);
                 document.getElementById('total-received').textContent = formatCurrency(totalReceived);
+                const totalPending = state.guests.reduce((s, g) => s + (g.expectedValue || 0) - (g.paidValue || 0), 0);
                 document.getElementById('total-pending').textContent = formatCurrency(totalPending);
 
                 const recentPaymentsList = document.getElementById('recent-payments-list');
-                recentPaymentsList.innerHTML = [...state.guests].filter(g => g.paidValue > 0).sort((a,b) => b.id - a.id).slice(0, 5).map(g => `
-                    <li class="list-item" style="cursor:default;">
-                        <div class="transaction-details">
-                            <div class="transaction-status paid"></div>
-                            <div class="transaction-info">
-                                <span class="description">${g.name}</span>
-                                <span class="details">Pagamento de convidado</span>
+                recentPaymentsList.innerHTML = '';
+                const recentPayments = state.guests.filter(g => g.paidValue > 0).sort((a, b) => new Date(b.paymentDate || 0) - new Date(a.paymentDate || 0)).slice(0, 5);
+                if (recentPayments.length === 0) {
+                    recentPaymentsList.innerHTML = '<li class="list-item"><span>Nenhum pagamento recebido ainda</span></li>';
+                } else {
+                    recentPayments.forEach(guest => {
+                        const li = document.createElement('li');
+                        li.className = 'list-item';
+                        li.innerHTML = `
+                            <div class="transaction-details">
+                                <div class="transaction-status paid"></div>
+                                <div class="transaction-info">
+                                    <span class="description">${guest.name}</span>
+                                    <span class="details">${guest.paymentDate ? new Date(guest.paymentDate).toLocaleDateString('pt-BR') : 'Data não informada'}</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="transaction-amount income">${formatCurrency(g.paidValue)}</div>
-                    </li>
-                `).join('') || `<li class="list-item" style="justify-content:center;">Nenhum pagamento recebido.</li>`;
+                            <div class="transaction-amount income">${formatCurrency(guest.paidValue)}</div>
+                        `;
+                        recentPaymentsList.appendChild(li);
+                    });
+                }
             },
+
             renderEventPage() {
-                document.getElementById('event-info').innerHTML = `
-                    <p><strong>Nome do Evento:</strong> <span>${state.eventData.name || 'Não definido'}</span></p>
-                    <p><strong>Data do Evento:</strong> <span>${state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR', {timeZone:'UTC'}) : 'Não definida'}</span></p>
-                    <p><strong>Local do Evento:</strong> <span>${state.eventData.location || 'Não definido'}</span></p>`;
-                
-                document.getElementById('costs-info').innerHTML = Object.entries(state.eventData.costs || {}).map(([key, value]) => `
-                    <p><strong>${getCostCategoryName(key)}:</strong> <span>${formatCurrency(value)}</span></p>`).join('');
+                const eventInfo = document.getElementById('event-info');
+                if (!state.eventData.name) {
+                    eventInfo.innerHTML = '<p>Nenhum evento configurado. Clique em "Editar Evento" para começar.</p>';
+                } else {
+                    eventInfo.innerHTML = `
+                        <div class="form-grid">
+                            <div><strong>Nome do Evento:</strong> ${state.eventData.name}</div>
+                            <div><strong>Data:</strong> ${state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR') : 'Não definida'}</div>
+                            <div><strong>Local:</strong> ${state.eventData.location || 'Não definido'}</div>
+                            <div><strong>Descrição:</strong> ${state.eventData.description || 'Não definida'}</div>
+                        </div>
+                    `;
+                }
+
+                const costsInfo = document.getElementById('costs-info');
+                const totalCost = calculateTotalCost();
+                let costsHtml = `<div class="form-grid"><div><strong>Custo Total:</strong> ${formatCurrency(totalCost)}</div></div><div class="form-grid">`;
+                Object.entries(state.eventData.costs || {}).forEach(([category, value]) => {
+                    if (value > 0) {
+                        costsHtml += `<div><strong>${getCostCategoryName(category)}:</strong> ${formatCurrency(value)}</div>`;
+                    }
+                });
+                state.suppliers.forEach(s => {
+                    if (s.cost > 0) {
+                        costsHtml += `<div><strong>${s.name}:</strong> ${formatCurrency(s.cost)}</div>`;
+                    }
+                });
+                costsHtml += '</div>';
+                costsInfo.innerHTML = costsHtml;
             },
+
             renderGuestsPage() {
                 const searchTerm = document.getElementById('guest-search').value.toLowerCase();
-                const filtered = state.guests.filter(g => g.name.toLowerCase().includes(searchTerm));
-                document.getElementById('guests-list').innerHTML = filtered.map(g => `
-                    <li class="list-item" onclick="app.openGuestModal('${g.id}')">
+                const filteredGuests = state.guests.filter(g => g.name.toLowerCase().includes(searchTerm));
+                const guestsList = document.getElementById('guests-list');
+                guestsList.innerHTML = '';
+
+                if (filteredGuests.length === 0) {
+                    guestsList.innerHTML = '<li class="list-item"><span>Nenhum convidado encontrado</span></li>';
+                    return;
+                }
+
+                filteredGuests.forEach(guest => {
+                    const li = document.createElement('li');
+                    li.className = 'list-item';
+                    li.innerHTML = `
                         <div class="list-item-main">
                             <i class="fa-solid fa-user"></i>
                             <div>
-                                <div>${g.name}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-light-color);">${g.email || ''} ${g.phone || ''}</div>
+                                <strong>${guest.name}</strong>
+                                <div style="font-size: 0.9rem; color: var(--text-light-color);">
+                                    ${guest.email || ''} ${guest.phone ? ' | ' + guest.phone : ''}
+                                </div>
+                                <div style="font-size: 0.8rem; margin-top: 0.25rem;">
+                                    <span class="status ${guest.paymentStatus || 'pending'}">${getPaymentStatusText(guest.paymentStatus)}</span>
+                                    <span class="checkin-status ${guest.checkedIn ? 'checked' : 'not-checked'}">${guest.checkedIn ? 'Confirmado' : 'Não confirmado'}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="list-item-actions">
-                            <span class="status ${g.paymentStatus}">${getPaymentStatusText(g.paymentStatus)}</span>
-                            <button class="delete-btn" style="opacity:1" onclick="event.stopPropagation(); app.openDeleteModal('${g.id}', 'guest', '${g.name}')"><i class="fa-solid fa-trash"></i></button>
+                            <span>${formatCurrency(guest.paidValue || 0)} / ${formatCurrency(guest.expectedValue || 0)}</span>
+                            <button class="delete-btn" data-id="${guest.id}" data-type="guest"><i class="fa-solid fa-trash"></i></button>
                         </div>
-                    </li>
-                `).join('') || `<li class="list-item" style="justify-content:center;">Nenhum convidado adicionado.</li>`;
+                    `;
+                    guestsList.appendChild(li);
+                });
+
+                document.querySelectorAll('#guests-list .delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.dataset.id;
+                        const guest = state.guests.find(g => g.id === id);
+                        document.getElementById('delete-modal-title').textContent = 'Excluir Convidado';
+                        document.getElementById('delete-message').textContent = `Tem certeza que deseja excluir o convidado "${guest.name}"?`;
+                        document.getElementById('confirm-delete-btn').onclick = () => app.deleteItem(id, 'guest');
+                        openModal('delete-modal');
+                    });
+                });
+
+                document.querySelectorAll('#guests-list .list-item').forEach((item, index) => {
+                    item.addEventListener('click', () => {
+                        const guestId = item.querySelector('.delete-btn').dataset.id;
+                        app.openGuestModal(guestId);
+                    });
+                });
             },
+
             renderSuppliersPage() {
-                 document.getElementById('suppliers-list').innerHTML = state.suppliers.map(s => `
-                    <li class="list-item" onclick="app.openSupplierModal('${s.id}')">
-                         <div class="list-item-main">
+                const suppliersList = document.getElementById('suppliers-list');
+                suppliersList.innerHTML = '';
+
+                if (state.suppliers.length === 0) {
+                    suppliersList.innerHTML = '<li class="list-item"><span>Nenhum fornecedor cadastrado</span></li>';
+                    return;
+                }
+
+                state.suppliers.forEach(supplier => {
+                    const li = document.createElement('li');
+                    li.className = 'list-item';
+                    li.innerHTML = `
+                        <div class="list-item-main">
                             <i class="fa-solid fa-truck"></i>
                             <div>
-                                <div>${s.name}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-light-color);">${s.service} - ${formatCurrency(s.cost)}</div>
+                                <strong>${supplier.name}</strong>
+                                <div style="font-size: 0.9rem; color: var(--text-light-color);">
+                                    ${supplier.service || ''} ${supplier.contact ? ' | ' + supplier.contact : ''}
+                                </div>
                             </div>
                         </div>
                         <div class="list-item-actions">
-                            <span class="status ${s.paymentStatus}">${getPaymentStatusText(s.paymentStatus)}</span>
-                             <button class="delete-btn" style="opacity:1" onclick="event.stopPropagation(); app.openDeleteModal('${s.id}', 'supplier', '${s.name}')"><i class="fa-solid fa-trash"></i></button>
+                            <span>${formatCurrency(supplier.cost || 0)}</span>
+                            <button class="delete-btn" data-id="${supplier.id}" data-type="supplier"><i class="fa-solid fa-trash"></i></button>
                         </div>
-                    </li>
-                `).join('') || `<li class="list-item" style="justify-content:center;">Nenhum fornecedor adicionado.</li>`;
-            },
-            renderPaymentsPage() {
-                const totalReceived = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
-                const totalPending = state.guests.reduce((s, g) => s + Math.max(0, (g.suggestedValue || 0) - (g.paidValue || 0)), 0);
-                document.getElementById('payments-total-received').textContent = formatCurrency(totalReceived);
-                document.getElementById('payments-total-pending').textContent = formatCurrency(totalPending);
+                    `;
+                    suppliersList.appendChild(li);
+                });
 
-                document.getElementById('guest-payments-list').innerHTML = state.guests.map(g => `
-                    <li class="list-item" style="cursor:default;">
-                        <div class="transaction-details">
-                            <div class="transaction-info">
-                                <span class="description">${g.name}</span>
-                                <span class="details">Sugerido: ${formatCurrency(g.suggestedValue)}</span>
-                            </div>
-                        </div>
-                        <div class="transaction-amount income">${formatCurrency(g.paidValue)}</div>
-                    </li>
-                `).join('') || `<li class="list-item" style="justify-content:center;">Nenhum pagamento de convidado.</li>`;
-                
-                document.getElementById('supplier-payments-list').innerHTML = state.suppliers.map(s => `
-                     <li class="list-item" style="cursor:default;">
-                        <div class="transaction-details">
-                            <div class="transaction-info">
-                                <span class="description">${s.name} (${s.service})</span>
-                                <span class="details">Custo Total: ${formatCurrency(s.cost)}</span>
-                            </div>
-                        </div>
-                        <div class="transaction-amount expense">-${formatCurrency(s.paid)}</div>
-                    </li>
-                `).join('') || `<li class="list-item" style="justify-content:center;">Nenhum pagamento a fornecedor.</li>`;
+                document.querySelectorAll('#suppliers-list .delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.dataset.id;
+                        const supplier = state.suppliers.find(s => s.id === id);
+                        document.getElementById('delete-modal-title').textContent = 'Excluir Fornecedor';
+                        document.getElementById('delete-message').textContent = `Tem certeza que deseja excluir o fornecedor "${supplier.name}"?`;
+                        document.getElementById('confirm-delete-btn').onclick = () => app.deleteItem(id, 'supplier');
+                        openModal('delete-modal');
+                    });
+                });
+
+                document.querySelectorAll('#suppliers-list .list-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const supplierId = item.querySelector('.delete-btn').dataset.id;
+                        app.openSupplierModal(supplierId);
+                    });
+                });
             },
+
+            renderPaymentsPage() {
+                const guestPaymentsTotal = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
+                const guestPaymentsPending = state.guests.reduce((s, g) => s + (g.expectedValue || 0) - (g.paidValue || 0), 0);
+                document.getElementById('payments-total-received').textContent = formatCurrency(guestPaymentsTotal);
+                document.getElementById('payments-total-pending').textContent = formatCurrency(guestPaymentsPending);
+
+                const guestPaymentsList = document.getElementById('guest-payments-list');
+                guestPaymentsList.innerHTML = '';
+                if (state.guests.length === 0) {
+                    guestPaymentsList.innerHTML = '<li class="list-item"><span>Nenhum convidado cadastrado</span></li>';
+                } else {
+                    state.guests.forEach(guest => {
+                        const li = document.createElement('li');
+                        li.className = 'list-item';
+                        li.innerHTML = `
+                            <div class="list-item-main">
+                                <i class="fa-solid fa-user"></i>
+                                <div>
+                                    <strong>${guest.name}</strong>
+                                    <div style="font-size: 0.9rem; color: var(--text-light-color);">
+                                        ${guest.email || ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-item-actions">
+                                <span class="status ${guest.paymentStatus || 'pending'}">${getPaymentStatusText(guest.paymentStatus)}</span>
+                                <span>${formatCurrency(guest.paidValue || 0)} / ${formatCurrency(guest.expectedValue || 0)}</span>
+                            </div>
+                        `;
+                        guestPaymentsList.appendChild(li);
+                    });
+                }
+
+                const supplierPaymentsList = document.getElementById('supplier-payments-list');
+                supplierPaymentsList.innerHTML = '';
+                if (state.suppliers.length === 0) {
+                    supplierPaymentsList.innerHTML = '<li class="list-item"><span>Nenhum fornecedor cadastrado</span></li>';
+                } else {
+                    state.suppliers.forEach(supplier => {
+                        const li = document.createElement('li');
+                        li.className = 'list-item';
+                        li.innerHTML = `
+                            <div class="list-item-main">
+                                <i class="fa-solid fa-truck"></i>
+                                <div>
+                                    <strong>${supplier.name}</strong>
+                                    <div style="font-size: 0.9rem; color: var(--text-light-color);">
+                                        ${supplier.service || ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="list-item-actions">
+                                <span>${formatCurrency(supplier.cost || 0)}</span>
+                            </div>
+                        `;
+                        supplierPaymentsList.appendChild(li);
+                    });
+                }
+            },
+
             renderQRPage() {
-                const listEl = document.getElementById('qr-codes-list');
-                const guestsWithQr = state.guests.filter(g => g.qrCode);
-                listEl.innerHTML = guestsWithQr.map(g => `
-                    <div class="card" style="width: 220px; text-align: center;">
-                        <h4>${g.name}</h4>
-                        <div class="qr-code-container">
-                            <div class="qr-code" id="qr-${g.id}"></div>
-                            <div class="qr-info">
-                                <span class="checkin-status ${g.checkIn ? 'checked' : 'not-checked'}">${g.checkIn ? 'Check-in Feito' : 'Aguardando'}</span>
-                            </div>
-                        </div>
-                    </div>
-                `).join('') || `<div style="text-align:center; width:100%;">Nenhum QR Code gerado. QR Codes são criados quando um pagamento integral é confirmado.</div>`;
+                const qrCodesList = document.getElementById('qr-codes-list');
+                qrCodesList.innerHTML = '';
                 
-                guestsWithQr.forEach(g => this.generateQRCodeImage(g.qrCode, `qr-${g.id}`));
+                if (state.guests.length === 0) {
+                    qrCodesList.innerHTML = '<p>Nenhum convidado cadastrado para gerar QR Codes.</p>';
+                    return;
+                }
+
+                state.guests.forEach(guest => {
+                    const guestCard = document.createElement('div');
+                    guestCard.className = 'qr-code-container';
+                    guestCard.style.width = '180px';
+                    
+                    const qrContainer = document.createElement('div');
+                    qrContainer.className = 'qr-code';
+                    qrContainer.id = `qr-${guest.id}`;
+                    
+                    const guestInfo = document.createElement('div');
+                    guestInfo.className = 'qr-info';
+                    guestInfo.innerHTML = `
+                        <strong>${guest.name}</strong><br>
+                        <span class="checkin-status ${guest.checkedIn ? 'checked' : 'not-checked'}">${guest.checkedIn ? 'Confirmado' : 'Pendente'}</span>
+                    `;
+                    
+                    guestCard.appendChild(qrContainer);
+                    guestCard.appendChild(guestInfo);
+                    qrCodesList.appendChild(guestCard);
+                    
+                    // Gerar QR Code para o convidado
+                    this.generateQRCodeForGuest(guest);
+                });
             },
+
             renderReportsPage() {
                 const totalIncome = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
                 const totalExpenses = calculateTotalCost();
                 const finalBalance = totalIncome - totalExpenses;
+
                 document.getElementById('total-income').textContent = formatCurrency(totalIncome);
                 document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
                 document.getElementById('final-balance').textContent = formatCurrency(finalBalance);
 
-                document.getElementById('balance-details').innerHTML = `<tr><td style="padding: 8px;">Receitas</td><td>${formatCurrency(totalIncome)}</td></tr><tr><td style="padding: 8px;">Despesas</td><td>${formatCurrency(totalExpenses)}</td></tr><tr><td style="padding: 8px;"><strong>Saldo</strong></td><td><strong>${formatCurrency(finalBalance)}</strong></td></tr>`;
-                document.getElementById('guest-payments-details').innerHTML = state.guests.map(g => `<tr><td style="padding: 8px;">${g.name}</td><td>${formatCurrency(g.paidValue)}</td><td><span class="status ${g.paymentStatus}">${getPaymentStatusText(g.paymentStatus)}</span></td></tr>`).join('');
-                document.getElementById('expenses-details').innerHTML = state.suppliers.map(s => `<tr><td style="padding: 8px;">${s.name}</td><td>${formatCurrency(s.paid)} de ${formatCurrency(s.cost)}</td><td><span class="status ${s.paymentStatus}">${getPaymentStatusText(s.paymentStatus)}</span></td></tr>`).join('');
+                // Balanço Geral
+                const balanceDetails = document.getElementById('balance-details');
+                balanceDetails.innerHTML = `
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Total de Receitas</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; color: var(--success-color);">${formatCurrency(totalIncome)}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Total de Despesas</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; color: var(--danger-color);">${formatCurrency(totalExpenses)}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Saldo Final</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${finalBalance >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">${formatCurrency(finalBalance)}</td></tr>
+                `;
+
+                // Pagamentos de Convidados
+                const guestPaymentsDetails = document.getElementById('guest-payments-details');
+                guestPaymentsDetails.innerHTML = '';
+                state.guests.forEach(guest => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;">${guest.name}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(guest.paidValue || 0)}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency((guest.expectedValue || 0) - (guest.paidValue || 0))}</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eee;"><span class="status ${guest.paymentStatus || 'pending'}">${getPaymentStatusText(guest.paymentStatus)}</span></td>
+                    `;
+                    guestPaymentsDetails.appendChild(row);
+                });
+
+                // Despesas do Evento
+                const expensesDetails = document.getElementById('expenses-details');
+                expensesDetails.innerHTML = '';
+                Object.entries(state.eventData.costs || {}).forEach(([category, value]) => {
+                    if (value > 0) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${getCostCategoryName(category)}</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(value)}</td>
+                        `;
+                        expensesDetails.appendChild(row);
+                    }
+                });
+                state.suppliers.forEach(supplier => {
+                    if (supplier.cost > 0) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${supplier.name} (${supplier.service})</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(supplier.cost)}</td>
+                        `;
+                        expensesDetails.appendChild(row);
+                    }
+                });
             },
-            renderBackupPage() { /* Página estática, não precisa de renderização dinâmica */ },
 
             renderActivePage() {
-                const renderers = {
-                    'dashboard-page': this.renderDashboard, 'event-page': this.renderEventPage, 'guests-page': this.renderGuestsPage,
-                    'suppliers-page': this.renderSuppliersPage, 'payments-page': this.renderPaymentsPage, 'qr-page': this.renderQRPage,
-                    'reports-page': this.renderReportsPage, 'backup-page': this.renderBackupPage,
-                };
-                renderers[state.activePage]?.call(this);
+                switch (state.activePage) {
+                    case 'dashboard-page': this.renderDashboard(); break;
+                    case 'event-page': this.renderEventPage(); break;
+                    case 'guests-page': this.renderGuestsPage(); break;
+                    case 'suppliers-page': this.renderSuppliersPage(); break;
+                    case 'payments-page': this.renderPaymentsPage(); break;
+                    case 'qr-page': this.renderQRPage(); break;
+                    case 'reports-page': this.renderReportsPage(); break;
+                }
             },
-            
-            // ===== LÓGICA DOS MODAIS E FORMULÁRIOS =====
+
+            // ===== GERENCIAMENTO DE FORMULÁRIOS =====
             openEventModal() {
-                document.getElementById('event-modal-title').textContent = 'Editar Evento';
-                document.getElementById('event-form').innerHTML = `
-                    <div class="form-control"><label for="event-name">Nome do Evento</label><input type="text" id="event-name" required></div>
-                    <div class="form-control"><label for="event-date">Data do Evento</label><input type="date" id="event-date" required></div>
-                    <div class="form-control"><label for="event-location">Local do Evento</label><input type="text" id="event-location" required></div>
-                    <div class="modal-actions"><button type="button" class="btn secondary" onclick="app.closeAllModals()">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>`;
-                
-                document.getElementById('event-name').value = state.eventData.name || '';
-                document.getElementById('event-date').value = state.eventData.date || '';
-                document.getElementById('event-location').value = state.eventData.location || '';
+                document.getElementById('event-modal-title').textContent = state.eventData.name ? 'Editar Evento' : 'Criar Evento';
+                const form = document.getElementById('event-form');
+                form.innerHTML = `
+                    <div class="form-control">
+                        <label for="event-name">Nome do Evento</label>
+                        <input type="text" id="event-name" value="${state.eventData.name || ''}" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="event-date">Data do Evento</label>
+                        <input type="date" id="event-date" value="${state.eventData.date || ''}">
+                    </div>
+                    <div class="form-control">
+                        <label for="event-location">Local</label>
+                        <input type="text" id="event-location" value="${state.eventData.location || ''}">
+                    </div>
+                    <div class="form-control">
+                        <label for="event-description">Descrição</label>
+                        <textarea id="event-description" rows="3">${state.eventData.description || ''}</textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn secondary" onclick="closeModal('event-modal')">Cancelar</button>
+                        <button type="submit" class="btn primary">Salvar</button>
+                    </div>
+                `;
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    state.eventData = {
+                        ...state.eventData,
+                        name: document.getElementById('event-name').value,
+                        date: document.getElementById('event-date').value,
+                        location: document.getElementById('event-location').value,
+                        description: document.getElementById('event-description').value
+                    };
+                    saveState();
+                    closeModal('event-modal');
+                    this.renderActivePage();
+                };
                 openModal('event-modal');
             },
-            saveEvent(e) {
-                e.preventDefault();
-                state.eventData.name = document.getElementById('event-name').value;
-                state.eventData.date = document.getElementById('event-date').value;
-                state.eventData.location = document.getElementById('event-location').value;
-                this.closeAllModals(); this.updateUI();
-            },
-             openCostsModal() {
-                document.getElementById('costs-modal-title').textContent = 'Editar Custos do Evento';
-                document.getElementById('costs-form').innerHTML = `
-                    <div class="form-grid">
-                        <div class="form-control"><label for="cost-food">Alimentação</label><input type="number" id="cost-food" min="0" step="0.01"></div>
-                        <div class="form-control"><label for="cost-music">Música</label><input type="number" id="cost-music" min="0" step="0.01"></div>
-                        <div class="form-control"><label for="cost-venue">Aluguel</label><input type="number" id="cost-venue" min="0" step="0.01"></div>
-                        <div class="form-control"><label for="cost-drinks">Bebidas</label><input type="number" id="cost-drinks" min="0" step="0.01"></div>
-                    </div>
-                     <div class="form-control"><label for="cost-other">Outros Custos</label><input type="number" id="cost-other" min="0" step="0.01"></div>
-                    <div class="modal-actions"><button type="button" class="btn secondary" onclick="app.closeAllModals()">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>`;
 
-                Object.keys(state.eventData.costs).forEach(key => document.getElementById(`cost-${key}`).value = state.eventData.costs[key]);
+            openCostsModal() {
+                document.getElementById('costs-modal-title').textContent = 'Editar Custos do Evento';
+                const form = document.getElementById('costs-form');
+                form.innerHTML = `
+                    <div class="form-control">
+                        <label for="cost-food">Alimentação</label>
+                        <input type="number" id="cost-food" step="0.01" value="${state.eventData.costs?.food || 0}">
+                    </div>
+                    <div class="form-control">
+                        <label for="cost-music">Música</label>
+                        <input type="number" id="cost-music" step="0.01" value="${state.eventData.costs?.music || 0}">
+                    </div>
+                    <div class="form-control">
+                        <label for="cost-venue">Aluguel do Espaço</label>
+                        <input type="number" id="cost-venue" step="0.01" value="${state.eventData.costs?.venue || 0}">
+                    </div>
+                    <div class="form-control">
+                        <label for="cost-drinks">Bebidas</label>
+                        <input type="number" id="cost-drinks" step="0.01" value="${state.eventData.costs?.drinks || 0}">
+                    </div>
+                    <div class="form-control">
+                        <label for="cost-other">Outros Custos</label>
+                        <input type="number" id="cost-other" step="0.01" value="${state.eventData.costs?.other || 0}">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn secondary" onclick="closeModal('costs-modal')">Cancelar</button>
+                        <button type="submit" class="btn primary">Salvar</button>
+                    </div>
+                `;
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    state.eventData.costs = {
+                        food: parseFloat(document.getElementById('cost-food').value) || 0,
+                        music: parseFloat(document.getElementById('cost-music').value) || 0,
+                        venue: parseFloat(document.getElementById('cost-venue').value) || 0,
+                        drinks: parseFloat(document.getElementById('cost-drinks').value) || 0,
+                        other: parseFloat(document.getElementById('cost-other').value) || 0
+                    };
+                    saveState();
+                    closeModal('costs-modal');
+                    this.renderActivePage();
+                };
                 openModal('costs-modal');
             },
-            saveCosts(e) {
-                e.preventDefault();
-                Object.keys(state.eventData.costs).forEach(key => state.eventData.costs[key] = parseFloat(document.getElementById(`cost-${key}`).value) || 0);
-                this.closeAllModals(); this.updateUI();
-            },
+
             openGuestModal(guestId = null) {
-                state.currentEditingId = guestId;
-                const guest = guestId ? state.guests.find(g => g.id === guestId) : null;
-                document.getElementById('guest-modal-title').textContent = guest ? 'Editar Convidado' : 'Adicionar Convidado';
-                document.getElementById('guest-form').innerHTML = `
-                    <div class="form-control"><label for="guest-name">Nome</label><input type="text" id="guest-name" required></div>
-                    <div class="form-grid">
-                        <div class="form-control"><label for="guest-email">E-mail</label><input type="email" id="guest-email"></div>
-                        <div class="form-control"><label for="guest-phone">Telefone (Obrigatório p/ Pagamento)</label><input type="tel" id="guest-phone" required></div>
+                const isEditing = guestId !== null;
+                const guest = isEditing ? state.guests.find(g => g.id === guestId) : null;
+                document.getElementById('guest-modal-title').textContent = isEditing ? 'Editar Convidado' : 'Adicionar Convidado';
+                const form = document.getElementById('guest-form');
+                form.innerHTML = `
+                    <div class="form-control">
+                        <label for="guest-name">Nome</label>
+                        <input type="text" id="guest-name" value="${guest?.name || ''}" required>
                     </div>
-                     <div class="form-grid">
-                        <div class="form-control"><label for="guest-suggested-value">Valor Sugerido</label><input type="number" id="guest-suggested-value" min="0" step="0.01"></div>
-                        <div class="form-control"><label for="guest-paid-value">Valor Pago</label><input type="number" id="guest-paid-value" min="0" step="0.01"></div>
+                    <div class="form-control">
+                        <label for="guest-email">E-mail</label>
+                        <input type="email" id="guest-email" value="${guest?.email || ''}">
                     </div>
-                    <div class="form-control"><label for="guest-status">Status Pagamento</label><select id="guest-status"><option value="pending">Pendente</option><option value="partial">Parcial</option><option value="paid">Pago</option></select></div>
-                    <div class="modal-actions"><button type="button" class="btn secondary" onclick="app.closeAllModals()">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>`;
-                
-                if (guest) {
-                    document.getElementById('guest-name').value = guest.name; document.getElementById('guest-email').value = guest.email || '';
-                    document.getElementById('guest-phone').value = guest.phone || ''; document.getElementById('guest-suggested-value').value = guest.suggestedValue || 0;
-                    document.getElementById('guest-paid-value').value = guest.paidValue || 0; document.getElementById('guest-status').value = guest.paymentStatus || 'pending';
-                }
+                    <div class="form-control">
+                        <label for="guest-phone">Telefone</label>
+                        <input type="tel" id="guest-phone" value="${guest?.phone || ''}">
+                    </div>
+                    <div class="form-control">
+                        <label for="guest-expected-value">Valor Esperado (R$)</label>
+                        <input type="number" id="guest-expected-value" step="0.01" value="${guest?.expectedValue || 0}">
+                    </div>
+                    <div class="form-control">
+                        <label for="guest-paid-value">Valor Pago (R$)</label>
+                        <input type="number" id="guest-paid-value" step="0.01" value="${guest?.paidValue || 0}">
+                    </div>
+                    <div class="form-control">
+                        <label for="guest-payment-date">Data do Pagamento</label>
+                        <input type="date" id="guest-payment-date" value="${guest?.paymentDate || ''}">
+                    </div>
+                    <div class="form-control">
+                        <label for="guest-payment-status">Status do Pagamento</label>
+                        <select id="guest-payment-status">
+                            <option value="pending" ${guest?.paymentStatus === 'pending' ? 'selected' : ''}>Pendente</option>
+                            <option value="partial" ${guest?.paymentStatus === 'partial' ? 'selected' : ''}>Parcial</option>
+                            <option value="paid" ${guest?.paymentStatus === 'paid' ? 'selected' : ''}>Pago</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn secondary" onclick="closeModal('guest-modal')">Cancelar</button>
+                        <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
+                    </div>
+                `;
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    const guestData = {
+                        id: guestId || Date.now().toString(),
+                        name: document.getElementById('guest-name').value,
+                        email: document.getElementById('guest-email').value,
+                        phone: document.getElementById('guest-phone').value,
+                        expectedValue: parseFloat(document.getElementById('guest-expected-value').value) || 0,
+                        paidValue: parseFloat(document.getElementById('guest-paid-value').value) || 0,
+                        paymentDate: document.getElementById('guest-payment-date').value,
+                        paymentStatus: document.getElementById('guest-payment-status').value,
+                        checkedIn: guest?.checkedIn || false,
+                        regOrder: guest?.regOrder || state.guests.length + 1
+                    };
+                    if (isEditing) {
+                        const index = state.guests.findIndex(g => g.id === guestId);
+                        if (index !== -1) state.guests[index] = guestData;
+                    } else {
+                        state.guests.push(guestData);
+                    }
+                    saveState();
+                    closeModal('guest-modal');
+                    this.renderActivePage();
+                };
                 openModal('guest-modal');
             },
-            async saveGuest(e) {
-                e.preventDefault();
 
-                const name = document.getElementById('guest-name').value;
-                const email = document.getElementById('guest-email').value;
-                const phone = document.getElementById('guest-phone').value;
-                const suggestedValue = parseFloat(document.getElementById('guest-suggested-value').value) || 0;
-                const paidValue = parseFloat(document.getElementById('guest-paid-value').value) || 0;
-                const paymentStatus = document.getElementById('guest-status').value;
-
-                if (paymentStatus === 'paid') {
-                    if (!phone) {
-                        alert('O número de telefone é obrigatório para confirmar o pagamento e gerar o QR Code.');
-                        return;
-                    }
-                    // CORREÇÃO: Lógica de validação ajustada para corresponder à intenção.
-                    if (suggestedValue === 0 || paidValue !== suggestedValue) {
-                        alert('Para marcar como "Pago", o valor pago deve ser exatamente igual ao valor sugerido (e o valor sugerido deve ser maior que zero).');
-                        return;
-                    }
-                }
-
-                const oldStatus = state.currentEditingId ? state.guests.find(g => g.id === state.currentEditingId)?.paymentStatus : null;
-                let guestToProcess;
-
-                if (state.currentEditingId) {
-                    const index = state.guests.findIndex(g => g.id === state.currentEditingId);
-                    if (index === -1) return;
-
-                    const guest = state.guests[index];
-                    guest.name = name; guest.email = email; guest.phone = phone;
-                    guest.suggestedValue = suggestedValue; guest.paidValue = paidValue; guest.paymentStatus = paymentStatus;
-                    
-                    if (paymentStatus === 'paid') {
-                        guest.qrCode = `EVENTPRO-${guest.phone.replace(/\D/g, '')}-${guest.regOrder}`;
-                    } else {
-                        guest.qrCode = ''; // Remove QR code if status is no longer 'paid'
-                    }
-                    guestToProcess = guest;
-
-                } else {
-                    const regOrder = state.guests.length + 1;
-                    const newGuest = {
-                        id: Date.now().toString(), name, email, phone, suggestedValue, paidValue, paymentStatus,
-                        checkIn: false, regOrder: regOrder, qrCode: ''
-                    };
-                    
-                    if (paymentStatus === 'paid') {
-                         newGuest.qrCode = `EVENTPRO-${newGuest.phone.replace(/\D/g, '')}-${newGuest.regOrder}`;
-                    }
-                    state.guests.push(newGuest);
-                    guestToProcess = newGuest;
-                }
-                
-                if (guestToProcess.paymentStatus === 'paid' && oldStatus !== 'paid') {
-                    await this.generateGuestReceipt(guestToProcess);
-                }
-
-                this.closeAllModals();
-                this.updateUI();
-            },
             openSupplierModal(supplierId = null) {
-                state.currentEditingId = supplierId;
-                const supplier = supplierId ? state.suppliers.find(s => s.id === supplierId) : null;
-                document.getElementById('supplier-modal-title').textContent = supplier ? 'Editar Fornecedor' : 'Adicionar Fornecedor';
-                document.getElementById('supplier-form').innerHTML = `
-                    <div class="form-control"><label for="supplier-name">Nome</label><input type="text" id="supplier-name" required></div>
-                    <div class="form-control"><label for="supplier-service">Serviço</label><input type="text" id="supplier-service" required></div>
-                    <div class="form-grid">
-                        <div class="form-control"><label for="supplier-cost">Custo</label><input type="number" id="supplier-cost" min="0" step="0.01"></div>
-                        <div class="form-control"><label for="supplier-paid">Valor Pago</label><input type="number" id="supplier-paid" min="0" step="0.01"></div>
+                const isEditing = supplierId !== null;
+                const supplier = isEditing ? state.suppliers.find(s => s.id === supplierId) : null;
+                document.getElementById('supplier-modal-title').textContent = isEditing ? 'Editar Fornecedor' : 'Adicionar Fornecedor';
+                const form = document.getElementById('supplier-form');
+                form.innerHTML = `
+                    <div class="form-control">
+                        <label for="supplier-name">Nome</label>
+                        <input type="text" id="supplier-name" value="${supplier?.name || ''}" required>
                     </div>
-                    <div class="form-control"><label for="supplier-status">Status</label><select id="supplier-status"><option value="pending">Pendente</option><option value="partial">Parcial</option><option value="paid">Pago</option></select></div>
-                    <div class="modal-actions"><button type="button" class="btn secondary" onclick="app.closeAllModals()">Cancelar</button><button type="submit" class="btn primary">Salvar</button></div>`;
-
-                if(supplier) {
-                    document.getElementById('supplier-name').value = supplier.name; document.getElementById('supplier-service').value = supplier.service;
-                    document.getElementById('supplier-cost').value = supplier.cost || 0; document.getElementById('supplier-paid').value = supplier.paid || 0;
-                    document.getElementById('supplier-status').value = supplier.paymentStatus || 'pending';
-                }
+                    <div class="form-control">
+                        <label for="supplier-service">Serviço</label>
+                        <input type="text" id="supplier-service" value="${supplier?.service || ''}">
+                    </div>
+                    <div class="form-control">
+                        <label for="supplier-contact">Contato</label>
+                        <input type="text" id="supplier-contact" value="${supplier?.contact || ''}">
+                    </div>
+                    <div class="form-control">
+                        <label for="supplier-cost">Custo (R$)</label>
+                        <input type="number" id="supplier-cost" step="0.01" value="${supplier?.cost || 0}">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn secondary" onclick="closeModal('supplier-modal')">Cancelar</button>
+                        <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
+                    </div>
+                `;
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    const supplierData = {
+                        id: supplierId || Date.now().toString(),
+                        name: document.getElementById('supplier-name').value,
+                        service: document.getElementById('supplier-service').value,
+                        contact: document.getElementById('supplier-contact').value,
+                        cost: parseFloat(document.getElementById('supplier-cost').value) || 0
+                    };
+                    if (isEditing) {
+                        const index = state.suppliers.findIndex(s => s.id === supplierId);
+                        if (index !== -1) state.suppliers[index] = supplierData;
+                    } else {
+                        state.suppliers.push(supplierData);
+                    }
+                    saveState();
+                    closeModal('supplier-modal');
+                    this.renderActivePage();
+                };
                 openModal('supplier-modal');
             },
-            saveSupplier(e) {
-                e.preventDefault();
-                const supplierData = {
-                    name: document.getElementById('supplier-name').value, service: document.getElementById('supplier-service').value,
-                    cost: parseFloat(document.getElementById('supplier-cost').value) || 0, paid: parseFloat(document.getElementById('supplier-paid').value) || 0,
-                    paymentStatus: document.getElementById('supplier-status').value
-                };
-                if(state.currentEditingId) {
-                    const index = state.suppliers.findIndex(s => s.id === state.currentEditingId);
-                    supplierData.id = state.currentEditingId; state.suppliers[index] = supplierData;
+
+            deleteItem(id, type) {
+                if (type === 'guest') {
+                    state.guests = state.guests.filter(g => g.id !== id);
+                } else if (type === 'supplier') {
+                    state.suppliers = state.suppliers.filter(s => s.id !== id);
+                }
+                saveState();
+                closeModal('delete-modal');
+                this.renderActivePage();
+            },
+
+            // ===== FUNCIONALIDADES DE QR CODE =====
+            generateQRCodeForGuest(guest) {
+                const qrContainer = document.getElementById(`qr-${guest.id}`);
+                if (!qrContainer) return;
+                
+                // Limpar container antes de gerar novo QR Code
+                qrContainer.innerHTML = '';
+                
+                // Verificar se a biblioteca QRCode está disponível
+                if (typeof QRCode !== 'undefined') {
+                    try {
+                        // Gerar QR Code com dados do convidado
+                        QRCode.toCanvas(qrContainer, JSON.stringify({
+                            id: guest.id,
+                            name: guest.name,
+                            event: state.eventData.name
+                        }), {
+                            width: 150,
+                            height: 150,
+                            margin: 1,
+                            color: {
+                                dark: '#000000',
+                                light: '#FFFFFF'
+                            }
+                        }, function(error) {
+                            if (error) {
+                                console.error('Erro ao gerar QR Code:', error);
+                                qrContainer.innerHTML = '<p style="color: red; font-size: 12px;">Erro no QR Code</p>';
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Erro ao gerar QR Code:', error);
+                        qrContainer.innerHTML = '<p style="color: red; font-size: 12px;">Erro no QR Code</p>';
+                    }
                 } else {
-                    supplierData.id = Date.now().toString(); state.suppliers.push(supplierData);
+                    qrContainer.innerHTML = '<p style="color: red; font-size: 12px;">Biblioteca QR Code não carregada</p>';
                 }
-                this.closeAllModals(); this.updateUI();
             },
-            openDeleteModal(id, type, name) {
-                state.currentEditingId = id; state.currentEditingType = type;
-                document.getElementById('delete-modal-title').textContent = 'Confirmar Exclusão';
-                document.getElementById('delete-message').textContent = `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`;
-                openModal('delete-modal');
-            },
-            confirmDelete() {
-                if (state.currentEditingType === 'guest') state.guests = state.guests.filter(g => g.id !== state.currentEditingId);
-                else if (state.currentEditingType === 'supplier') state.suppliers = state.suppliers.filter(s => s.id !== state.currentEditingId);
-                this.closeAllModals(); this.updateUI();
-            },
-            closeAllModals() {
-                document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
-                state.currentEditingId = null; state.currentEditingType = null;
-            },
-            
-            // ===== LÓGICA DO QR CODE =====
-            generateQRCodeImage(data, elementId) {
-                // CORREÇÃO: Adicionada verificação da biblioteca
-                if (typeof QRCode === 'undefined') {
-                    console.error("A biblioteca QRCode não foi carregada.");
-                    const qrElement = document.getElementById(elementId);
-                    if(qrElement) qrElement.innerHTML = `<p style="font-size:0.8rem; color:var(--danger-color);">Erro ao carregar lib.</p>`;
-                    return;
-                }
-                const qrElement = document.getElementById(elementId);
-                if (!qrElement) return;
-                qrElement.innerHTML = '';
-                const canvas = document.createElement('canvas');
-                qrElement.appendChild(canvas);
-                QRCode.toCanvas(canvas, data, { width: 150, margin: 1 }, (err) => { if(err) console.error(err); });
-            },
+
             startQRScanner() {
                 const video = document.getElementById('qr-video');
                 const canvas = document.getElementById('qr-canvas');
+                const canvasContext = canvas.getContext('2d');
+                const resultDiv = document.getElementById('qr-result');
+                const startBtn = document.getElementById('start-camera-btn');
+                const stopBtn = document.getElementById('stop-camera-btn');
                 const placeholder = document.getElementById('qr-scanner-placeholder');
-                
-                placeholder.style.display = 'none';
-                video.classList.remove('hidden');
-                document.getElementById('start-camera-btn').classList.add('hidden');
-                document.getElementById('stop-camera-btn').classList.remove('hidden');
+
+                // Verificar se a biblioteca jsQR está disponível
+                if (typeof jsQR === 'undefined') {
+                    resultDiv.textContent = 'Erro: Biblioteca de leitura QR não carregada. Verifique sua conexão com a internet.';
+                    resultDiv.className = 'qr-result error';
+                    resultDiv.style.display = 'block';
+                    return;
+                }
 
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(stream => {
-                    state.qrScannerStream = stream;
-                    video.srcObject = stream;
-                    video.play();
-                    this.tickQRScanner();
-                }).catch(err => {
-                    console.error("Erro ao acessar a câmera: ", err);
-                    this.showQRResult('Erro ao acessar a câmera.', 'error');
-                });
+                    .then(stream => {
+                        state.qrScannerStream = stream;
+                        video.srcObject = stream;
+                        video.classList.remove('hidden');
+                        canvas.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
+                        startBtn.classList.add('hidden');
+                        stopBtn.classList.remove('hidden');
+                        resultDiv.style.display = 'none';
+
+                        video.play();
+                        requestAnimationFrame(tick);
+
+                        function tick() {
+                            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                                canvas.height = video.videoHeight;
+                                canvas.width = video.videoWidth;
+                                canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                                    inversionAttempts: 'dontInvert',
+                                });
+
+                                if (code) {
+                                    try {
+                                        const guestData = JSON.parse(code.data);
+                                        const guest = state.guests.find(g => g.id === guestData.id);
+                                        if (guest) {
+                                            if (!guest.checkedIn) {
+                                                guest.checkedIn = true;
+                                                saveState();
+                                                app.renderActivePage();
+                                                resultDiv.innerHTML = `
+                                                    <strong>Check-in realizado com sucesso!</strong><br>
+                                                    ${guest.name}<br>
+                                                    <span style="font-size: 12px;">${new Date().toLocaleString('pt-BR')}</span>
+                                                `;
+                                                resultDiv.className = 'qr-result success';
+                                            } else {
+                                                resultDiv.innerHTML = `
+                                                    <strong>Convidado já fez check-in</strong><br>
+                                                    ${guest.name}<br>
+                                                    <span style="font-size: 12px;">Check-in anterior</span>
+                                                `;
+                                                resultDiv.className = 'qr-result pending';
+                                            }
+                                        } else {
+                                            resultDiv.innerHTML = '<strong>Convidado não encontrado</strong>';
+                                            resultDiv.className = 'qr-result error';
+                                        }
+                                    } catch (e) {
+                                        resultDiv.innerHTML = '<strong>QR Code inválido</strong>';
+                                        resultDiv.className = 'qr-result error';
+                                    }
+                                    resultDiv.style.display = 'block';
+                                }
+                            }
+                            state.qrScannerAnimationId = requestAnimationFrame(tick);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Erro ao acessar câmera:', err);
+                        resultDiv.textContent = 'Erro ao acessar a câmera. Verifique as permissões.';
+                        resultDiv.className = 'qr-result error';
+                        resultDiv.style.display = 'block';
+                    });
             },
-            tickQRScanner() {
+
+            stopQRScanner() {
                 const video = document.getElementById('qr-video');
                 const canvas = document.getElementById('qr-canvas');
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    const ctx = canvas.getContext('2d');
-                    canvas.height = video.videoHeight;
-                    canvas.width = video.videoWidth;
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-                    
-                    if (code) {
-                        this.processQRCode(code.data);
-                        return;
-                    }
+                const startBtn = document.getElementById('start-camera-btn');
+                const stopBtn = document.getElementById('stop-camera-btn');
+                const placeholder = document.getElementById('qr-scanner-placeholder');
+                const resultDiv = document.getElementById('qr-result');
+
+                if (state.qrScannerAnimationId) {
+                    cancelAnimationFrame(state.qrScannerAnimationId);
+                    state.qrScannerAnimationId = null;
                 }
-                state.qrScannerAnimationId = requestAnimationFrame(() => this.tickQRScanner());
-            },
-            stopQRScanner() {
-                if(state.qrScannerAnimationId) cancelAnimationFrame(state.qrScannerAnimationId);
+
                 if (state.qrScannerStream) {
                     state.qrScannerStream.getTracks().forEach(track => track.stop());
                     state.qrScannerStream = null;
                 }
-                document.getElementById('qr-video').classList.add('hidden');
-                document.getElementById('qr-scanner-placeholder').style.display = 'block';
-                document.getElementById('start-camera-btn').classList.remove('hidden');
-                document.getElementById('stop-camera-btn').classList.add('hidden');
-            },
-            processQRCode(data) {
-                if (!data.startsWith('EVENTPRO-')) {
-                    this.showQRResult('QR Code inválido.', 'error');
-                    setTimeout(() => this.stopQRScanner(), 3000);
-                    return;
-                }
 
-                const guest = state.guests.find(g => g.qrCode === data);
-                if (guest) {
-                    if (!guest.checkIn) {
-                        guest.checkIn = true;
-                        this.showQRResult(`Check-in confirmado para ${guest.name}!`, 'success');
-                        this.updateUI();
-                    } else {
-                        this.showQRResult(`${guest.name} já fez check-in.`, 'pending');
-                    }
-                } else {
-                    this.showQRResult('Convidado não encontrado.', 'error');
-                }
-                setTimeout(() => this.stopQRScanner(), 3000);
-            },
-            showQRResult(message, type) {
-                const resultDiv = document.getElementById('qr-result');
-                resultDiv.textContent = message;
-                resultDiv.className = `qr-result ${type}`;
-                resultDiv.style.display = 'block';
-                setTimeout(() => resultDiv.style.display = 'none', 3000);
+                video.classList.add('hidden');
+                canvas.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                resultDiv.style.display = 'none';
             },
 
-            // ===== LÓGICA DE RELATÓRIOS E BACKUP =====
-            async generateGuestReceipt(guest) {
-                 // CORREÇÃO: Adicionada verificação da biblioteca
-                if (typeof QRCode === 'undefined') {
-                    console.error("A biblioteca QRCode não foi carregada.");
-                    alert("Erro: A biblioteca de QR Code não pôde ser carregada. O recibo será gerado sem o código. Verifique sua conexão com a internet e tente novamente.");
-                }
-                
+            // ===== RELATÓRIOS E BACKUP =====
+            generatePDFReport(type) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                let yPosition = 20;
 
-                doc.setFontSize(22); doc.setTextColor('#5636D3');
-                doc.text('Recibo de Pagamento', 105, 20, null, null, 'center');
+                // Cabeçalho
+                doc.setFontSize(20);
+                doc.setTextColor(86, 54, 211);
+                doc.text('Eventos Pro - Relatório', pageWidth / 2, yPosition, { align: 'center' });
+                yPosition += 15;
 
-                doc.setFontSize(14); doc.setTextColor('#363F5F');
-                doc.text(state.eventData.name || 'Nome do Evento', 105, 35, null, null, 'center');
-                doc.setFontSize(11); doc.setTextColor('#969CB2');
-                const eventDate = state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'Data não definida';
-                doc.text(`Data: ${eventDate}`, 105, 42, null, null, 'center');
-                doc.text(`Local: ${state.eventData.location || 'Local não definido'}`, 105, 49, null, null, 'center');
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                const reportTitle = type === 'balance' ? 'Balanço Geral' : 
+                                  type === 'guest-payments' ? 'Pagamentos de Convidados' : 'Despesas do Evento';
+                doc.text(reportTitle, pageWidth / 2, yPosition, { align: 'center' });
+                yPosition += 20;
 
-                doc.setDrawColor('#5636D3'); doc.line(20, 60, 190, 60);
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
 
-                doc.setFontSize(12); doc.setTextColor('#363F5F');
-                doc.text('Recebemos de:', 20, 70);
-                doc.setFontSize(16); doc.text(guest.name, 20, 80);
+                if (type === 'balance') {
+                    const totalIncome = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
+                    const totalExpenses = calculateTotalCost();
+                    const finalBalance = totalIncome - totalExpenses;
 
-                doc.setFontSize(12); doc.text('Valor Pago:', 20, 95);
-                doc.setFontSize(16); doc.setTextColor('#12A454');
-                doc.text(formatCurrency(guest.paidValue), 20, 105);
-
-                if (typeof QRCode !== 'undefined' && guest.qrCode) {
-                    try {
-                        const qrCodeDataUrl = await QRCode.toDataURL(guest.qrCode, { width: 400, errorCorrectionLevel: 'H' });
-                        doc.addImage(qrCodeDataUrl, 'PNG', 140, 70, 50, 50);
-                        doc.setFontSize(10); doc.setTextColor('#969CB2');
-                        doc.text('Apresente este QR Code na entrada', 165, 128, null, null, 'center');
-                    } catch (err) {
-                        console.error('Falha ao gerar QR Code para o PDF:', err);
-                        doc.text('Erro ao gerar QR Code', 150, 90);
-                    }
+                    doc.text(`Total de Receitas: ${formatCurrency(totalIncome)}`, 20, yPosition);
+                    yPosition += 10;
+                    doc.text(`Total de Despesas: ${formatCurrency(totalExpenses)}`, 20, yPosition);
+                    yPosition += 10;
+                    doc.text(`Saldo Final: ${formatCurrency(finalBalance)}`, 20, yPosition);
+                    yPosition += 20;
+                } else if (type === 'guest-payments') {
+                    const headers = [['Nome', 'Valor Pago', 'Valor Pendente', 'Status']];
+                    const data = state.guests.map(g => [
+                        g.name,
+                        formatCurrency(g.paidValue || 0),
+                        formatCurrency((g.expectedValue || 0) - (g.paidValue || 0)),
+                        getPaymentStatusText(g.paymentStatus)
+                    ]);
+                    doc.autoTable({
+                        head: headers,
+                        body: data,
+                        startY: yPosition,
+                        theme: 'grid',
+                        headStyles: { fillColor: [86, 54, 211] }
+                    });
+                } else if (type === 'expenses') {
+                    const headers = [['Descrição', 'Valor']];
+                    const data = [];
+                    Object.entries(state.eventData.costs || {}).forEach(([category, value]) => {
+                        if (value > 0) {
+                            data.push([getCostCategoryName(category), formatCurrency(value)]);
+                        }
+                    });
+                    state.suppliers.forEach(s => {
+                        if (s.cost > 0) {
+                            data.push([`${s.name} (${s.service})`, formatCurrency(s.cost)]);
+                        }
+                    });
+                    doc.autoTable({
+                        head: headers,
+                        body: data,
+                        startY: yPosition,
+                        theme: 'grid',
+                        headStyles: { fillColor: [86, 54, 211] }
+                    });
                 }
-                doc.save(`recibo-${guest.name.replace(/\s+/g, '_')}.pdf`);
-            },
-            generatePDF(title, columns, rows, filename) {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                doc.setFontSize(18); doc.text(title, 14, 22);
-                doc.setFontSize(11); doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 14, 30);
-                doc.autoTable({ head: [columns], body: rows, startY: 35, theme: 'grid', headStyles: { fillColor: [86, 54, 211] } });
-                doc.save(filename);
-            },
-            generateGuestPaymentsReport() {
-                const rows = state.guests.map(g => [g.name, formatCurrency(g.suggestedValue), formatCurrency(g.paidValue), getPaymentStatusText(g.paymentStatus)]);
-                this.generatePDF('Pagamentos de Convidados', ['Nome', 'Sugerido', 'Pago', 'Status'], rows, 'relatorio_convidados.pdf');
-            },
-            generateExpensesReport() {
-                 const rows = state.suppliers.map(s => [`${s.name} (${s.service})`, formatCurrency(s.cost), formatCurrency(s.paid), getPaymentStatusText(s.paymentStatus)]);
-                 this.generatePDF('Despesas do Evento', ['Fornecedor/Serviço', 'Custo', 'Pago', 'Status'], rows, 'relatorio_despesas.pdf');
-            },
-            exportData(dataType = 'all') {
-                let data;
-                let filename = `backup_evento_${new Date().toISOString().split('T')[0]}.json`;
 
-                if(dataType === 'guests') {
-                    data = { guests: state.guests };
-                    filename = `convidados_${new Date().toISOString().split('T')[0]}.json`;
-                } else {
-                    data = { eventData: state.eventData, guests: state.guests, suppliers: state.suppliers };
+                doc.save(`relatorio-${type}-${new Date().toISOString().slice(0,10)}.pdf`);
+            },
+
+            exportData(type = 'all') {
+                let dataToExport;
+                let filename;
+
+                if (type === 'all') {
+                    dataToExport = { eventData: state.eventData, guests: state.guests, suppliers: state.suppliers };
+                    filename = `backup-completo-${new Date().toISOString().slice(0,10)}.json`;
+                } else if (type === 'guests') {
+                    dataToExport = state.guests;
+                    filename = `convidados-${new Date().toISOString().slice(0,10)}.json`;
                 }
 
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(a.href);
+                const dataStr = JSON.stringify(dataToExport, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
             },
-            importData() {
-                const file = document.getElementById('backup-file').files[0];
-                if (!file) { alert('Por favor, selecione um arquivo.'); return; }
-                
+
+            importData(file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
-                        const data = JSON.parse(e.target.result);
-                        if (data.eventData && !state.eventData.name) state.eventData = data.eventData;
-                        if (data.guests) data.guests.forEach(g => { if(!state.guests.find(eg => eg.id === g.id)) state.guests.push(g); });
-                        if (data.suppliers) data.suppliers.forEach(s => { if(!state.suppliers.find(es => es.id === s.id)) state.suppliers.push(s); });
-                        
-                        this.updateUI();
+                        const importedData = JSON.parse(e.target.result);
+                        if (Array.isArray(importedData)) {
+                            // É uma lista de convidados
+                            state.guests = [...state.guests, ...importedData];
+                        } else if (importedData.eventData || importedData.guests || importedData.suppliers) {
+                            // É um backup completo
+                            if (importedData.eventData) state.eventData = { ...state.eventData, ...importedData.eventData };
+                            if (importedData.guests) state.guests = [...state.guests, ...importedData.guests];
+                            if (importedData.suppliers) state.suppliers = [...state.suppliers, ...importedData.suppliers];
+                        }
+                        saveState();
+                        app.renderActivePage();
                         alert('Dados importados com sucesso!');
                     } catch (error) {
-                        alert('Erro ao ler o arquivo de backup.');
-                        console.error(error);
+                        alert('Erro ao importar dados. Verifique se o arquivo é válido.');
                     }
                 };
                 reader.readAsText(file);
             },
+
             clearAllData() {
-                if(confirm('ATENÇÃO! Isso apagará TODOS os dados do evento. Deseja continuar?')) {
-                    localStorage.removeItem('eventManagementData_v2');
-                    initializeData();
-                    this.updateUI();
+                if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                    state.eventData = { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
+                    state.guests = [];
+                    state.suppliers = [];
+                    saveState();
+                    app.renderActivePage();
                     alert('Todos os dados foram removidos.');
                 }
             },
-            updateUI() {
-                saveState();
-                this.renderActivePage();
+
+            // ===== INICIALIZAÇÃO =====
+            init() {
+                initializeData();
+                
+                // Eventos de Navegação
+                selectors.navLinks.addEventListener('click', (e) => {
+                    const link = e.target.closest('a[data-page]');
+                    if (link) navigateTo(link.dataset.page);
+                });
+
+                // Navegação por cards do dashboard
+                selectors.dashboardCardsContainer.addEventListener('click', (e) => {
+                    const card = e.target.closest('.card[data-page]');
+                    if (card) navigateTo(card.dataset.page);
+                });
+
+                // Menu Mobile
+                selectors.menuToggleBtn.addEventListener('click', () => {
+                    selectors.sidebar.classList.toggle('open');
+                    selectors.sidebarOverlay.classList.toggle('active');
+                });
+
+                selectors.sidebarOverlay.addEventListener('click', () => {
+                    selectors.sidebar.classList.remove('open');
+                    selectors.sidebarOverlay.classList.remove('active');
+                });
+
+                // FAB (Botão de adicionar)
+                selectors.fab.addEventListener('click', () => {
+                    if (state.activePage === 'guests-page') app.openGuestModal();
+                    else if (state.activePage === 'suppliers-page') app.openSupplierModal();
+                });
+
+                // Busca de convidados
+                document.getElementById('guest-search').addEventListener('input', () => app.renderGuestsPage());
+
+                // Botões de ação
+                document.getElementById('edit-event-btn').addEventListener('click', () => app.openEventModal());
+                document.getElementById('edit-costs-btn').addEventListener('click', () => app.openCostsModal());
+                document.getElementById('start-camera-btn').addEventListener('click', () => app.startQRScanner());
+                document.getElementById('stop-camera-btn').addEventListener('click', () => app.stopQRScanner());
+                document.getElementById('generate-balance-report-btn').addEventListener('click', () => app.generatePDFReport('balance'));
+                document.getElementById('generate-guest-payments-report-btn').addEventListener('click', () => app.generatePDFReport('guest-payments'));
+                document.getElementById('generate-expenses-report-btn').addEventListener('click', () => app.generatePDFReport('expenses'));
+                document.getElementById('export-data-btn').addEventListener('click', () => app.exportData('all'));
+                document.getElementById('export-guests-btn').addEventListener('click', () => app.exportData('guests'));
+                document.getElementById('import-data-btn').addEventListener('click', () => {
+                    const fileInput = document.getElementById('backup-file');
+                    if (fileInput.files.length > 0) {
+                        app.importData(fileInput.files[0]);
+                    } else {
+                        alert('Por favor, selecione um arquivo de backup.');
+                    }
+                });
+                document.getElementById('clear-data-btn').addEventListener('click', () => app.clearAllData());
+
+                // Modal de confirmação de exclusão
+                document.getElementById('cancel-delete-btn').addEventListener('click', () => closeModal('delete-modal'));
+
+                // Inicialização
+                navigateTo(state.activePage);
             }
         };
 
-        // ===== EVENT LISTENERS (OUVINTE DE EVENTOS) =====
-        selectors.navLinks.addEventListener('click', e => {
-            const link = e.target.closest('a');
-            if (link?.dataset.page) {
-                e.preventDefault();
-                navigateTo(link.dataset.page);
-            }
-        });
-        
-        selectors.dashboardCardsContainer.addEventListener('click', (e) => {
-            const card = e.target.closest('.card[data-page]');
-            if (card && card.dataset.page) {
-                navigateTo(card.dataset.page);
-            }
-        });
-
-        selectors.fab.addEventListener('click', () => {
-            if (state.activePage === 'guests-page') app.openGuestModal();
-            else if (state.activePage === 'suppliers-page') app.openSupplierModal();
-        });
-
-        document.getElementById('event-form').addEventListener('submit', (e) => app.saveEvent(e));
-        document.getElementById('costs-form').addEventListener('submit', (e) => app.saveCosts(e));
-        document.getElementById('guest-form').addEventListener('submit', async (e) => await app.saveGuest(e));
-        document.getElementById('supplier-form').addEventListener('submit', (e) => app.saveSupplier(e));
-        document.getElementById('confirm-delete-btn').addEventListener('click', () => app.confirmDelete());
-        document.getElementById('cancel-delete-btn').addEventListener('click', () => app.closeAllModals());
-        
-        document.getElementById('edit-event-btn').addEventListener('click', () => app.openEventModal());
-        document.getElementById('edit-costs-btn').addEventListener('click', () => app.openCostsModal());
-        document.getElementById('guest-search').addEventListener('input', () => app.renderGuestsPage());
-        document.getElementById('start-camera-btn').addEventListener('click', () => app.startQRScanner());
-        document.getElementById('stop-camera-btn').addEventListener('click', () => app.stopQRScanner());
-        document.getElementById('generate-guest-payments-report-btn').addEventListener('click', () => app.generateGuestPaymentsReport());
-        document.getElementById('generate-expenses-report-btn').addEventListener('click', () => app.generateExpensesReport());
-        document.getElementById('export-data-btn').addEventListener('click', () => app.exportData('all'));
-        document.getElementById('export-guests-btn').addEventListener('click', () => app.exportData('guests'));
-        document.getElementById('import-data-btn').addEventListener('click', () => app.importData());
-        document.getElementById('clear-data-btn').addEventListener('click', () => app.clearAllData());
-
-        const toggleSidebar = () => {
-            selectors.sidebar.classList.toggle('open');
-            selectors.sidebarOverlay.classList.toggle('active');
-        };
-        selectors.menuToggleBtn.addEventListener('click', toggleSidebar);
-        selectors.sidebarOverlay.addEventListener('click', toggleSidebar);
-        
-        window.app = app; 
-        initializeData();
-        navigateTo(state.activePage);
+        // Inicializar a aplicação
+        app.init();
     });
     </script>
 </body>
