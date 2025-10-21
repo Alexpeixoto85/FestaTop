@@ -13,8 +13,6 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
     <style>
         :root {
@@ -215,17 +213,16 @@
             margin-bottom: 2rem;
         }
         
-        /* Estilo "iPhone Widget" para os cards do dashboard */
         #dashboard-cards .card {
-            border-radius: 22px; /* Mais arredondado */
+            border-radius: 22px; 
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(0,0,0,0.05); /* Borda sutil */
+            border: 1px solid rgba(0,0,0,0.05);
         }
         
         #dashboard-cards .card:hover {
-            transform: scale(1.03); /* Efeito de escala ao passar o mouse */
+            transform: scale(1.03);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
         
@@ -274,22 +271,31 @@
         .management-page .list-item i { font-size: 1.2rem; margin-right: 1rem; color: var(--primary-color); }
         .list-item-main { flex-grow: 1; display: flex; align-items: center; }
         
-        /* --- Página QR Code --- */
-        .qr-code-container { text-align: center; margin: 20px 0; padding: 15px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: white; }
-        .qr-code { margin: 0 auto; max-width: 200px; display: flex; justify-content: center; align-items: center; height: 150px; }
-        .qr-info { margin-top: 15px; font-size: 14px; color: #666; }
-        .qr-scanner-container { width: 100%; max-width: 400px; margin: 2rem auto; text-align: center; }
-        .qr-scanner {
-            width: 100%; height: 300px; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 15px;
-            background-color: #f5f5f5; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; position: relative;
+        /* --- Página Controle de Entrada --- */
+        .checkin-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 2rem auto;
+            text-align: center;
         }
-        .qr-scanner video, .qr-scanner canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        .hidden { display: none; }
-        .qr-result { margin-top: 15px; padding: 15px; border-radius: 10px; background-color: #f8f9fa; display: none; }
-        .qr-result.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .qr-result.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .qr-result.pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .checkin-container input {
+            font-size: 2rem;
+            text-align: center;
+            letter-spacing: 0.5em;
+        }
+        .checkin-result { 
+            margin-top: 15px; 
+            padding: 15px; 
+            border-radius: 10px; 
+            background-color: #f8f9fa; 
+            display: none; 
+            text-align: left;
+        }
+        .checkin-result h4 { margin-bottom: 0.5rem; }
+        .checkin-result.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .checkin-result.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .checkin-result.pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        
         
         /* --- Página Relatórios --- */
         #reports-page .filters { background-color: #fff; padding: 1.5rem; margin-bottom: 2rem; border-radius: var(--border-radius); display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
@@ -357,7 +363,7 @@
                 <li><a data-page="guests-page"><i class="fa-solid fa-users"></i> Convidados</a></li>
                 <li><a data-page="suppliers-page"><i class="fa-solid fa-truck"></i> Fornecedores</a></li>
                 <li><a data-page="payments-page"><i class="fa-solid fa-money-bill-wave"></i> Pagamentos</a></li>
-                <li><a data-page="qr-page"><i class="fa-solid fa-qrcode"></i> QR Code</a></li>
+                <li><a data-page="checkin-page"><i class="fa-solid fa-id-card"></i> Controle de Entrada</a></li>
                 <li><a data-page="reports-page"><i class="fa-solid fa-chart-line"></i> Relatórios</a></li>
                 <li><a data-page="backup-page"><i class="fa-solid fa-database"></i> Backup</a></li>
             </ul>
@@ -444,28 +450,23 @@
             <div class="card"><h3>Pagamentos Efetuados a Fornecedores</h3><ul id="supplier-payments-list"></ul></div>
         </section>
 
-        <section id="qr-page" class="page-content">
-            <header><h2>Controle de Entrada com QR Code</h2></header>
+        <section id="checkin-page" class="page-content">
+            <header><h2>Controle de Entrada</h2></header>
             <div class="card">
-                <h3>Leitor de QR Code</h3>
-                <p>Use esta ferramenta para escanear os QR Codes dos convidados na entrada do evento.</p>
-                <div class="qr-scanner-container">
-                    <div class="qr-scanner" id="qr-scanner">
-                        <div id="qr-scanner-placeholder"><p>Clique em "Iniciar Câmera" para escanear</p></div>
-                        <video id="qr-video" class="hidden" playsinline></video>
-                        <canvas id="qr-canvas" class="hidden"></canvas>
-                    </div>
-                    <div class="modal-actions" style="justify-content: center;">
-                        <button class="btn success" id="start-camera-btn">Iniciar Câmera</button>
-                        <button class="btn secondary hidden" id="stop-camera-btn">Parar Câmera</button>
-                    </div>
-                    <div id="qr-result" class="qr-result"></div>
+                <h3>Verificação de Acesso</h3>
+                <p>Digite o código de 4 dígitos do convidado para validar a entrada.</p>
+                <div class="checkin-container">
+                    <form id="checkin-form">
+                        <div class="form-control">
+                            <label for="checkin-code">Código de Acesso (4 dígitos)</label>
+                            <input type="tel" id="checkin-code" maxlength="4" pattern="\d{4}" inputmode="numeric" required>
+                        </div>
+                        <div class="modal-actions" style="justify-content: center;">
+                            <button type="submit" class="btn primary">Verificar Entrada</button>
+                        </div>
+                    </form>
+                    <div id="checkin-result" class="checkin-result"></div>
                 </div>
-            </div>
-            <div class="card">
-                <h3>QR Codes dos Convidados</h3>
-                <p>Lista de convidados com seus respectivos QR Codes para entrada no evento.</p>
-                <div id="qr-codes-list" style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 1rem;"></div>
             </div>
         </section>
 
@@ -534,8 +535,6 @@
             activePage: 'dashboard-page',
             currentEditingId: null,
             currentEditingType: null,
-            qrScannerStream: null,
-            qrScannerAnimationId: null
         };
 
         // ===== SELETORES DE ELEMENTOS COMUNS =====
@@ -562,959 +561,1435 @@
             if (savedData) {
                 state.eventData = savedData.eventData || { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
                 state.guests = savedData.guests || [];
-                // Migração de dados para garantir que convidados antigos tenham as novas propriedades
+                
+                // --- Migração de Dados: Adiciona accessCode para convidados antigos ---
+                let needsSave = false;
+                const existingCodes = new Set(state.guests.map(g => g.accessCode).filter(Boolean)); // Pega todos os códigos que já existem
+                
                 state.guests.forEach((guest, index) => {
                     if (!guest.regOrder) {
                         guest.regOrder = index + 1;
+                        needsSave = true;
                     }
-                    if (!guest.qrCode) {
-                        guest.qrCode = ''; 
+                    
+                    // Se o convidado não tem um código, gera um novo e único
+                    if (!guest.accessCode) {
+                        let newCode;
+                        do {
+                            newCode = Math.floor(1000 + Math.random() * 9000); // Gera um número de 1000 a 9999
+                        } while (existingCodes.has(newCode)); // Garante que seja único
+                        
+                        guest.accessCode = newCode;
+                        existingCodes.add(newCode); // Adiciona ao set para a próxima verificação
+                        needsSave = true;
+                    }
+
+                    // Remove dados antigos de QR Code, se existirem
+                    if (guest.qrCode) {
+                        delete guest.qrCode;
+                        needsSave = true;
                     }
                 });
+
+                if (needsSave) {
+                    saveData(); // Salva os novos códigos gerados
+                }
+                // --- Fim da Migração ---
+
                 state.suppliers = savedData.suppliers || [];
             } else {
-                 state.eventData = { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
+                state.eventData = { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
+                state.guests = [];
+                state.suppliers = [];
+                saveData();
             }
-            state.activePage = localStorage.getItem('eventActivePage_v2') || 'dashboard-page';
         };
 
-        const saveState = () => {
-            const dataToSave = { eventData: state.eventData, guests: state.guests, suppliers: state.suppliers };
-            localStorage.setItem('eventManagementData_v2', JSON.stringify(dataToSave));
-            localStorage.setItem('eventActivePage_v2', state.activePage);
+        const saveData = () => {
+            localStorage.setItem('eventManagementData_v2', JSON.stringify({
+                eventData: state.eventData,
+                guests: state.guests,
+                suppliers: state.suppliers
+            }));
         };
 
-        // ===== NAVEGAÇÃO E CONTROLE DA UI =====
-        const navigateTo = (pageId) => {
-            state.activePage = pageId;
-            const activeLink = document.querySelector(`.sidebar nav a[data-page="${pageId}"]`);
-            document.querySelector('.sidebar nav a.active')?.classList.remove('active');
-            activeLink?.classList.add('active');
-            
-            selectors.mobilePageTitle.textContent = activeLink?.textContent.trim() || 'Dashboard';
-            selectors.pages.forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId)?.classList.add('active');
+        // ===== NAVEGAÇÃO E INTERFACE =====
+        const setupNavigation = () => {
+            // Navegação por clique nos links
+            selectors.navLinks.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A' || e.target.parentElement.tagName === 'A') {
+                    e.preventDefault();
+                    const link = e.target.tagName === 'A' ? e.target : e.target.parentElement;
+                    const pageId = link.getAttribute('data-page');
+                    if (pageId) {
+                        navigateToPage(pageId);
+                        // Fechar menu mobile após seleção
+                        if (window.innerWidth <= 768) {
+                            selectors.sidebar.classList.remove('open');
+                            selectors.sidebarOverlay.classList.remove('active');
+                        }
+                    }
+                }
+            });
 
-            selectors.fab.style.display = ['guests-page', 'suppliers-page'].includes(pageId) ? 'flex' : 'none';
-            
-            if (window.innerWidth <= 768) {
+            // Navegação por clique nos cards do dashboard
+            selectors.dashboardCardsContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.card');
+                if (card && card.dataset.page) {
+                    navigateToPage(card.dataset.page);
+                }
+            });
+
+            // Menu mobile toggle
+            selectors.menuToggleBtn.addEventListener('click', () => {
+                selectors.sidebar.classList.toggle('open');
+                selectors.sidebarOverlay.classList.toggle('active');
+            });
+
+            // Fechar menu mobile ao clicar no overlay
+            selectors.sidebarOverlay.addEventListener('click', () => {
                 selectors.sidebar.classList.remove('open');
                 selectors.sidebarOverlay.classList.remove('active');
-            }
-            app.renderActivePage();
+            });
         };
 
-        // ===== MODAIS =====
-        const openModal = (modalId) => document.getElementById(modalId).classList.add('active');
-        const closeModal = (modalId) => document.getElementById(modalId).classList.remove('active');
+        const navigateToPage = (pageId) => {
+            // Atualizar navegação
+            document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+            document.querySelector(`.sidebar nav a[data-page="${pageId}"]`).classList.add('active');
+            
+            // Atualizar páginas
+            document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            
+            // Atualizar título mobile
+            const pageTitle = document.querySelector(`.sidebar nav a[data-page="${pageId}"]`).textContent.trim();
+            selectors.mobilePageTitle.textContent = pageTitle;
+            
+            // Atualizar botão FAB
+            updateFAB(pageId);
+            
+            // Atualizar estado
+            state.activePage = pageId;
+            
+            // Renderizar conteúdo específico da página
+            renderPageContent(pageId);
+        };
 
-        const app = {
-            // ===== LÓGICA DE RENDERIZAÇÃO DAS PÁGINAS =====
-            renderDashboard() {
-                document.getElementById('dashboard-event-name').textContent = state.eventData.name || 'Configurar';
-                document.getElementById('dashboard-guest-count').textContent = state.guests.length;
-                document.getElementById('dashboard-supplier-count').textContent = state.suppliers.length;
-                const totalReceived = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
-                document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalReceived);
+        const updateFAB = (pageId) => {
+            const fab = selectors.fab;
+            const showFab = ['guests-page', 'suppliers-page'].includes(pageId);
+            fab.style.display = showFab ? 'flex' : 'none';
+            
+            if (showFab) {
+                fab.onclick = () => {
+                    if (pageId === 'guests-page') showGuestModal();
+                    if (pageId === 'suppliers-page') showSupplierModal();
+                };
+            }
+        };
 
-                const totalCost = calculateTotalCost();
-                document.getElementById('total-cost').textContent = formatCurrency(totalCost);
-                document.getElementById('cost-per-guest').textContent = formatCurrency(state.guests.length ? totalCost / state.guests.length : 0);
-                document.getElementById('total-received').textContent = formatCurrency(totalReceived);
-                const totalPending = state.guests.reduce((s, g) => s + (g.expectedValue || 0) - (g.paidValue || 0), 0);
-                document.getElementById('total-pending').textContent = formatCurrency(totalPending);
+        const renderPageContent = (pageId) => {
+            switch(pageId) {
+                case 'dashboard-page':
+                    renderDashboard();
+                    break;
+                case 'event-page':
+                    renderEventPage();
+                    break;
+                case 'guests-page':
+                    renderGuestsPage();
+                    break;
+                case 'suppliers-page':
+                    renderSuppliersPage();
+                    break;
+                case 'payments-page':
+                    renderPaymentsPage();
+                    break;
+                case 'checkin-page': // Alterado de qr-page
+                    renderCheckinPage();
+                    break;
+                case 'reports-page':
+                    renderReportsPage();
+                    break;
+                case 'backup-page':
+                    renderBackupPage();
+                    break;
+            }
+        };
 
-                const recentPaymentsList = document.getElementById('recent-payments-list');
-                recentPaymentsList.innerHTML = '';
-                const recentPayments = state.guests.filter(g => g.paidValue > 0).sort((a, b) => new Date(b.paymentDate || 0) - new Date(a.paymentDate || 0)).slice(0, 5);
-                if (recentPayments.length === 0) {
-                    recentPaymentsList.innerHTML = '<li class="list-item"><span>Nenhum pagamento recebido ainda</span></li>';
-                } else {
-                    recentPayments.forEach(guest => {
-                        const li = document.createElement('li');
-                        li.className = 'list-item';
-                        li.innerHTML = `
-                            <div class="transaction-details">
-                                <div class="transaction-status paid"></div>
-                                <div class="transaction-info">
-                                    <span class="description">${guest.name}</span>
-                                    <span class="details">${guest.paymentDate ? new Date(guest.paymentDate).toLocaleDateString('pt-BR') : 'Data não informada'}</span>
-                                </div>
-                            </div>
-                            <div class="transaction-amount income">${formatCurrency(guest.paidValue)}</div>
-                        `;
-                        recentPaymentsList.appendChild(li);
-                    });
-                }
-            },
-
-            renderEventPage() {
-                const eventInfo = document.getElementById('event-info');
-                if (!state.eventData.name) {
-                    eventInfo.innerHTML = '<p>Nenhum evento configurado. Clique em "Editar Evento" para começar.</p>';
-                } else {
-                    eventInfo.innerHTML = `
-                        <div class="form-grid">
-                            <div><strong>Nome do Evento:</strong> ${state.eventData.name}</div>
-                            <div><strong>Data:</strong> ${state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR') : 'Não definida'}</div>
-                            <div><strong>Local:</strong> ${state.eventData.location || 'Não definido'}</div>
-                            <div><strong>Descrição:</strong> ${state.eventData.description || 'Não definida'}</div>
-                        </div>
-                    `;
-                }
-
-                const costsInfo = document.getElementById('costs-info');
-                const totalCost = calculateTotalCost();
-                let costsHtml = `<div class="form-grid"><div><strong>Custo Total:</strong> ${formatCurrency(totalCost)}</div></div><div class="form-grid">`;
-                Object.entries(state.eventData.costs || {}).forEach(([category, value]) => {
-                    if (value > 0) {
-                        costsHtml += `<div><strong>${getCostCategoryName(category)}:</strong> ${formatCurrency(value)}</div>`;
+        // ===== GERENCIAMENTO DE MODAIS =====
+        const setupModals = () => {
+            // Fechar modais ao clicar fora do conteúdo
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeAllModals();
                     }
                 });
-                state.suppliers.forEach(s => {
-                    if (s.cost > 0) {
-                        costsHtml += `<div><strong>${s.name}:</strong> ${formatCurrency(s.cost)}</div>`;
-                    }
-                });
-                costsHtml += '</div>';
-                costsInfo.innerHTML = costsHtml;
-            },
+            });
 
-            renderGuestsPage() {
-                const searchTerm = document.getElementById('guest-search').value.toLowerCase();
-                const filteredGuests = state.guests.filter(g => g.name.toLowerCase().includes(searchTerm));
-                const guestsList = document.getElementById('guests-list');
-                guestsList.innerHTML = '';
-
-                if (filteredGuests.length === 0) {
-                    guestsList.innerHTML = '<li class="list-item"><span>Nenhum convidado encontrado</span></li>';
-                    return;
+            // Botões de cancelar
+            document.querySelectorAll('.modal-actions .btn.secondary').forEach(btn => {
+                if (btn.id !== 'cancel-delete-btn') {
+                    btn.addEventListener('click', closeAllModals);
                 }
+            });
+        };
 
-                filteredGuests.forEach(guest => {
-                    const li = document.createElement('li');
-                    li.className = 'list-item';
-                    li.innerHTML = `
-                        <div class="list-item-main">
-                            <i class="fa-solid fa-user"></i>
-                            <div>
-                                <strong>${guest.name}</strong>
-                                <div style="font-size: 0.9rem; color: var(--text-light-color);">
-                                    ${guest.email || ''} ${guest.phone ? ' | ' + guest.phone : ''}
-                                </div>
-                                <div style="font-size: 0.8rem; margin-top: 0.25rem;">
-                                    <span class="status ${guest.paymentStatus || 'pending'}">${getPaymentStatusText(guest.paymentStatus)}</span>
-                                    <span class="checkin-status ${guest.checkedIn ? 'checked' : 'not-checked'}">${guest.checkedIn ? 'Confirmado' : 'Não confirmado'}</span>
-                                </div>
-                            </div>
+        const closeAllModals = () => {
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.classList.remove('active');
+            });
+            state.currentEditingId = null;
+            state.currentEditingType = null;
+        };
+
+        // ===== DASHBOARD =====
+        const renderDashboard = () => {
+            // Atualizar cards principais
+            document.getElementById('dashboard-event-name').textContent = state.eventData.name || 'Configurar';
+            document.getElementById('dashboard-guest-count').textContent = state.guests.length;
+            document.getElementById('dashboard-supplier-count').textContent = state.suppliers.length;
+            
+            // Calcular totais de pagamentos
+            const totalReceived = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalPending = state.guests.reduce((sum, guest) => {
+                const total = guest.totalAmount || 0;
+                const paid = guest.paidAmount || 0;
+                return sum + (total - paid);
+            }, 0);
+            
+            document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalReceived);
+            
+            // Atualizar resumo financeiro
+            const totalCost = calculateTotalCost();
+            const costPerGuest = state.guests.length > 0 ? totalCost / state.guests.length : 0;
+            
+            document.getElementById('total-cost').textContent = formatCurrency(totalCost);
+            document.getElementById('cost-per-guest').textContent = formatCurrency(costPerGuest);
+            document.getElementById('total-received').textContent = formatCurrency(totalReceived);
+            document.getElementById('total-pending').textContent = formatCurrency(totalPending);
+            
+            // Atualizar lista de pagamentos recentes
+            renderRecentPayments();
+        };
+
+        const renderRecentPayments = () => {
+            const container = document.getElementById('recent-payments-list');
+            container.innerHTML = '';
+            
+            // Obter pagamentos recentes (últimos 5)
+            const recentPayments = state.guests
+                .filter(guest => guest.paidAmount > 0)
+                .sort((a, b) => new Date(b.lastPaymentDate || 0) - new Date(a.lastPaymentDate || 0))
+                .slice(0, 5);
+            
+            if (recentPayments.length === 0) {
+                container.innerHTML = '<li class="list-item">Nenhum pagamento recebido ainda</li>';
+                return;
+            }
+            
+            recentPayments.forEach(guest => {
+                const li = document.createElement('li');
+                li.className = 'list-item';
+                li.innerHTML = `
+                    <div class="transaction-details">
+                        <div class="transaction-status ${guest.paymentStatus === 'paid' ? 'paid' : 'pending'}"></div>
+                        <div class="transaction-info">
+                            <span class="description">${guest.name}</span>
+                            <span class="details">${guest.lastPaymentDate ? new Date(guest.lastPaymentDate).toLocaleDateString('pt-BR') : 'N/A'}</span>
                         </div>
-                        <div class="list-item-actions">
-                            <span>${formatCurrency(guest.paidValue || 0)} / ${formatCurrency(guest.expectedValue || 0)}</span>
-                            <button class="delete-btn" data-id="${guest.id}" data-type="guest"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `;
-                    guestsList.appendChild(li);
-                });
+                    </div>
+                    <div class="transaction-amount income">${formatCurrency(guest.paidAmount || 0)}</div>
+                `;
+                container.appendChild(li);
+            });
+        };
 
-                document.querySelectorAll('#guests-list .delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const id = btn.dataset.id;
-                        const guest = state.guests.find(g => g.id === id);
-                        document.getElementById('delete-modal-title').textContent = 'Excluir Convidado';
-                        document.getElementById('delete-message').textContent = `Tem certeza que deseja excluir o convidado "${guest.name}"?`;
-                        document.getElementById('confirm-delete-btn').onclick = () => app.deleteItem(id, 'guest');
-                        openModal('delete-modal');
-                    });
-                });
+        // ===== PÁGINA DO EVENTO =====
+        const renderEventPage = () => {
+            // Configurar botões de edição
+            document.getElementById('edit-event-btn').onclick = () => showEventModal();
+            document.getElementById('edit-costs-btn').onclick = () => showCostsModal();
+            
+            // Renderizar informações do evento
+            renderEventInfo();
+            renderCostsInfo();
+        };
 
-                document.querySelectorAll('#guests-list .list-item').forEach((item, index) => {
-                    item.addEventListener('click', () => {
-                        const guestId = item.querySelector('.delete-btn').dataset.id;
-                        app.openGuestModal(guestId);
-                    });
-                });
-            },
+        const renderEventInfo = () => {
+            const container = document.getElementById('event-info');
+            const event = state.eventData;
+            
+            container.innerHTML = `
+                <div class="form-grid">
+                    <div><strong>Nome do Evento:</strong> ${event.name || 'Não definido'}</div>
+                    <div><strong>Data:</strong> ${event.date ? new Date(event.date).toLocaleDateString('pt-BR') : 'Não definida'}</div>
+                    <div><strong>Local:</strong> ${event.location || 'Não definido'}</div>
+                    <div><strong>Descrição:</strong> ${event.description || 'Não definida'}</div>
+                </div>
+            `;
+        };
 
-            renderSuppliersPage() {
-                const suppliersList = document.getElementById('suppliers-list');
-                suppliersList.innerHTML = '';
+        const renderCostsInfo = () => {
+            const container = document.getElementById('costs-info');
+            const costs = state.eventData.costs || {};
+            const suppliersTotal = state.suppliers.reduce((sum, supplier) => sum + (supplier.cost || 0), 0);
+            const totalCost = calculateTotalCost();
+            
+            let html = `
+                <div class="form-grid">
+                    <div><strong>Alimentação:</strong> ${formatCurrency(costs.food || 0)}</div>
+                    <div><strong>Música:</strong> ${formatCurrency(costs.music || 0)}</div>
+                    <div><strong>Aluguel do Espaço:</strong> ${formatCurrency(costs.venue || 0)}</div>
+                    <div><strong>Bebidas:</strong> ${formatCurrency(costs.drinks || 0)}</div>
+                    <div><strong>Outros Custos:</strong> ${formatCurrency(costs.other || 0)}</div>
+                    <div><strong>Custos com Fornecedores:</strong> ${formatCurrency(suppliersTotal)}</div>
+                    <div style="grid-column: span 2; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 10px;">
+                        <strong>Custo Total do Evento:</strong> ${formatCurrency(totalCost)}
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        };
 
-                if (state.suppliers.length === 0) {
-                    suppliersList.innerHTML = '<li class="list-item"><span>Nenhum fornecedor cadastrado</span></li>';
-                    return;
-                }
+        const showEventModal = () => {
+            const modal = document.getElementById('event-modal');
+            const title = document.getElementById('event-modal-title');
+            const form = document.getElementById('event-form');
+            
+            title.textContent = state.eventData.name ? 'Editar Evento' : 'Criar Evento';
+            
+            form.innerHTML = `
+                <div class="form-control">
+                    <label for="event-name">Nome do Evento</label>
+                    <input type="text" id="event-name" value="${state.eventData.name || ''}" required>
+                </div>
+                <div class="form-control">
+                    <label for="event-date">Data do Evento</label>
+                    <input type="date" id="event-date" value="${state.eventData.date || ''}" required>
+                </div>
+                <div class="form-control">
+                    <label for="event-location">Local</label>
+                    <input type="text" id="event-location" value="${state.eventData.location || ''}" required>
+                </div>
+                <div class="form-control">
+                    <label for="event-description">Descrição</label>
+                    <textarea id="event-description" rows="3">${state.eventData.description || ''}</textarea>
+                </div>
+                <div class="modal-actions">
+                    <div class="spacer"></div>
+                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="submit" class="btn primary">Salvar</button>
+                </div>
+            `;
+            
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                saveEventData();
+            };
+            
+            modal.classList.add('active');
+        };
 
-                state.suppliers.forEach(supplier => {
-                    const li = document.createElement('li');
-                    li.className = 'list-item';
-                    li.innerHTML = `
-                        <div class="list-item-main">
-                            <i class="fa-solid fa-truck"></i>
-                            <div>
-                                <strong>${supplier.name}</strong>
-                                <div style="font-size: 0.9rem; color: var(--text-light-color);">
-                                    ${supplier.service || ''} ${supplier.contact ? ' | ' + supplier.contact : ''}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="list-item-actions">
-                            <span>${formatCurrency(supplier.cost || 0)}</span>
-                            <button class="delete-btn" data-id="${supplier.id}" data-type="supplier"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    `;
-                    suppliersList.appendChild(li);
-                });
+        const showCostsModal = () => {
+            const modal = document.getElementById('costs-modal');
+            const title = document.getElementById('costs-modal-title');
+            const form = document.getElementById('costs-form');
+            
+            title.textContent = 'Editar Custos do Evento';
+            const costs = state.eventData.costs || { food: 0, music: 0, venue: 0, drinks: 0, other: 0 };
+            
+            form.innerHTML = `
+                <div class="form-control">
+                    <label for="cost-food">Alimentação</label>
+                    <input type="number" id="cost-food" step="0.01" value="${costs.food || 0}" required>
+                </div>
+                <div class="form-control">
+                    <label for="cost-music">Música</label>
+                    <input type="number" id="cost-music" step="0.01" value="${costs.music || 0}" required>
+                </div>
+                <div class="form-control">
+                    <label for="cost-venue">Aluguel do Espaço</label>
+                    <input type="number" id="cost-venue" step="0.01" value="${costs.venue || 0}" required>
+                </div>
+                <div class="form-control">
+                    <label for="cost-drinks">Bebidas</label>
+                    <input type="number" id="cost-drinks" step="0.01" value="${costs.drinks || 0}" required>
+                </div>
+                <div class="form-control">
+                    <label for="cost-other">Outros Custos</label>
+                    <input type="number" id="cost-other" step="0.01" value="${costs.other || 0}" required>
+                </div>
+                <div class="modal-actions">
+                    <div class="spacer"></div>
+                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="submit" class="btn primary">Salvar</button>
+                </div>
+            `;
+            
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                saveCostsData();
+            };
+            
+            modal.classList.add('active');
+        };
 
-                document.querySelectorAll('#suppliers-list .delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const id = btn.dataset.id;
-                        const supplier = state.suppliers.find(s => s.id === id);
-                        document.getElementById('delete-modal-title').textContent = 'Excluir Fornecedor';
-                        document.getElementById('delete-message').textContent = `Tem certeza que deseja excluir o fornecedor "${supplier.name}"?`;
-                        document.getElementById('confirm-delete-btn').onclick = () => app.deleteItem(id, 'supplier');
-                        openModal('delete-modal');
-                    });
-                });
+        const saveEventData = () => {
+            state.eventData = {
+                ...state.eventData,
+                name: document.getElementById('event-name').value,
+                date: document.getElementById('event-date').value,
+                location: document.getElementById('event-location').value,
+                description: document.getElementById('event-description').value
+            };
+            
+            saveData();
+            renderEventInfo();
+            renderDashboard();
+            closeAllModals();
+        };
 
-                document.querySelectorAll('#suppliers-list .list-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const supplierId = item.querySelector('.delete-btn').dataset.id;
-                        app.openSupplierModal(supplierId);
-                    });
-                });
-            },
+        const saveCostsData = () => {
+            state.eventData.costs = {
+                food: parseFloat(document.getElementById('cost-food').value) || 0,
+                music: parseFloat(document.getElementById('cost-music').value) || 0,
+                venue: parseFloat(document.getElementById('cost-venue').value) || 0,
+                drinks: parseFloat(document.getElementById('cost-drinks').value) || 0,
+                other: parseFloat(document.getElementById('cost-other').value) || 0
+            };
+            
+            saveData();
+            renderCostsInfo();
+            renderDashboard();
+            closeAllModals();
+        };
 
-            renderPaymentsPage() {
-                const guestPaymentsTotal = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
-                const guestPaymentsPending = state.guests.reduce((s, g) => s + (g.expectedValue || 0) - (g.paidValue || 0), 0);
-                document.getElementById('payments-total-received').textContent = formatCurrency(guestPaymentsTotal);
-                document.getElementById('payments-total-pending').textContent = formatCurrency(guestPaymentsPending);
+        // ===== PÁGINA DE CONVIDADOS =====
+        const renderGuestsPage = () => {
+            const container = document.getElementById('guests-list');
+            const searchInput = document.getElementById('guest-search');
+            
+            // Configurar busca
+            searchInput.oninput = () => renderGuestsList();
+            
+            // Renderizar lista
+            renderGuestsList();
+        };
 
-                const guestPaymentsList = document.getElementById('guest-payments-list');
-                guestPaymentsList.innerHTML = '';
-                if (state.guests.length === 0) {
-                    guestPaymentsList.innerHTML = '<li class="list-item"><span>Nenhum convidado cadastrado</span></li>';
-                } else {
-                    state.guests.forEach(guest => {
-                        const li = document.createElement('li');
-                        li.className = 'list-item';
-                        li.innerHTML = `
-                            <div class="list-item-main">
-                                <i class="fa-solid fa-user"></i>
-                                <div>
-                                    <strong>${guest.name}</strong>
-                                    <div style="font-size: 0.9rem; color: var(--text-light-color);">
-                                        ${guest.email || ''}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="list-item-actions">
-                                <span class="status ${guest.paymentStatus || 'pending'}">${getPaymentStatusText(guest.paymentStatus)}</span>
-                                <span>${formatCurrency(guest.paidValue || 0)} / ${formatCurrency(guest.expectedValue || 0)}</span>
-                            </div>
-                        `;
-                        guestPaymentsList.appendChild(li);
-                    });
-                }
-
-                const supplierPaymentsList = document.getElementById('supplier-payments-list');
-                supplierPaymentsList.innerHTML = '';
-                if (state.suppliers.length === 0) {
-                    supplierPaymentsList.innerHTML = '<li class="list-item"><span>Nenhum fornecedor cadastrado</span></li>';
-                } else {
-                    state.suppliers.forEach(supplier => {
-                        const li = document.createElement('li');
-                        li.className = 'list-item';
-                        li.innerHTML = `
-                            <div class="list-item-main">
-                                <i class="fa-solid fa-truck"></i>
-                                <div>
-                                    <strong>${supplier.name}</strong>
-                                    <div style="font-size: 0.9rem; color: var(--text-light-color);">
-                                        ${supplier.service || ''}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="list-item-actions">
-                                <span>${formatCurrency(supplier.cost || 0)}</span>
-                            </div>
-                        `;
-                        supplierPaymentsList.appendChild(li);
-                    });
-                }
-            },
-
-            renderQRPage() {
-                const qrCodesList = document.getElementById('qr-codes-list');
-                qrCodesList.innerHTML = '';
+        const renderGuestsList = () => {
+            const container = document.getElementById('guests-list');
+            const searchTerm = document.getElementById('guest-search').value.toLowerCase();
+            
+            // Filtrar convidados
+            const filteredGuests = state.guests.filter(guest => 
+                guest.name.toLowerCase().includes(searchTerm) || 
+                (guest.phone && guest.phone.includes(searchTerm)) || // Busca por telefone
+                (guest.email && guest.email.toLowerCase().includes(searchTerm))
+            );
+            
+            if (filteredGuests.length === 0) {
+                container.innerHTML = '<li class="list-item">Nenhum convidado encontrado</li>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            filteredGuests.forEach(guest => {
+                const li = document.createElement('li');
+                li.className = 'list-item';
                 
-                if (state.guests.length === 0) {
-                    qrCodesList.innerHTML = '<p>Nenhum convidado cadastrado para gerar QR Codes.</p>';
-                    return;
-                }
-
-                state.guests.forEach(guest => {
-                    const guestCard = document.createElement('div');
-                    guestCard.className = 'qr-code-container';
-                    guestCard.style.width = '180px';
-                    
-                    const qrContainer = document.createElement('div');
-                    qrContainer.className = 'qr-code';
-                    qrContainer.id = `qr-${guest.id}`;
-                    
-                    const guestInfo = document.createElement('div');
-                    guestInfo.className = 'qr-info';
-                    guestInfo.innerHTML = `
-                        <strong>${guest.name}</strong><br>
-                        <span class="checkin-status ${guest.checkedIn ? 'checked' : 'not-checked'}">${guest.checkedIn ? 'Confirmado' : 'Pendente'}</span>
-                    `;
-                    
-                    guestCard.appendChild(qrContainer);
-                    guestCard.appendChild(guestInfo);
-                    qrCodesList.appendChild(guestCard);
-                    
-                    // Gerar QR Code para o convidado
-                    this.generateQRCodeForGuest(guest);
-                });
-            },
-
-            renderReportsPage() {
-                const totalIncome = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
-                const totalExpenses = calculateTotalCost();
-                const finalBalance = totalIncome - totalExpenses;
-
-                document.getElementById('total-income').textContent = formatCurrency(totalIncome);
-                document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
-                document.getElementById('final-balance').textContent = formatCurrency(finalBalance);
-
-                // Balanço Geral
-                const balanceDetails = document.getElementById('balance-details');
-                balanceDetails.innerHTML = `
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Total de Receitas</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; color: var(--success-color);">${formatCurrency(totalIncome)}</td></tr>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">Total de Despesas</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; color: var(--danger-color);">${formatCurrency(totalExpenses)}</td></tr>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Saldo Final</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: ${finalBalance >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">${formatCurrency(finalBalance)}</td></tr>
-                `;
-
-                // Pagamentos de Convidados
-                const guestPaymentsDetails = document.getElementById('guest-payments-details');
-                guestPaymentsDetails.innerHTML = '';
-                state.guests.forEach(guest => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td style="padding: 8px; border-bottom: 1px solid #eee;">${guest.name}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(guest.paidValue || 0)}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency((guest.expectedValue || 0) - (guest.paidValue || 0))}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #eee;"><span class="status ${guest.paymentStatus || 'pending'}">${getPaymentStatusText(guest.paymentStatus)}</span></td>
-                    `;
-                    guestPaymentsDetails.appendChild(row);
-                });
-
-                // Despesas do Evento
-                const expensesDetails = document.getElementById('expenses-details');
-                expensesDetails.innerHTML = '';
-                Object.entries(state.eventData.costs || {}).forEach(([category, value]) => {
-                    if (value > 0) {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${getCostCategoryName(category)}</td>
-                            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(value)}</td>
-                        `;
-                        expensesDetails.appendChild(row);
-                    }
-                });
-                state.suppliers.forEach(supplier => {
-                    if (supplier.cost > 0) {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${supplier.name} (${supplier.service})</td>
-                            <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(supplier.cost)}</td>
-                        `;
-                        expensesDetails.appendChild(row);
-                    }
-                });
-            },
-
-            renderActivePage() {
-                switch (state.activePage) {
-                    case 'dashboard-page': this.renderDashboard(); break;
-                    case 'event-page': this.renderEventPage(); break;
-                    case 'guests-page': this.renderGuestsPage(); break;
-                    case 'suppliers-page': this.renderSuppliersPage(); break;
-                    case 'payments-page': this.renderPaymentsPage(); break;
-                    case 'qr-page': this.renderQRPage(); break;
-                    case 'reports-page': this.renderReportsPage(); break;
-                }
-            },
-
-            // ===== GERENCIAMENTO DE FORMULÁRIOS =====
-            openEventModal() {
-                document.getElementById('event-modal-title').textContent = state.eventData.name ? 'Editar Evento' : 'Criar Evento';
-                const form = document.getElementById('event-form');
-                form.innerHTML = `
-                    <div class="form-control">
-                        <label for="event-name">Nome do Evento</label>
-                        <input type="text" id="event-name" value="${state.eventData.name || ''}" required>
-                    </div>
-                    <div class="form-control">
-                        <label for="event-date">Data do Evento</label>
-                        <input type="date" id="event-date" value="${state.eventData.date || ''}">
-                    </div>
-                    <div class="form-control">
-                        <label for="event-location">Local</label>
-                        <input type="text" id="event-location" value="${state.eventData.location || ''}">
-                    </div>
-                    <div class="form-control">
-                        <label for="event-description">Descrição</label>
-                        <textarea id="event-description" rows="3">${state.eventData.description || ''}</textarea>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn secondary" onclick="closeModal('event-modal')">Cancelar</button>
-                        <button type="submit" class="btn primary">Salvar</button>
-                    </div>
-                `;
-                form.onsubmit = (e) => {
-                    e.preventDefault();
-                    state.eventData = {
-                        ...state.eventData,
-                        name: document.getElementById('event-name').value,
-                        date: document.getElementById('event-date').value,
-                        location: document.getElementById('event-location').value,
-                        description: document.getElementById('event-description').value
-                    };
-                    saveState();
-                    closeModal('event-modal');
-                    this.renderActivePage();
-                };
-                openModal('event-modal');
-            },
-
-            openCostsModal() {
-                document.getElementById('costs-modal-title').textContent = 'Editar Custos do Evento';
-                const form = document.getElementById('costs-form');
-                form.innerHTML = `
-                    <div class="form-control">
-                        <label for="cost-food">Alimentação</label>
-                        <input type="number" id="cost-food" step="0.01" value="${state.eventData.costs?.food || 0}">
-                    </div>
-                    <div class="form-control">
-                        <label for="cost-music">Música</label>
-                        <input type="number" id="cost-music" step="0.01" value="${state.eventData.costs?.music || 0}">
-                    </div>
-                    <div class="form-control">
-                        <label for="cost-venue">Aluguel do Espaço</label>
-                        <input type="number" id="cost-venue" step="0.01" value="${state.eventData.costs?.venue || 0}">
-                    </div>
-                    <div class="form-control">
-                        <label for="cost-drinks">Bebidas</label>
-                        <input type="number" id="cost-drinks" step="0.01" value="${state.eventData.costs?.drinks || 0}">
-                    </div>
-                    <div class="form-control">
-                        <label for="cost-other">Outros Custos</label>
-                        <input type="number" id="cost-other" step="0.01" value="${state.eventData.costs?.other || 0}">
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn secondary" onclick="closeModal('costs-modal')">Cancelar</button>
-                        <button type="submit" class="btn primary">Salvar</button>
-                    </div>
-                `;
-                form.onsubmit = (e) => {
-                    e.preventDefault();
-                    state.eventData.costs = {
-                        food: parseFloat(document.getElementById('cost-food').value) || 0,
-                        music: parseFloat(document.getElementById('cost-music').value) || 0,
-                        venue: parseFloat(document.getElementById('cost-venue').value) || 0,
-                        drinks: parseFloat(document.getElementById('cost-drinks').value) || 0,
-                        other: parseFloat(document.getElementById('cost-other').value) || 0
-                    };
-                    saveState();
-                    closeModal('costs-modal');
-                    this.renderActivePage();
-                };
-                openModal('costs-modal');
-            },
-
-            openGuestModal(guestId = null) {
-                const isEditing = guestId !== null;
-                const guest = isEditing ? state.guests.find(g => g.id === guestId) : null;
-                document.getElementById('guest-modal-title').textContent = isEditing ? 'Editar Convidado' : 'Adicionar Convidado';
-                const form = document.getElementById('guest-form');
-                form.innerHTML = `
-                    <div class="form-control">
-                        <label for="guest-name">Nome</label>
-                        <input type="text" id="guest-name" value="${guest?.name || ''}" required>
-                    </div>
-                    <div class="form-control">
-                        <label for="guest-email">E-mail</label>
-                        <input type="email" id="guest-email" value="${guest?.email || ''}">
-                    </div>
-                    <div class="form-control">
-                        <label for="guest-phone">Telefone</label>
-                        <input type="tel" id="guest-phone" value="${guest?.phone || ''}">
-                    </div>
-                    <div class="form-control">
-                        <label for="guest-expected-value">Valor Esperado (R$)</label>
-                        <input type="number" id="guest-expected-value" step="0.01" value="${guest?.expectedValue || 0}">
-                    </div>
-                    <div class="form-control">
-                        <label for="guest-paid-value">Valor Pago (R$)</label>
-                        <input type="number" id="guest-paid-value" step="0.01" value="${guest?.paidValue || 0}">
-                    </div>
-                    <div class="form-control">
-                        <label for="guest-payment-date">Data do Pagamento</label>
-                        <input type="date" id="guest-payment-date" value="${guest?.paymentDate || ''}">
-                    </div>
-                    <div class="form-control">
-                        <label for="guest-payment-status">Status do Pagamento</label>
-                        <select id="guest-payment-status">
-                            <option value="pending" ${guest?.paymentStatus === 'pending' ? 'selected' : ''}>Pendente</option>
-                            <option value="partial" ${guest?.paymentStatus === 'partial' ? 'selected' : ''}>Parcial</option>
-                            <option value="paid" ${guest?.paymentStatus === 'paid' ? 'selected' : ''}>Pago</option>
-                        </select>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn secondary" onclick="closeModal('guest-modal')">Cancelar</button>
-                        <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
-                    </div>
-                `;
-                form.onsubmit = (e) => {
-                    e.preventDefault();
-                    const guestData = {
-                        id: guestId || Date.now().toString(),
-                        name: document.getElementById('guest-name').value,
-                        email: document.getElementById('guest-email').value,
-                        phone: document.getElementById('guest-phone').value,
-                        expectedValue: parseFloat(document.getElementById('guest-expected-value').value) || 0,
-                        paidValue: parseFloat(document.getElementById('guest-paid-value').value) || 0,
-                        paymentDate: document.getElementById('guest-payment-date').value,
-                        paymentStatus: document.getElementById('guest-payment-status').value,
-                        checkedIn: guest?.checkedIn || false,
-                        regOrder: guest?.regOrder || state.guests.length + 1
-                    };
-                    if (isEditing) {
-                        const index = state.guests.findIndex(g => g.id === guestId);
-                        if (index !== -1) state.guests[index] = guestData;
-                    } else {
-                        state.guests.push(guestData);
-                    }
-                    saveState();
-                    closeModal('guest-modal');
-                    this.renderActivePage();
-                };
-                openModal('guest-modal');
-            },
-
-            openSupplierModal(supplierId = null) {
-                const isEditing = supplierId !== null;
-                const supplier = isEditing ? state.suppliers.find(s => s.id === supplierId) : null;
-                document.getElementById('supplier-modal-title').textContent = isEditing ? 'Editar Fornecedor' : 'Adicionar Fornecedor';
-                const form = document.getElementById('supplier-form');
-                form.innerHTML = `
-                    <div class="form-control">
-                        <label for="supplier-name">Nome</label>
-                        <input type="text" id="supplier-name" value="${supplier?.name || ''}" required>
-                    </div>
-                    <div class="form-control">
-                        <label for="supplier-service">Serviço</label>
-                        <input type="text" id="supplier-service" value="${supplier?.service || ''}">
-                    </div>
-                    <div class="form-control">
-                        <label for="supplier-contact">Contato</label>
-                        <input type="text" id="supplier-contact" value="${supplier?.contact || ''}">
-                    </div>
-                    <div class="form-control">
-                        <label for="supplier-cost">Custo (R$)</label>
-                        <input type="number" id="supplier-cost" step="0.01" value="${supplier?.cost || 0}">
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn secondary" onclick="closeModal('supplier-modal')">Cancelar</button>
-                        <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
-                    </div>
-                `;
-                form.onsubmit = (e) => {
-                    e.preventDefault();
-                    const supplierData = {
-                        id: supplierId || Date.now().toString(),
-                        name: document.getElementById('supplier-name').value,
-                        service: document.getElementById('supplier-service').value,
-                        contact: document.getElementById('supplier-contact').value,
-                        cost: parseFloat(document.getElementById('supplier-cost').value) || 0
-                    };
-                    if (isEditing) {
-                        const index = state.suppliers.findIndex(s => s.id === supplierId);
-                        if (index !== -1) state.suppliers[index] = supplierData;
-                    } else {
-                        state.suppliers.push(supplierData);
-                    }
-                    saveState();
-                    closeModal('supplier-modal');
-                    this.renderActivePage();
-                };
-                openModal('supplier-modal');
-            },
-
-            deleteItem(id, type) {
-                if (type === 'guest') {
-                    state.guests = state.guests.filter(g => g.id !== id);
-                } else if (type === 'supplier') {
-                    state.suppliers = state.suppliers.filter(s => s.id !== id);
-                }
-                saveState();
-                closeModal('delete-modal');
-                this.renderActivePage();
-            },
-
-            // ===== FUNCIONALIDADES DE QR CODE =====
-            generateQRCodeForGuest(guest) {
-                const qrContainer = document.getElementById(`qr-${guest.id}`);
-                if (!qrContainer) return;
+                const totalAmount = guest.totalAmount || 0;
+                const paidAmount = guest.paidAmount || 0;
+                const paymentStatus = guest.paymentStatus || 'pending';
+                const checkinStatus = guest.checkedIn ? 'checked' : 'not-checked';
                 
-                // Limpar container antes de gerar novo QR Code
-                qrContainer.innerHTML = '';
+                li.innerHTML = `
+                    <div class="list-item-main">
+                        <i class="fa-solid fa-user"></i>
+                        <div>
+                            <div><strong>${guest.name}</strong></div>
+                            <div style="font-size: 0.8rem; color: var(--text-light-color);">${guest.phone || 'Sem telefone'}</div>
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        <span class="status ${paymentStatus}">${getPaymentStatusText(paymentStatus)}</span>
+                        <span class="checkin-status ${checkinStatus}">${guest.checkedIn ? 'Entrada Confirmada' : 'Não Entrou'}</span>
+                        <span>${formatCurrency(paidAmount)} / ${formatCurrency(totalAmount)}</span>
+                        <button class="btn secondary" onclick="editGuest(${guest.id})"><i class="fa-solid fa-edit"></i></button>
+                        <button class="btn secondary" onclick="showReceipt(${guest.id})"><i class="fa-solid fa-receipt"></i></button>
+                        <button class="delete-btn" onclick="confirmDelete(${guest.id}, 'guest')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
                 
-                // Verificar se a biblioteca QRCode está disponível
-                if (typeof QRCode !== 'undefined') {
-                    try {
-                        // Gerar QR Code com dados do convidado
-                        QRCode.toCanvas(qrContainer, JSON.stringify({
-                            id: guest.id,
-                            name: guest.name,
-                            event: state.eventData.name
-                        }), {
-                            width: 150,
-                            height: 150,
-                            margin: 1,
-                            color: {
-                                dark: '#000000',
-                                light: '#FFFFFF'
-                            }
-                        }, function(error) {
-                            if (error) {
-                                console.error('Erro ao gerar QR Code:', error);
-                                qrContainer.innerHTML = '<p style="color: red; font-size: 12px;">Erro no QR Code</p>';
+                container.appendChild(li);
+            });
+        };
+
+        const showGuestModal = (guestId = null) => {
+            const modal = document.getElementById('guest-modal');
+            const title = document.getElementById('guest-modal-title');
+            const form = document.getElementById('guest-form');
+            
+            const isEditing = guestId !== null;
+            const guest = isEditing ? state.guests.find(g => g.id === guestId) : null;
+            
+            title.textContent = isEditing ? 'Editar Convidado' : 'Adicionar Convidado';
+
+            // Adiciona o campo de código de acesso (somente leitura) se estiver editando
+            let accessCodeHtml = '';
+            if (isEditing) {
+                accessCodeHtml = `
+                <div class="form-control">
+                    <label>Código de Acesso</label>
+                    <input type="text" value="${guest.accessCode}" readonly style="background-color: #eee; text-align: center; font-size: 1.2rem; letter-spacing: 0.2em;">
+                </div>`;
+            }
+            
+            form.innerHTML = `
+                <div class="form-control">
+                    <label for="guest-name">Nome</label>
+                    <input type="text" id="guest-name" value="${guest ? guest.name : ''}" required>
+                </div>
+                <div class="form-control">
+                    <label for="guest-phone">Telefone</label>
+                    <input type="tel" id="guest-phone" value="${guest ? guest.phone : ''}" required>
+                </div>
+                ${accessCodeHtml} 
+                <div class="form-control">
+                    <label for="guest-email">E-mail (Opcional)</label>
+                    <input type="email" id="guest-email" value="${guest ? guest.email : ''}">
+                </div>
+                <div class="form-control">
+                    <label for="guest-total-amount">Valor Total</label>
+                    <input type="number" id="guest-total-amount" step="0.01" value="${guest ? guest.totalAmount : '0'}" required>
+                </div>
+                <div class="form-control">
+                    <label for="guest-paid-amount">Valor Pago</label>
+                    <input type="number" id="guest-paid-amount" step="0.01" value="${guest ? guest.paidAmount : '0'}" required>
+                </div>
+                <div class="form-control">
+                    <label for="guest-payment-status">Status do Pagamento</label>
+                    <select id="guest-payment-status">
+                        <option value="pending" ${guest && guest.paymentStatus === 'pending' ? 'selected' : ''}>Pendente</option>
+                        <option value="partial" ${guest && guest.paymentStatus === 'partial' ? 'selected' : ''}>Parcial</option>
+                        <option value="paid" ${guest && guest.paymentStatus === 'paid' ? 'selected' : ''}>Pago</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <div class="spacer"></div>
+                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
+                </div>
+            `;
+            
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                saveGuestData(guestId);
+            };
+            
+            modal.classList.add('active');
+        };
+
+        const saveGuestData = (guestId = null) => {
+            const name = document.getElementById('guest-name').value;
+            const email = document.getElementById('guest-email').value;
+            const phone = document.getElementById('guest-phone').value;
+            const totalAmount = parseFloat(document.getElementById('guest-total-amount').value) || 0;
+            const paidAmount = parseFloat(document.getElementById('guest-paid-amount').value) || 0;
+            const paymentStatus = document.getElementById('guest-payment-status').value;
+
+            const autoPaymentStatus = paidAmount === 0 ? 'pending' : (paidAmount >= totalAmount ? 'paid' : 'partial');
+            const finalPaymentStatus = paymentStatus || autoPaymentStatus;
+
+            if (guestId !== null) {
+                // Editar convidado existente
+                const index = state.guests.findIndex(g => g.id === guestId);
+                if (index !== -1) {
+                    state.guests[index] = {
+                        ...state.guests[index], // Mantém o accessCode e outros dados
+                        name, email, phone, totalAmount, paidAmount,
+                        paymentStatus: finalPaymentStatus,
+                        lastPaymentDate: paidAmount > state.guests[index].paidAmount ? new Date().toISOString() : state.guests[index].lastPaymentDate
+                    };
+                }
+            } else {
+                // Adicionar novo convidado
+                
+                // Gerar código de acesso único
+                const existingCodes = new Set(state.guests.map(g => g.accessCode));
+                let newCode;
+                do {
+                    newCode = Math.floor(1000 + Math.random() * 9000);
+                } while (existingCodes.has(newCode));
+
+                const newGuest = {
+                    id: Date.now(),
+                    name, email, phone, totalAmount, paidAmount,
+                    paymentStatus: finalPaymentStatus,
+                    checkedIn: false,
+                    regOrder: state.guests.length + 1,
+                    lastPaymentDate: paidAmount > 0 ? new Date().toISOString() : null,
+                    accessCode: newCode // Adiciona o novo código
+                };
+                
+                state.guests.push(newGuest);
+            }
+
+            saveData();
+            renderGuestsList();
+            renderDashboard();
+            renderPaymentsPage();
+            closeAllModals();
+        };
+
+        const editGuest = (guestId) => {
+            showGuestModal(guestId);
+        };
+
+        // ===== PÁGINA DE FORNECEDORES =====
+        const renderSuppliersPage = () => {
+            renderSuppliersList();
+        };
+
+        const renderSuppliersList = () => {
+            const container = document.getElementById('suppliers-list');
+            
+            if (state.suppliers.length === 0) {
+                container.innerHTML = '<li class="list-item">Nenhum fornecedor cadastrado</li>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            state.suppliers.forEach(supplier => {
+                const li = document.createElement('li');
+                li.className = 'list-item';
+                
+                li.innerHTML = `
+                    <div class="list-item-main">
+                        <i class="fa-solid fa-truck"></i>
+                        <div>
+                            <div><strong>${supplier.name}</strong></div>
+                            <div style="font-size: 0.8rem; color: var(--text-light-color);">${supplier.service}</div>
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        <span>${formatCurrency(supplier.cost || 0)}</span>
+                        <button class="btn secondary" onclick="editSupplier(${supplier.id})"><i class="fa-solid fa-edit"></i></button>
+                        <button class="delete-btn" onclick="confirmDelete(${supplier.id}, 'supplier')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                
+                container.appendChild(li);
+            });
+        };
+
+        const showSupplierModal = (supplierId = null) => {
+            const modal = document.getElementById('supplier-modal');
+            const title = document.getElementById('supplier-modal-title');
+            const form = document.getElementById('supplier-form');
+            
+            const isEditing = supplierId !== null;
+            const supplier = isEditing ? state.suppliers.find(s => s.id === supplierId) : null;
+            
+            title.textContent = isEditing ? 'Editar Fornecedor' : 'Adicionar Fornecedor';
+            
+            form.innerHTML = `
+                <div class="form-control">
+                    <label for="supplier-name">Nome</label>
+                    <input type="text" id="supplier-name" value="${supplier ? supplier.name : ''}" required>
+                </div>
+                <div class="form-control">
+                    <label for="supplier-service">Serviço</label>
+                    <input type="text" id="supplier-service" value="${supplier ? supplier.service : ''}" required>
+                </div>
+                <div class="form-control">
+                    <label for="supplier-phone">Telefone</label>
+                    <input type="tel" id="supplier-phone" value="${supplier ? supplier.phone : ''}">
+                </div>
+                <div class="form-control">
+                    <label for="supplier-cost">Custo</label>
+                    <input type="number" id="supplier-cost" step="0.01" value="${supplier ? supplier.cost : '0'}" required>
+                </div>
+                <div class="form-control">
+                    <label for="supplier-paid">Valor Pago</label>
+                    <input type="number" id="supplier-paid" step="0.01" value="${supplier ? supplier.paid : '0'}" required>
+                </div>
+                <div class="modal-actions">
+                    <div class="spacer"></div>
+                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
+                </div>
+            `;
+            
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                saveSupplierData(supplierId);
+            };
+            
+            modal.classList.add('active');
+        };
+
+        const saveSupplierData = (supplierId = null) => {
+            const name = document.getElementById('supplier-name').value;
+            const service = document.getElementById('supplier-service').value;
+            const phone = document.getElementById('supplier-phone').value;
+            const cost = parseFloat(document.getElementById('supplier-cost').value) || 0;
+            const paid = parseFloat(document.getElementById('supplier-paid').value) || 0;
+            
+            if (supplierId !== null) {
+                // Editar fornecedor existente
+                const index = state.suppliers.findIndex(s => s.id === supplierId);
+                if (index !== -1) {
+                    state.suppliers[index] = {
+                        ...state.suppliers[index],
+                        name,
+                        service,
+                        phone,
+                        cost,
+                        paid
+                    };
+                }
+            } else {
+                // Adicionar novo fornecedor
+                state.suppliers.push({
+                    id: Date.now(),
+                    name,
+                    service,
+                    phone,
+                    cost,
+                    paid
+                });
+            }
+            
+            saveData();
+            renderSuppliersList();
+            renderDashboard();
+            renderPaymentsPage();
+            closeAllModals();
+        };
+
+        const editSupplier = (supplierId) => {
+            showSupplierModal(supplierId);
+        };
+
+        // ===== PÁGINA DE PAGAMENTOS =====
+        const renderPaymentsPage = () => {
+            // Calcular totais
+            const totalReceived = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalPending = state.guests.reduce((sum, guest) => {
+                const total = guest.totalAmount || 0;
+                const paid = guest.paidAmount || 0;
+                return sum + (total - paid);
+            }, 0);
+            
+            document.getElementById('payments-total-received').textContent = formatCurrency(totalReceived);
+            document.getElementById('payments-total-pending').textContent = formatCurrency(totalPending);
+            
+            // Renderizar listas
+            renderGuestPaymentsList();
+            renderSupplierPaymentsList();
+        };
+
+        const renderGuestPaymentsList = () => {
+            const container = document.getElementById('guest-payments-list');
+            
+            if (state.guests.length === 0) {
+                container.innerHTML = '<li class="list-item">Nenhum convidado cadastrado</li>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            state.guests.forEach(guest => {
+                const li = document.createElement('li');
+                li.className = 'list-item';
+                
+                const totalAmount = guest.totalAmount || 0;
+                const paidAmount = guest.paidAmount || 0;
+                const paymentStatus = guest.paymentStatus || 'pending';
+                
+                li.innerHTML = `
+                    <div class="list-item-main">
+                        <i class="fa-solid fa-user"></i>
+                        <div>
+                            <div><strong>${guest.name}</strong></div>
+                            <div style="font-size: 0.8rem; color: var(--text-light-color);">${guest.phone || guest.email}</div>
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        <span class="status ${paymentStatus}">${getPaymentStatusText(paymentStatus)}</span>
+                        <span>${formatCurrency(paidAmount)} / ${formatCurrency(totalAmount)}</span>
+                        <button class="btn secondary" onclick="editGuest(${guest.id})"><i class="fa-solid fa-edit"></i></button>
+                        <button class="btn secondary" onclick="showReceipt(${guest.id})"><i class="fa-solid fa-receipt"></i></button>
+                    </div>
+                `;
+                
+                container.appendChild(li);
+            });
+        };
+
+        const renderSupplierPaymentsList = () => {
+            const container = document.getElementById('supplier-payments-list');
+            
+            if (state.suppliers.length === 0) {
+                container.innerHTML = '<li class="list-item">Nenhum fornecedor cadastrado</li>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            state.suppliers.forEach(supplier => {
+                const li = document.createElement('li');
+                li.className = 'list-item';
+                
+                const cost = supplier.cost || 0;
+                const paid = supplier.paid || 0;
+                const paymentStatus = paid >= cost ? 'paid' : paid > 0 ? 'partial' : 'pending';
+                
+                li.innerHTML = `
+                    <div class="list-item-main">
+                        <i class="fa-solid fa-truck"></i>
+                        <div>
+                            <div><strong>${supplier.name}</strong></div>
+                            <div style="font-size: 0.8rem; color: var(--text-light-color);">${supplier.service}</div>
+                        </div>
+                    </div>
+                    <div class="list-item-actions">
+                        <span class="status ${paymentStatus}">${getPaymentStatusText(paymentStatus)}</span>
+                        <span>${formatCurrency(paid)} / ${formatCurrency(cost)}</span>
+                        <button class="btn secondary" onclick="editSupplier(${supplier.id})"><i class="fa-solid fa-edit"></i></button>
+                    </div>
+                `;
+                
+                container.appendChild(li);
+            });
+        };
+
+        // ===== PÁGINA DE CONTROLE DE ENTRADA =====
+        const renderCheckinPage = () => {
+            const form = document.getElementById('checkin-form');
+            const input = document.getElementById('checkin-code');
+            const resultDiv = document.getElementById('checkin-result');
+
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                processCheckinCode();
+            };
+
+            // Limpa o resultado ao focar no input
+            input.onfocus = () => {
+                resultDiv.style.display = 'none';
+            }
+        };
+
+        const processCheckinCode = () => {
+            const input = document.getElementById('checkin-code');
+            const code = input.value;
+            const resultDiv = document.getElementById('checkin-result');
+
+            if (!code || code.length !== 4) {
+                resultDiv.innerHTML = `<h4>Código Inválido</h4><p>O código de acesso deve ter 4 dígitos.</p>`;
+                resultDiv.className = 'checkin-result error';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            // Encontra o convidado pelo código de acesso
+            const guest = state.guests.find(g => g.accessCode == code); // Use == para comparar string com número
+
+            if (!guest) {
+                resultDiv.innerHTML = `<h4>Código Inválido</h4><p>Nenhum convidado encontrado com este código.</p>`;
+                resultDiv.className = 'checkin-result error';
+            } else {
+                if (guest.checkedIn) {
+                    resultDiv.innerHTML = `<h4>Entrada já Registrada</h4><p><strong>${guest.name}</strong> já fez check-in.</p><p>Horário: ${new Date(guest.checkinTime).toLocaleString('pt-BR')}</p>`;
+                    resultDiv.className = 'checkin-result pending';
+                } else if (guest.paymentStatus === 'paid') {
+                    // Pagamento integral - Acesso liberado
+                    guest.checkedIn = true;
+                    guest.checkinTime = new Date().toISOString();
+                    saveData(); // Salva o status do check-in
+                    
+                    resultDiv.innerHTML = `<h4>Acesso Liberado!</h4><p>Bem-vindo(a), <strong>${guest.name}</strong>!</p><p>Pagamento confirmado.</p>`;
+                    resultDiv.className = 'checkin-result success';
+                    
+                    // Atualiza a lista de convidados em segundo plano
+                    if (document.getElementById('guests-list').innerHTML) {
+                        renderGuestsList();
+                    }
+                } else {
+                    // Pagamento pendente ou parcial
+                    resultDiv.innerHTML = `<h4>Pagamento Pendente</h4><p>A entrada de <strong>${guest.name}</strong> não pode ser liberada.</p><p>Status do Pagamento: <strong>${getPaymentStatusText(guest.paymentStatus)}</strong>.</p><p>Favor regularizar a situação.</p>`;
+                    resultDiv.className = 'checkin-result error';
+                }
+            }
+
+            resultDiv.style.display = 'block';
+            input.value = ''; // Limpa o campo
+        };
+
+        // ===== PÁGINA DE RELATÓRIOS =====
+        const renderReportsPage = () => {
+            // Calcular totais
+            const totalIncome = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalExpenses = calculateTotalCost();
+            const finalBalance = totalIncome - totalExpenses;
+            
+            document.getElementById('total-income').textContent = formatCurrency(totalIncome);
+            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('final-balance').textContent = formatCurrency(finalBalance);
+            
+            // Renderizar detalhes
+            renderBalanceDetails();
+            renderGuestPaymentsDetails();
+            renderExpensesDetails();
+            
+            // Configurar botões de geração de PDF
+            document.getElementById('generate-balance-report-btn').onclick = () => generateBalancePDF();
+            document.getElementById('generate-guest-payments-report-btn').onclick = () => generateGuestPaymentsPDF();
+            document.getElementById('generate-expenses-report-btn').onclick = () => generateExpensesPDF();
+        };
+
+        const renderBalanceDetails = () => {
+            const container = document.getElementById('balance-details');
+            const totalIncome = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalExpenses = calculateTotalCost();
+            const finalBalance = totalIncome - totalExpenses;
+            
+            container.innerHTML = `
+                <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Total de Receitas</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(totalIncome)}</td></tr>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Total de Despesas</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(totalExpenses)}</td></tr>
+                <tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Saldo Final</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;"><strong>${formatCurrency(finalBalance)}</strong></td></tr>
+            `;
+        };
+
+        const renderGuestPaymentsDetails = () => {
+            const container = document.getElementById('guest-payments-details');
+            
+            if (state.guests.length === 0) {
+                container.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center;">Nenhum convidado cadastrado</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            state.guests.forEach(guest => {
+                const totalAmount = guest.totalAmount || 0;
+                const paidAmount = guest.paidAmount || 0;
+                const pendingAmount = totalAmount - paidAmount;
+                
+                html += `
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${guest.name}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(paidAmount)}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(pendingAmount)}</td>
+                    </tr>
+                `;
+            });
+            
+            container.innerHTML = html;
+        };
+
+        const renderExpensesDetails = () => {
+            const container = document.getElementById('expenses-details');
+            const costs = state.eventData.costs || {};
+            const suppliersTotal = state.suppliers.reduce((sum, supplier) => sum + (supplier.cost || 0), 0);
+            const totalCost = calculateTotalCost();
+            
+            let html = '';
+            
+            // Custos fixos do evento
+            Object.entries(costs).forEach(([category, amount]) => {
+                if (amount > 0) {
+                    html += `
+                        <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${getCostCategoryName(category)}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(amount)}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            // Custos com fornecedores
+            state.suppliers.forEach(supplier => {
+                html += `
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${supplier.name} (${supplier.service})</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(supplier.cost || 0)}</td>
+                    </tr>
+                `;
+            });
+            
+            // Total
+            html += `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Total de Despesas</strong></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;"><strong>${formatCurrency(totalCost)}</strong></td>
+                </tr>
+            `;
+            
+            container.innerHTML = html;
+        };
+
+        // ===== PÁGINA DE BACKUP =====
+        const renderBackupPage = () => {
+            // Configurar botões de exportação
+            document.getElementById('export-data-btn').onclick = exportAllData;
+            document.getElementById('export-guests-btn').onclick = exportGuestsData;
+            document.getElementById('import-data-btn').onclick = importData;
+            document.getElementById('clear-data-btn').onclick = confirmClearData;
+        };
+
+        const exportAllData = () => {
+            const data = {
+                eventData: state.eventData,
+                guests: state.guests,
+                suppliers: state.suppliers,
+                exportDate: new Date().toISOString()
+            };
+            
+            downloadJSON(data, 'eventos-pro-backup-completo.json');
+        };
+
+        const exportGuestsData = () => {
+            const data = {
+                guests: state.guests,
+                exportDate: new Date().toISOString()
+            };
+            
+            downloadJSON(data, 'eventos-pro-convidados.json');
+        };
+
+        const importData = () => {
+            const fileInput = document.getElementById('backup-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Por favor, selecione um arquivo de backup.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    // Mesclar dados importados com dados existentes
+                    if (importedData.eventData) {
+                        state.eventData = { ...state.eventData, ...importedData.eventData };
+                    }
+                    
+                    if (importedData.guests) {
+                        // Adicionar novos convidados (evitar duplicação por ID)
+                        importedData.guests.forEach(importedGuest => {
+                            const existingIndex = state.guests.findIndex(g => g.id === importedGuest.id);
+                            if (existingIndex === -1) {
+                                state.guests.push(importedGuest);
+                            } else {
+                                state.guests[existingIndex] = importedGuest;
                             }
                         });
-                    } catch (error) {
-                        console.error('Erro ao gerar QR Code:', error);
-                        qrContainer.innerHTML = '<p style="color: red; font-size: 12px;">Erro no QR Code</p>';
                     }
-                } else {
-                    qrContainer.innerHTML = '<p style="color: red; font-size: 12px;">Biblioteca QR Code não carregada</p>';
-                }
-            },
-
-            startQRScanner() {
-                const video = document.getElementById('qr-video');
-                const canvas = document.getElementById('qr-canvas');
-                const canvasContext = canvas.getContext('2d');
-                const resultDiv = document.getElementById('qr-result');
-                const startBtn = document.getElementById('start-camera-btn');
-                const stopBtn = document.getElementById('stop-camera-btn');
-                const placeholder = document.getElementById('qr-scanner-placeholder');
-
-                // Verificar se a biblioteca jsQR está disponível
-                if (typeof jsQR === 'undefined') {
-                    resultDiv.textContent = 'Erro: Biblioteca de leitura QR não carregada. Verifique sua conexão com a internet.';
-                    resultDiv.className = 'qr-result error';
-                    resultDiv.style.display = 'block';
-                    return;
-                }
-
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                    .then(stream => {
-                        state.qrScannerStream = stream;
-                        video.srcObject = stream;
-                        video.classList.remove('hidden');
-                        canvas.classList.remove('hidden');
-                        placeholder.classList.add('hidden');
-                        startBtn.classList.add('hidden');
-                        stopBtn.classList.remove('hidden');
-                        resultDiv.style.display = 'none';
-
-                        video.play();
-                        requestAnimationFrame(tick);
-
-                        function tick() {
-                            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                                canvas.height = video.videoHeight;
-                                canvas.width = video.videoWidth;
-                                canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-                                const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
-                                const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                                    inversionAttempts: 'dontInvert',
-                                });
-
-                                if (code) {
-                                    try {
-                                        const guestData = JSON.parse(code.data);
-                                        const guest = state.guests.find(g => g.id === guestData.id);
-                                        if (guest) {
-                                            if (!guest.checkedIn) {
-                                                guest.checkedIn = true;
-                                                saveState();
-                                                app.renderActivePage();
-                                                resultDiv.innerHTML = `
-                                                    <strong>Check-in realizado com sucesso!</strong><br>
-                                                    ${guest.name}<br>
-                                                    <span style="font-size: 12px;">${new Date().toLocaleString('pt-BR')}</span>
-                                                `;
-                                                resultDiv.className = 'qr-result success';
-                                            } else {
-                                                resultDiv.innerHTML = `
-                                                    <strong>Convidado já fez check-in</strong><br>
-                                                    ${guest.name}<br>
-                                                    <span style="font-size: 12px;">Check-in anterior</span>
-                                                `;
-                                                resultDiv.className = 'qr-result pending';
-                                            }
-                                        } else {
-                                            resultDiv.innerHTML = '<strong>Convidado não encontrado</strong>';
-                                            resultDiv.className = 'qr-result error';
-                                        }
-                                    } catch (e) {
-                                        resultDiv.innerHTML = '<strong>QR Code inválido</strong>';
-                                        resultDiv.className = 'qr-result error';
-                                    }
-                                    resultDiv.style.display = 'block';
-                                }
+                    
+                    if (importedData.suppliers) {
+                        // Adicionar novos fornecedores (evitar duplicação por ID)
+                        importedData.suppliers.forEach(importedSupplier => {
+                            const existingIndex = state.suppliers.findIndex(s => s.id === importedSupplier.id);
+                            if (existingIndex === -1) {
+                                state.suppliers.push(importedSupplier);
+                            } else {
+                                state.suppliers[existingIndex] = importedSupplier;
                             }
-                            state.qrScannerAnimationId = requestAnimationFrame(tick);
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Erro ao acessar câmera:', err);
-                        resultDiv.textContent = 'Erro ao acessar a câmera. Verifique as permissões.';
-                        resultDiv.className = 'qr-result error';
-                        resultDiv.style.display = 'block';
-                    });
-            },
-
-            stopQRScanner() {
-                const video = document.getElementById('qr-video');
-                const canvas = document.getElementById('qr-canvas');
-                const startBtn = document.getElementById('start-camera-btn');
-                const stopBtn = document.getElementById('stop-camera-btn');
-                const placeholder = document.getElementById('qr-scanner-placeholder');
-                const resultDiv = document.getElementById('qr-result');
-
-                if (state.qrScannerAnimationId) {
-                    cancelAnimationFrame(state.qrScannerAnimationId);
-                    state.qrScannerAnimationId = null;
-                }
-
-                if (state.qrScannerStream) {
-                    state.qrScannerStream.getTracks().forEach(track => track.stop());
-                    state.qrScannerStream = null;
-                }
-
-                video.classList.add('hidden');
-                canvas.classList.add('hidden');
-                placeholder.classList.remove('hidden');
-                startBtn.classList.remove('hidden');
-                stopBtn.classList.add('hidden');
-                resultDiv.style.display = 'none';
-            },
-
-            // ===== RELATÓRIOS E BACKUP =====
-            generatePDFReport(type) {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                const pageWidth = doc.internal.pageSize.getWidth();
-                let yPosition = 20;
-
-                // Cabeçalho
-                doc.setFontSize(20);
-                doc.setTextColor(86, 54, 211);
-                doc.text('Eventos Pro - Relatório', pageWidth / 2, yPosition, { align: 'center' });
-                yPosition += 15;
-
-                doc.setFontSize(12);
-                doc.setTextColor(100, 100, 100);
-                const reportTitle = type === 'balance' ? 'Balanço Geral' : 
-                                  type === 'guest-payments' ? 'Pagamentos de Convidados' : 'Despesas do Evento';
-                doc.text(reportTitle, pageWidth / 2, yPosition, { align: 'center' });
-                yPosition += 20;
-
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-
-                if (type === 'balance') {
-                    const totalIncome = state.guests.reduce((s, g) => s + (g.paidValue || 0), 0);
-                    const totalExpenses = calculateTotalCost();
-                    const finalBalance = totalIncome - totalExpenses;
-
-                    doc.text(`Total de Receitas: ${formatCurrency(totalIncome)}`, 20, yPosition);
-                    yPosition += 10;
-                    doc.text(`Total de Despesas: ${formatCurrency(totalExpenses)}`, 20, yPosition);
-                    yPosition += 10;
-                    doc.text(`Saldo Final: ${formatCurrency(finalBalance)}`, 20, yPosition);
-                    yPosition += 20;
-                } else if (type === 'guest-payments') {
-                    const headers = [['Nome', 'Valor Pago', 'Valor Pendente', 'Status']];
-                    const data = state.guests.map(g => [
-                        g.name,
-                        formatCurrency(g.paidValue || 0),
-                        formatCurrency((g.expectedValue || 0) - (g.paidValue || 0)),
-                        getPaymentStatusText(g.paymentStatus)
-                    ]);
-                    doc.autoTable({
-                        head: headers,
-                        body: data,
-                        startY: yPosition,
-                        theme: 'grid',
-                        headStyles: { fillColor: [86, 54, 211] }
-                    });
-                } else if (type === 'expenses') {
-                    const headers = [['Descrição', 'Valor']];
-                    const data = [];
-                    Object.entries(state.eventData.costs || {}).forEach(([category, value]) => {
-                        if (value > 0) {
-                            data.push([getCostCategoryName(category), formatCurrency(value)]);
-                        }
-                    });
-                    state.suppliers.forEach(s => {
-                        if (s.cost > 0) {
-                            data.push([`${s.name} (${s.service})`, formatCurrency(s.cost)]);
-                        }
-                    });
-                    doc.autoTable({
-                        head: headers,
-                        body: data,
-                        startY: yPosition,
-                        theme: 'grid',
-                        headStyles: { fillColor: [86, 54, 211] }
-                    });
-                }
-
-                doc.save(`relatorio-${type}-${new Date().toISOString().slice(0,10)}.pdf`);
-            },
-
-            exportData(type = 'all') {
-                let dataToExport;
-                let filename;
-
-                if (type === 'all') {
-                    dataToExport = { eventData: state.eventData, guests: state.guests, suppliers: state.suppliers };
-                    filename = `backup-completo-${new Date().toISOString().slice(0,10)}.json`;
-                } else if (type === 'guests') {
-                    dataToExport = state.guests;
-                    filename = `convidados-${new Date().toISOString().slice(0,10)}.json`;
-                }
-
-                const dataStr = JSON.stringify(dataToExport, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            },
-
-            importData(file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const importedData = JSON.parse(e.target.result);
-                        if (Array.isArray(importedData)) {
-                            // É uma lista de convidados
-                            state.guests = [...state.guests, ...importedData];
-                        } else if (importedData.eventData || importedData.guests || importedData.suppliers) {
-                            // É um backup completo
-                            if (importedData.eventData) state.eventData = { ...state.eventData, ...importedData.eventData };
-                            if (importedData.guests) state.guests = [...state.guests, ...importedData.guests];
-                            if (importedData.suppliers) state.suppliers = [...state.suppliers, ...importedData.suppliers];
-                        }
-                        saveState();
-                        app.renderActivePage();
-                        alert('Dados importados com sucesso!');
-                    } catch (error) {
-                        alert('Erro ao importar dados. Verifique se o arquivo é válido.');
+                        });
                     }
-                };
-                reader.readAsText(file);
-            },
-
-            clearAllData() {
-                if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
-                    state.eventData = { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
-                    state.guests = [];
-                    state.suppliers = [];
-                    saveState();
-                    app.renderActivePage();
-                    alert('Todos os dados foram removidos.');
+                    
+                    saveData();
+                    alert('Dados importados com sucesso!');
+                    location.reload(); // Recarregar para atualizar todas as visualizações
+                } catch (error) {
+                    console.error('Erro ao importar dados:', error);
+                    alert('Erro ao importar dados. Verifique se o arquivo é válido.');
                 }
-            },
+            };
+            
+            reader.readAsText(file);
+        };
 
-            // ===== INICIALIZAÇÃO =====
-            init() {
-                initializeData();
-                
-                // Eventos de Navegação
-                selectors.navLinks.addEventListener('click', (e) => {
-                    const link = e.target.closest('a[data-page]');
-                    if (link) navigateTo(link.dataset.page);
-                });
-
-                // Navegação por cards do dashboard
-                selectors.dashboardCardsContainer.addEventListener('click', (e) => {
-                    const card = e.target.closest('.card[data-page]');
-                    if (card) navigateTo(card.dataset.page);
-                });
-
-                // Menu Mobile
-                selectors.menuToggleBtn.addEventListener('click', () => {
-                    selectors.sidebar.classList.toggle('open');
-                    selectors.sidebarOverlay.classList.toggle('active');
-                });
-
-                selectors.sidebarOverlay.addEventListener('click', () => {
-                    selectors.sidebar.classList.remove('open');
-                    selectors.sidebarOverlay.classList.remove('active');
-                });
-
-                // FAB (Botão de adicionar)
-                selectors.fab.addEventListener('click', () => {
-                    if (state.activePage === 'guests-page') app.openGuestModal();
-                    else if (state.activePage === 'suppliers-page') app.openSupplierModal();
-                });
-
-                // Busca de convidados
-                document.getElementById('guest-search').addEventListener('input', () => app.renderGuestsPage());
-
-                // Botões de ação
-                document.getElementById('edit-event-btn').addEventListener('click', () => app.openEventModal());
-                document.getElementById('edit-costs-btn').addEventListener('click', () => app.openCostsModal());
-                document.getElementById('start-camera-btn').addEventListener('click', () => app.startQRScanner());
-                document.getElementById('stop-camera-btn').addEventListener('click', () => app.stopQRScanner());
-                document.getElementById('generate-balance-report-btn').addEventListener('click', () => app.generatePDFReport('balance'));
-                document.getElementById('generate-guest-payments-report-btn').addEventListener('click', () => app.generatePDFReport('guest-payments'));
-                document.getElementById('generate-expenses-report-btn').addEventListener('click', () => app.generatePDFReport('expenses'));
-                document.getElementById('export-data-btn').addEventListener('click', () => app.exportData('all'));
-                document.getElementById('export-guests-btn').addEventListener('click', () => app.exportData('guests'));
-                document.getElementById('import-data-btn').addEventListener('click', () => {
-                    const fileInput = document.getElementById('backup-file');
-                    if (fileInput.files.length > 0) {
-                        app.importData(fileInput.files[0]);
-                    } else {
-                        alert('Por favor, selecione um arquivo de backup.');
-                    }
-                });
-                document.getElementById('clear-data-btn').addEventListener('click', () => app.clearAllData());
-
-                // Modal de confirmação de exclusão
-                document.getElementById('cancel-delete-btn').addEventListener('click', () => closeModal('delete-modal'));
-
-                // Inicialização
-                navigateTo(state.activePage);
+        const confirmClearData = () => {
+            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
+                localStorage.removeItem('eventManagementData_v2');
+                alert('Todos os dados foram removidos.');
+                location.reload();
             }
         };
 
-        // Inicializar a aplicação
-        app.init();
+        const downloadJSON = (data, filename) => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // ===== COMPROVANTE DE PAGAMENTO (PDF) =====
+        const showReceipt = (guestId) => {
+            const guest = state.guests.find(g => g.id === guestId);
+            if (!guest) {
+                alert('Convidado não encontrado!');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [100, 150] // Um formato de "recibo" (10cm x 15cm)
+            });
+
+            // --- Estilos ---
+            const primaryColor = '#5636D3';
+            const textColor = '#363F5F';
+            const lightTextColor = '#969CB2';
+            const dangerColor = '#E83F5B';
+            const successColor = '#12A454'; // Cor para o sucesso
+            const margin = 10;
+            let yPosition = 15;
+
+            // --- Cabeçalho ---
+            doc.setFontSize(16);
+            doc.setTextColor(primaryColor);
+            doc.setFont(undefined, 'bold');
+            doc.text('Eventos Pro', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            yPosition += 6;
+            
+            doc.setFontSize(10);
+            doc.setTextColor(textColor);
+            doc.setFont(undefined, 'normal');
+            doc.text('Comprovante de Pagamento', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            yPosition += 4;
+            
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(primaryColor);
+            doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
+            yPosition += 10;
+
+            // --- Detalhes ---
+            const addDetail = (label, value) => {
+                doc.setFontSize(10);
+                doc.setTextColor(lightTextColor);
+                doc.setFont(undefined, 'normal');
+                doc.text(label, margin, yPosition);
+                
+                doc.setTextColor(textColor);
+                doc.setFont(undefined, 'bold');
+                doc.text(String(value), doc.internal.pageSize.getWidth() - margin, yPosition, { align: 'right' }); // Converte valor para string
+                
+                yPosition += 7;
+            };
+
+            addDetail('Convidado:', guest.name);
+            addDetail('Telefone:', guest.phone || 'N/A');
+            addDetail('Data do Evento:', state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR') : 'N/A');
+            yPosition += 3; // Espaço
+            addDetail('Valor Total:', formatCurrency(guest.totalAmount || 0));
+            addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
+            addDetail('Status:', getPaymentStatusText(guest.paymentStatus));
+            yPosition += 3; // Espaço
+
+            // --- Código de Acesso ---
+            doc.setFontSize(10);
+            doc.setTextColor(lightTextColor);
+            doc.setFont(undefined, 'normal');
+            doc.text('Código de Acesso:', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            yPosition += 10;
+
+            doc.setFontSize(22);
+            doc.setTextColor(primaryColor);
+            doc.setFont(undefined, 'bold');
+            doc.text(String(guest.accessCode), doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            yPosition += 15;
+            
+            // ===== INÍCIO DA MODIFICAÇÃO =====
+            // Adicionar aviso de pendência ou mensagem de sucesso
+            if (guest.paymentStatus !== 'paid') {
+                doc.setFontSize(10);
+                doc.setTextColor(dangerColor); // Cor vermelha de perigo
+                doc.setFont(undefined, 'bold');
+                
+                const avisoText = "A entrada só será liberada com o PAGAMENTO INTEGRAL.";
+                const splitText = doc.splitTextToSize(avisoText, doc.internal.pageSize.getWidth() - (margin * 2)); 
+                
+                doc.text(splitText, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                yPosition += (splitText.length * 5) + 5; 
+            } else {
+                // Mensagem de pagamento total efetuado
+                doc.setFontSize(10);
+                doc.setTextColor(successColor); // Cor verde de sucesso
+                doc.setFont(undefined, 'bold');
+                
+                const avisoText = "PAGAMENTO TOTAL efetuado, apresente seu recibo na entrada e curta a festa";
+                const splitText = doc.splitTextToSize(avisoText, doc.internal.pageSize.getWidth() - (margin * 2));
+                
+                doc.text(splitText, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                yPosition += (splitText.length * 5) + 5;
+            }
+            // ===== FIM DA MODIFICAÇÃO =====
+
+            // --- Rodapé ---
+            doc.setLineWidth(0.2);
+            doc.setDrawColor(lightTextColor);
+            doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
+            yPosition += 5;
+
+            doc.setFontSize(8);
+            doc.setTextColor(lightTextColor);
+            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            
+            // --- Salvar ---
+            doc.save(`recibo-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
+        };
+
+        // ===== EXCLUSÃO DE ITENS =====
+        const confirmDelete = (id, type) => {
+            const modal = document.getElementById('delete-modal');
+            const title = document.getElementById('delete-modal-title');
+            const message = document.getElementById('delete-message');
+            
+            state.currentEditingId = id;
+            state.currentEditingType = type;
+            
+            if (type === 'guest') {
+                const guest = state.guests.find(g => g.id === id);
+                title.textContent = 'Excluir Convidado';
+                message.textContent = `Tem certeza que deseja excluir o convidado "${guest.name}"? Esta ação não pode ser desfeita.`;
+            } else if (type === 'supplier') {
+                const supplier = state.suppliers.find(s => s.id === id);
+                title.textContent = 'Excluir Fornecedor';
+                message.textContent = `Tem certeza que deseja excluir o fornecedor "${supplier.name}"? Esta ação não pode ser desfeita.`;
+            }
+            
+            modal.classList.add('active');
+        };
+
+        // Configurar botões de confirmação de exclusão
+        document.getElementById('confirm-delete-btn').onclick = () => {
+            if (state.currentEditingType === 'guest') {
+                state.guests = state.guests.filter(g => g.id !== state.currentEditingId);
+                saveData();
+                renderGuestsList();
+                renderDashboard();
+                renderPaymentsPage();
+            } else if (state.currentEditingType === 'supplier') {
+                state.suppliers = state.suppliers.filter(s => s.id !== state.currentEditingId);
+                saveData();
+                renderSuppliersList();
+                renderDashboard();
+                renderPaymentsPage();
+            }
+            
+            closeAllModals();
+        };
+
+        document.getElementById('cancel-delete-btn').onclick = closeAllModals;
+
+        // ===== GERAÇÃO DE PDF (Relatórios) =====
+        const generateBalancePDF = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Cabeçalho
+            doc.setFontSize(20);
+            doc.setTextColor(86, 54, 211);
+            doc.text('Relatório Financeiro - Eventos Pro', 20, 20);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 20, 35);
+            doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
+            
+            // Resumo
+            const totalIncome = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalExpenses = calculateTotalCost();
+            const finalBalance = totalIncome - totalExpenses;
+            
+            doc.setFontSize(14);
+            doc.text('Resumo Financeiro', 20, 60);
+            
+            doc.setFontSize(12);
+            doc.text(`Total de Receitas: ${formatCurrency(totalIncome)}`, 20, 72);
+            doc.text(`Total de Despesas: ${formatCurrency(totalExpenses)}`, 20, 80);
+            doc.text(`Saldo Final: ${formatCurrency(finalBalance)}`, 20, 88);
+            
+            // Detalhes das Despesas
+            let yPosition = 110;
+            doc.setFontSize(14);
+            doc.text('Detalhes das Despesas', 20, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(10);
+            const costs = state.eventData.costs || {};
+            Object.entries(costs).forEach(([category, amount]) => {
+                if (amount > 0) {
+                    doc.text(`${getCostCategoryName(category)}: ${formatCurrency(amount)}`, 20, yPosition);
+                    yPosition += 6;
+                }
+            });
+            
+            state.suppliers.forEach(supplier => {
+                doc.text(`${supplier.name} (${supplier.service}): ${formatCurrency(supplier.cost || 0)}`, 20, yPosition);
+                yPosition += 6;
+            });
+            
+            // Salvar PDF
+            doc.save(`relatorio-financeiro-${new Date().toISOString().split('T')[0]}.pdf`);
+        };
+
+        const generateGuestPaymentsPDF = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Cabeçalho
+            doc.setFontSize(20);
+            doc.setTextColor(86, 54, 211);
+            doc.text('Relatório de Pagamentos - Convidados', 20, 20);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 20, 35);
+            doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
+            
+            // Tabela de pagamentos
+            let yPosition = 60;
+            doc.setFontSize(14);
+            doc.text('Pagamentos dos Convidados', 20, yPosition);
+            yPosition += 10;
+            
+            // Cabeçalho da tabela
+            doc.setFillColor(86, 54, 211);
+            doc.setTextColor(255, 255, 255);
+            doc.rect(20, yPosition, 170, 8, 'F');
+            doc.text('Nome', 22, yPosition + 6);
+            doc.text('Valor Pago', 120, yPosition + 6);
+            doc.text('Valor Pendente', 150, yPosition + 6);
+            
+            yPosition += 8;
+            doc.setTextColor(0, 0, 0);
+            
+            // Dados da tabela
+            state.guests.forEach(guest => {
+                const totalAmount = guest.totalAmount || 0;
+                const paidAmount = guest.paidAmount || 0;
+                const pendingAmount = totalAmount - paidAmount;
+                
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.text(guest.name, 22, yPosition + 6);
+                doc.text(formatCurrency(paidAmount), 120, yPosition + 6);
+                doc.text(formatCurrency(pendingAmount), 150, yPosition + 6);
+                
+                yPosition += 8;
+            });
+            
+            // Salvar PDF
+            doc.save(`relatorio-pagamentos-${new Date().toISOString().split('T')[0]}.pdf`);
+        };
+
+        const generateExpensesPDF = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Cabeçalho
+            doc.setFontSize(20);
+            doc.setTextColor(86, 54, 211);
+            doc.text('Relatório de Despesas - Eventos Pro', 20, 20);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 20, 35);
+            doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
+            
+            // Tabela de despesas
+            let yPosition = 60;
+            doc.setFontSize(14);
+            doc.text('Detalhes das Despesas', 20, yPosition);
+            yPosition += 10;
+            
+            // Cabeçalho da tabela
+            doc.setFillColor(86, 54, 211);
+            doc.setTextColor(255, 255, 255);
+            doc.rect(20, yPosition, 170, 8, 'F');
+            doc.text('Descrição', 22, yPosition + 6);
+            doc.text('Valor', 150, yPosition + 6);
+            
+            yPosition += 8;
+            doc.setTextColor(0, 0, 0);
+            
+            // Custos fixos
+            const costs = state.eventData.costs || {};
+            Object.entries(costs).forEach(([category, amount]) => {
+                if (amount > 0) {
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    doc.text(getCostCategoryName(category), 22, yPosition + 6);
+                    doc.text(formatCurrency(amount), 150, yPosition + 6);
+                    yPosition += 8;
+                }
+            });
+            
+            // Fornecedores
+            state.suppliers.forEach(supplier => {
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.text(`${supplier.name} (${supplier.service})`, 22, yPosition + 6);
+                doc.text(formatCurrency(supplier.cost || 0), 150, yPosition + 6);
+                yPosition += 8;
+            });
+            
+            // Total
+            const totalCost = calculateTotalCost();
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Total de Despesas:', 22, yPosition + 6);
+            doc.text(formatCurrency(totalCost), 150, yPosition + 6);
+            
+            // Salvar PDF
+            doc.save(`relatorio-despesas-${new Date().toISOString().split('T')[0]}.pdf`);
+        };
+
+        // ===== INICIALIZAÇÃO =====
+        const init = () => {
+            initializeData();
+            setupNavigation();
+            setupModals();
+            renderDashboard();
+            
+            // Expor funções globais para uso nos event handlers
+            window.editGuest = editGuest;
+            window.editSupplier = editSupplier;
+            window.confirmDelete = confirmDelete;
+            window.showReceipt = showReceipt;
+            window.closeAllModals = closeAllModals;
+        };
+
+        // Iniciar aplicação
+        init();
     });
     </script>
 </body>
