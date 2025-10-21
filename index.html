@@ -2549,7 +2549,7 @@
                 doc.setFont(undefined, 'bold');
                 doc.text(String(value), doc.internal.pageSize.getWidth() - margin, yPosition, { align: 'right' });
                 
-                yPosition += 7;
+                yPosition += 6; // <<<< CORREÇÃO: Reduzido de 7 para 6
             };
 
             addDetail('Convidado:', guest.name);
@@ -2557,7 +2557,7 @@
             addDetail('Total de Pessoas:', guest.familyCount || 1); // NOVO
             addDetail('Evento:', event.eventData.name || 'N/A');
             addDetail('Data do Evento:', event.eventData.date ? new Date(event.eventData.date).toLocaleDateString('pt-BR') : 'N/A');
-            yPosition += 3;
+            yPosition += 2; // <<<< CORREÇÃO: Reduzido de 3 para 2
             
             // NOVO: Detalhes de pagamento ou entrada gratuita
             if (isFree) {
@@ -2567,26 +2567,26 @@
                 addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
                 addDetail('Status:', getPaymentStatusText(guest.paymentStatus));
             }
-            yPosition += 5;
+            yPosition += 3; // <<<< CORREÇÃO: Reduzido de 5 para 3
 
             // --- Geração do QR Code ---
             try {
                 const qr = qrcode(0, 'M'); 
                 qr.addData(String(guest.accessCode)); 
                 qr.make();
-                const qrImgData = qr.createDataURL(5, 5); 
+                const qrImgData = qr.createDataURL(4, 4); // <<<< CORREÇÃO: Margem do QR reduzida
 
-                const qrSize = 40;
+                const qrSize = 35; // <<<< CORREÇÃO: Tamanho do QR reduzido de 40 para 35
                 const qrX = (doc.internal.pageSize.getWidth() / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPosition, qrSize, qrSize);
                 
-                yPosition += qrSize + 7; 
+                yPosition += qrSize + 3; // <<<< CORREÇÃO: Espaçador reduzido de 7 para 3
 
                 doc.setFontSize(14);
                 doc.setTextColor(textColor);
                 doc.setFont(undefined, 'bold');
                 doc.text(`CÓDIGO: ${guest.accessCode}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-                yPosition += 7; 
+                yPosition += 5; // <<<< CORREÇÃO: Espaçador reduzido de 7 para 5
 
             } catch (qrError) {
                 console.error("Erro ao gerar QR Code:", qrError);
