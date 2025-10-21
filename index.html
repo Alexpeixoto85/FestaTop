@@ -47,7 +47,7 @@
             width: 260px;
             background-color: var(--card-bg-color);
             height: 100vh;
-            padding: 2rem;
+            padding: 2rem 0; /* Ajustado */
             display: flex;
             flex-direction: column;
             box-shadow: 2px 0 10px rgba(0,0,0,0.05);
@@ -82,7 +82,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem; /* Ajustado */
+            padding: 0 2rem; /* Adicionado */
         }
         
         .sidebar .logo i {
@@ -94,7 +95,47 @@
             font-size: 1.5rem;
             font-weight: 600;
         }
+
+        /* --- NOVO: Seletor de Eventos --- */
+        .event-selector-container {
+            padding: 0 2rem 1.5rem 2rem;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1.5rem;
+        }
         
+        .event-selector-container label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-light-color);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .event-selector-container select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            background-color: #f9f9f9;
+        }
+
+        .event-selector-container button {
+            width: 100%; 
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px; /* Ajustado */
+        }
+        /* --- FIM: Seletor de Eventos --- */
+        
+        .sidebar nav {
+            padding: 0 2rem; /* Adicionado */
+        }
+
         .sidebar nav ul {
             list-style: none;
         }
@@ -356,6 +397,15 @@
             <i class="fa-solid fa-calendar-alt"></i>
             <h1>Eventos Pro</h1>
         </div>
+
+        <div class="event-selector-container">
+            <label for="event-selector">Evento Ativo:</label>
+            <select id="event-selector"></select>
+            <button id="new-event-btn" class="btn primary">
+                <i class="fa-solid fa-plus"></i> Novo Evento
+            </button>
+        </div>
+        
         <nav>
             <ul id="nav-links">
                 <li><a data-page="dashboard-page" class="active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
@@ -378,38 +428,47 @@
 
         <section id="dashboard-page" class="page-content active">
             <header><h2>Dashboard</h2></header>
-            <div id="dashboard-cards">
-                <div class="card event" data-page="event-page">
-                    <div class="card-header"><span>Evento</span><i class="fa-solid fa-calendar-alt"></i></div>
-                    <p id="dashboard-event-name">Configurar</p>
-                </div>
-                <div class="card guests" data-page="guests-page">
-                    <div class="card-header"><span>Convidados</span><i class="fa-solid fa-users"></i></div>
-                    <p id="dashboard-guest-count">0</p>
-                </div>
-                <div class="card suppliers" data-page="suppliers-page">
-                    <div class="card-header"><span>Fornecedores</span><i class="fa-solid fa-truck"></i></div>
-                    <p id="dashboard-supplier-count">0</p>
-                </div>
-                <div class="card payments" data-page="payments-page">
-                    <div class="card-header"><span>Total Recebido</span><i class="fa-solid fa-arrow-up"></i></div>
-                    <p id="dashboard-payment-total">R$ 0,00</p>
-                </div>
+
+            <div id="no-event-message" class="card" style="display: none; text-align: center;">
+                <h3>Bem-vindo ao Eventos Pro!</h3>
+                <p style="margin: 1rem 0;">Selecione um evento na barra lateral ou crie um novo para começar.</p>
+                <button id="create-event-dashboard-btn" class="btn primary">Criar Novo Evento</button>
             </div>
-            
-            <div class="card">
-                <h3>Resumo Financeiro</h3>
-                <div class="form-grid">
-                    <div><strong>Custo Total do Evento:</strong> <span id="total-cost">R$ 0,00</span></div>
-                    <div><strong>Custo por Convidado:</strong> <span id="cost-per-guest">R$ 0,00</span></div>
-                    <div><strong>Total Recebido:</strong> <span id="total-received" style="color: var(--success-color);">R$ 0,00</span></div>
-                    <div><strong>Total a Receber:</strong> <span id="total-pending" style="color: var(--danger-color);">R$ 0,00</span></div>
+
+            <div id="event-content-container">
+                <div id="dashboard-cards">
+                    <div class="card event" data-page="event-page">
+                        <div class="card-header"><span>Evento</span><i class="fa-solid fa-calendar-alt"></i></div>
+                        <p id="dashboard-event-name">Configurar</p>
+                    </div>
+                    <div class="card guests" data-page="guests-page">
+                        <div class="card-header"><span>Convidados</span><i class="fa-solid fa-users"></i></div>
+                        <p id="dashboard-guest-count">0</p>
+                    </div>
+                    <div class="card suppliers" data-page="suppliers-page">
+                        <div class="card-header"><span>Fornecedores</span><i class="fa-solid fa-truck"></i></div>
+                        <p id="dashboard-supplier-count">0</p>
+                    </div>
+                    <div class="card payments" data-page="payments-page">
+                        <div class="card-header"><span>Total Recebido</span><i class="fa-solid fa-arrow-up"></i></div>
+                        <p id="dashboard-payment-total">R$ 0,00</p>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="card">
-                <h3>Últimos Pagamentos Recebidos</h3>
-                <ul id="recent-payments-list"></ul>
+                
+                <div class="card">
+                    <h3>Resumo Financeiro</h3>
+                    <div class="form-grid">
+                        <div><strong>Custo Total do Evento:</strong> <span id="total-cost">R$ 0,00</span></div>
+                        <div><strong>Custo por Convidado:</strong> <span id="cost-per-guest">R$ 0,00</span></div>
+                        <div><strong>Total Recebido:</strong> <span id="total-received" style="color: var(--success-color);">R$ 0,00</span></div>
+                        <div><strong>Total a Receber:</strong> <span id="total-pending" style="color: var(--danger-color);">R$ 0,00</span></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Últimos Pagamentos Recebidos</h3>
+                    <ul id="recent-payments-list"></ul>
+                </div>
             </div>
         </section>
 
@@ -497,13 +556,13 @@
                 <h3>Exportar Dados</h3>
                 <p>Faça backup de todos os dados do sistema para um arquivo JSON.</p>
                 <div class="modal-actions">
-                    <button class="btn success" id="export-data-btn">Exportar Tudo</button>
-                    <button class="btn success" id="export-guests-btn">Exportar Convidados</button>
+                    <button class="btn success" id="export-data-btn">Exportar Tudo (v3)</button>
+                    <button class="btn success" id="export-guests-btn">Exportar Convidados (Evento Ativo)</button>
                 </div>
             </div>
             <div class="card">
                 <h3>Importar Dados</h3>
-                <p>Restaurar dados de um backup anterior. A importação adicionará novos dados aos existentes.</p>
+                <p>Restaurar dados de um backup v3. A importação adicionará novos eventos e atualizará eventos existentes com o mesmo ID.</p>
                 <div class="form-control"><label for="backup-file">Selecionar arquivo de backup (.json)</label><input type="file" id="backup-file" accept=".json"></div>
                 <div class="modal-actions">
                     <button class="btn secondary" id="import-data-btn">Importar Dados</button>
@@ -511,7 +570,7 @@
             </div>
             <div class="card">
                 <h3>Limpar Dados</h3>
-                <p>Remover todos os dados do sistema. Esta ação não pode ser desfeita.</p>
+                <p>Remover todos os dados do sistema (v3). Esta ação não pode ser desfeita.</p>
                 <div class="modal-actions"><button class="btn danger" id="clear-data-btn">Limpar Todos os Dados</button></div>
             </div>
         </section>
@@ -525,13 +584,29 @@
     <div class="modal-overlay" id="supplier-modal"><div class="modal-content"><h3 id="supplier-modal-title"></h3><form id="supplier-form"></form></div></div>
     <div class="modal-overlay" id="delete-modal"><div class="modal-content"><h3 id="delete-modal-title"></h3><p id="delete-message"></p><div class="modal-actions"><button type="button" class="btn secondary" id="cancel-delete-btn">Cancelar</button><button type="button" class="btn danger" id="confirm-delete-btn">Excluir</button></div></div></div>
 
+    <div class="modal-overlay" id="new-event-modal">
+        <div class="modal-content">
+            <h3>Criar Novo Evento</h3>
+            <form id="new-event-form">
+                <div class="form-control">
+                    <label for="new-event-name">Nome do Evento</label>
+                    <input type="text" id="new-event-name" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="submit" class="btn primary">Criar e Selecionar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // ===== ESTADO CENTRAL DA APLICAÇÃO =====
+        // ===== ESTADO CENTRAL DA APLICAÇÃO (Refatorado para Multi-Evento) =====
         const state = {
-            eventData: {},
-            guests: [],
-            suppliers: [],
+            events: [], // Lista de todos os objetos de evento
+            activeEventId: null, // ID (timestamp) do evento atualmente selecionado
             activePage: 'dashboard-page',
             currentEditingId: null,
             currentEditingType: null,
@@ -546,70 +621,131 @@
             menuToggleBtn: document.getElementById('menu-toggle-btn'),
             mobilePageTitle: document.getElementById('mobile-page-title'),
             fab: document.getElementById('fab-add-btn'),
-            dashboardCardsContainer: document.getElementById('dashboard-cards')
+            dashboardCardsContainer: document.getElementById('dashboard-cards'),
+            // Novos seletores
+            eventSelector: document.getElementById('event-selector'),
+            newEventBtn: document.getElementById('new-event-btn'),
+            createEventDashboardBtn: document.getElementById('create-event-dashboard-btn'),
+            noEventMessage: document.getElementById('no-event-message'),
+            eventContentContainer: document.getElementById('event-content-container')
         };
         
         // ===== FUNÇÕES AUXILIARES =====
+        
+        /**
+         * NOVO: Retorna o objeto do evento ativo
+         */
+        const getActiveEvent = () => {
+            if (!state.activeEventId) return null;
+            return state.events.find(e => e.id === state.activeEventId);
+        };
+
         const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const getPaymentStatusText = (status) => ({ paid: 'Pago', partial: 'Parcial', pending: 'Pendente' }[status] || 'Pendente');
         const getCostCategoryName = (category) => ({ food: 'Alimentação', music: 'Música', venue: 'Aluguel do Espaço', drinks: 'Bebidas', other: 'Outros Custos' }[category] || category);
-        const calculateTotalCost = () => (Object.values(state.eventData.costs || {}).reduce((s, c) => s + c, 0)) + (state.suppliers.reduce((s, sup) => s + (sup.cost || 0), 0));
+        
+        /**
+         * Refatorado: Calcula o custo total para o evento ativo
+         */
+        const calculateTotalCost = () => {
+            const event = getActiveEvent();
+            if (!event) return 0;
 
-        // ===== PERSISTÊNCIA DE DADOS (LocalStorage) =====
-        const initializeData = () => {
-            const savedData = JSON.parse(localStorage.getItem('eventManagementData_v2'));
-            if (savedData) {
-                state.eventData = savedData.eventData || { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
-                state.guests = savedData.guests || [];
-                
-                // --- Migração de Dados: Adiciona accessCode para convidados antigos ---
-                let needsSave = false;
-                const existingCodes = new Set(state.guests.map(g => g.accessCode).filter(Boolean)); // Pega todos os códigos que já existem
-                
-                state.guests.forEach((guest, index) => {
-                    if (!guest.regOrder) {
-                        guest.regOrder = index + 1;
-                        needsSave = true;
-                    }
-                    
-                    // Se o convidado não tem um código, gera um novo e único
-                    if (!guest.accessCode) {
-                        let newCode;
-                        do {
-                            newCode = Math.floor(1000 + Math.random() * 9000); // Gera um número de 1000 a 9999
-                        } while (existingCodes.has(newCode)); // Garante que seja único
-                        
-                        guest.accessCode = newCode;
-                        existingCodes.add(newCode); // Adiciona ao set para a próxima verificação
-                        needsSave = true;
-                    }
-
-                    // Remove dados antigos de QR Code, se existirem
-                    if (guest.qrCode) {
-                        delete guest.qrCode;
-                        needsSave = true;
-                    }
-                });
-
-                if (needsSave) {
-                    saveData(); // Salva os novos códigos gerados
-                }
-                // --- Fim da Migração ---
-
-                state.suppliers = savedData.suppliers || [];
-            } else {
-                state.eventData = { name: '', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } };
-                state.guests = [];
-                state.suppliers = [];
-                saveData();
-            }
+            const costs = event.eventData.costs || {};
+            const suppliersCost = event.suppliers.reduce((s, sup) => s + (sup.cost || 0), 0);
+            const fixedCosts = Object.values(costs).reduce((s, c) => s + c, 0);
+            
+            return fixedCosts + suppliersCost;
         };
 
+        // ===== PERSISTÊNCIA DE DADOS (LocalStorage) (Refatorado para v3) =====
+        
+        /**
+         * NOVO: Lógica de migração de convidados (extraída da v2)
+         */
+        const migrateGuestData = (event) => {
+            let needsSave = false;
+            const existingCodes = new Set(event.guests.map(g => g.accessCode).filter(Boolean));
+            
+            event.guests.forEach((guest, index) => {
+                if (!guest.regOrder) {
+                    guest.regOrder = index + 1;
+                    needsSave = true;
+                }
+                
+                if (!guest.accessCode) {
+                    let newCode;
+                    do {
+                        newCode = Math.floor(1000 + Math.random() * 9000); // Gera um número de 1000 a 9999
+                    } while (existingCodes.has(newCode)); // Garante que seja único
+                    
+                    guest.accessCode = newCode;
+                    existingCodes.add(newCode); // Adiciona ao set para a próxima verificação
+                    needsSave = true;
+                }
+
+                if (guest.qrCode) {
+                    delete guest.qrCode;
+                    needsSave = true;
+                }
+            });
+            return needsSave; // Retorna se os dados precisam ser salvos
+        };
+
+        /**
+         * Refatorado: Carrega dados v3 e migra v2 se existir
+         */
+        const initializeData = () => {
+            const savedData_v3 = JSON.parse(localStorage.getItem('eventManagementData_v3'));
+            const savedData_v2 = JSON.parse(localStorage.getItem('eventManagementData_v2')); // Verifica dados antigos
+
+            if (savedData_v3) {
+                // Carrega dados v3
+                state.events = savedData_v3.events || [];
+                state.activeEventId = savedData_v3.activeEventId || null;
+                
+                // Se um ID ativo está salvo, mas o evento não existe mais, reseta
+                if (state.activeEventId && !state.events.find(e => e.id === state.activeEventId)) {
+                    state.activeEventId = state.events.length > 0 ? state.events[0].id : null;
+                }
+                
+            } else if (savedData_v2) {
+                // MIGRAÇÃO de v2 para v3
+                console.log("Migrando dados v2 para v3...");
+                const newEventId = Date.now();
+                const migratedEvent = {
+                    id: newEventId,
+                    eventData: savedData_v2.eventData || { name: 'Evento Migrado', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } },
+                    guests: savedData_v2.guests || [],
+                    suppliers: savedData_v2.suppliers || []
+                };
+                
+                // Roda a migração de códigos de acesso nos dados v2
+                migrateGuestData(migratedEvent);
+                
+                state.events = [migratedEvent];
+                state.activeEventId = newEventId;
+                
+                saveData(); // Salva a nova estrutura v3
+                localStorage.removeItem('eventManagementData_v2'); // Remove a v2 antiga
+                
+            } else {
+                // Nenhuma data, começa do zero
+                state.events = [];
+                state.activeEventId = null;
+            }
+            
+            // Atualiza o dropdown de eventos
+            populateEventSelector();
+        };
+
+        /**
+         * Refatorado: Salva a estrutura v3
+         */
         const saveData = () => {
-            localStorage.setItem('eventManagementData_v2', JSON.stringify({
-                eventData: state.eventData,
-                guests: state.guests,
-                suppliers: state.suppliers
+            localStorage.setItem('eventManagementData_v3', JSON.stringify({
+                activeEventId: state.activeEventId,
+                events: state.events
             }));
         };
 
@@ -656,15 +792,17 @@
         const navigateToPage = (pageId) => {
             // Atualizar navegação
             document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
-            document.querySelector(`.sidebar nav a[data-page="${pageId}"]`).classList.add('active');
+            const activeLink = document.querySelector(`.sidebar nav a[data-page="${pageId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+                 // Atualizar título mobile
+                const pageTitle = activeLink.textContent.trim();
+                selectors.mobilePageTitle.textContent = pageTitle;
+            }
             
             // Atualizar páginas
             document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
-            
-            // Atualizar título mobile
-            const pageTitle = document.querySelector(`.sidebar nav a[data-page="${pageId}"]`).textContent.trim();
-            selectors.mobilePageTitle.textContent = pageTitle;
             
             // Atualizar botão FAB
             updateFAB(pageId);
@@ -678,7 +816,7 @@
 
         const updateFAB = (pageId) => {
             const fab = selectors.fab;
-            const showFab = ['guests-page', 'suppliers-page'].includes(pageId);
+            const showFab = ['guests-page', 'suppliers-page'].includes(pageId) && getActiveEvent();
             fab.style.display = showFab ? 'flex' : 'none';
             
             if (showFab) {
@@ -689,7 +827,25 @@
             }
         };
 
+        /**
+         * Refatorado: Renderiza o conteúdo da página ativa, respeitando o evento ativo
+         */
         const renderPageContent = (pageId) => {
+            // Oculta o FAB por padrão, ele será reexibido se a página permitir
+            selectors.fab.style.display = 'none';
+
+            // Se nenhum evento estiver ativo, força a renderização do dashboard
+            // (que mostrará a mensagem "crie um evento")
+            const activeEvent = getActiveEvent();
+            if (!activeEvent && pageId !== 'backup-page') { 
+                // Permite acesso ao backup mesmo sem evento
+                navigateToPage('dashboard-page');
+                return;
+            }
+
+            // Atualiza o FAB (agora que sabemos que um evento está ativo)
+            updateFAB(pageId);
+
             switch(pageId) {
                 case 'dashboard-page':
                     renderDashboard();
@@ -706,7 +862,7 @@
                 case 'payments-page':
                     renderPaymentsPage();
                     break;
-                case 'checkin-page': // Alterado de qr-page
+                case 'checkin-page':
                     renderCheckinPage();
                     break;
                 case 'reports-page':
@@ -717,6 +873,114 @@
                     break;
             }
         };
+
+        // ===== NOVO: GERENCIAMENTO DE EVENTOS (Dropdown e Modal) =====
+
+        /**
+         * Preenche o dropdown <select> com os eventos do 'state'
+         */
+        const populateEventSelector = () => {
+            const selector = selectors.eventSelector;
+            selector.innerHTML = ''; // Limpa
+            
+            if (state.events.length === 0) {
+                selector.innerHTML = '<option value="">Crie um evento</option>';
+                selector.disabled = true;
+            } else {
+                selector.disabled = false;
+                state.events.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event.id;
+                    option.textContent = event.eventData.name || 'Evento Sem Nome';
+                    if (event.id === state.activeEventId) {
+                        option.selected = true;
+                    }
+                    selector.appendChild(option);
+                });
+            }
+        };
+
+        /**
+         * Configura os listeners para o seletor de eventos e botões de criação
+         */
+        const setupEventSelector = () => {
+            // Botão de novo evento (sidebar)
+            selectors.newEventBtn.onclick = showNewEventModal;
+            // Botão de novo evento (dashboard)
+            selectors.createEventDashboardBtn.onclick = showNewEventModal;
+            
+            // Seletor
+            selectors.eventSelector.onchange = (e) => {
+                const newEventId = parseInt(e.target.value); // IDs são timestamps (números)
+                if (newEventId) {
+                    setActiveEvent(newEventId);
+                }
+            };
+        };
+
+        /**
+         * Define o evento ativo no 'state' e recarrega a página atual
+         */
+        const setActiveEvent = (eventId) => {
+            state.activeEventId = eventId;
+            saveData();
+            populateEventSelector(); // Garante que o seletor está atualizado
+            renderPageContent(state.activePage); // Re-renderiza a página atual com os dados do novo evento
+        };
+
+        /**
+         * Exibe o modal para criar um novo evento
+         */
+        const showNewEventModal = () => {
+            const modal = document.getElementById('new-event-modal');
+            const form = document.getElementById('new-event-form');
+            
+            form.reset(); // Limpa o formulário
+            
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                const eventName = document.getElementById('new-event-name').value;
+                if (eventName) {
+                    createNewEvent(eventName);
+                }
+            };
+            
+            modal.classList.add('active');
+        };
+
+        /**
+         * Cria um novo objeto de evento, salva e o define como ativo
+         */
+        const createNewEvent = (name) => {
+            const newEventId = Date.now();
+            const newEvent = {
+                id: newEventId,
+                eventData: { 
+                    name: name, 
+                    date: '', 
+                    location: '', 
+                    description: '', 
+                    costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } 
+                },
+                guests: [],
+                suppliers: []
+            };
+            
+            state.events.push(newEvent);
+            state.activeEventId = newEventId;
+            
+            saveData();
+            populateEventSelector();
+            closeAllModals();
+            
+            // Se estiver no dashboard, re-renderiza. Se não, vai para o dashboard.
+            if(state.activePage !== 'dashboard-page') {
+                navigateToPage('dashboard-page');
+            } else {
+                renderDashboard(); // Apenas re-renderiza o dashboard
+            }
+        };
+
 
         // ===== GERENCIAMENTO DE MODAIS =====
         const setupModals = () => {
@@ -732,9 +996,15 @@
             // Botões de cancelar
             document.querySelectorAll('.modal-actions .btn.secondary').forEach(btn => {
                 if (btn.id !== 'cancel-delete-btn') {
-                    btn.addEventListener('click', closeAllModals);
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault(); // Evita submit de formulário
+                        closeAllModals();
+                    });
                 }
             });
+
+            // Botão de cancelar do delete modal
+            document.getElementById('cancel-delete-btn').onclick = closeAllModals;
         };
 
         const closeAllModals = () => {
@@ -745,16 +1015,27 @@
             state.currentEditingType = null;
         };
 
-        // ===== DASHBOARD =====
+        // ===== DASHBOARD (Refatorado) =====
         const renderDashboard = () => {
+            const event = getActiveEvent();
+
+            if (!event) {
+                selectors.noEventMessage.style.display = 'block';
+                selectors.eventContentContainer.style.display = 'none';
+                return;
+            }
+            
+            selectors.noEventMessage.style.display = 'none';
+            selectors.eventContentContainer.style.display = 'block';
+
             // Atualizar cards principais
-            document.getElementById('dashboard-event-name').textContent = state.eventData.name || 'Configurar';
-            document.getElementById('dashboard-guest-count').textContent = state.guests.length;
-            document.getElementById('dashboard-supplier-count').textContent = state.suppliers.length;
+            document.getElementById('dashboard-event-name').textContent = event.eventData.name || 'Configurar';
+            document.getElementById('dashboard-guest-count').textContent = event.guests.length;
+            document.getElementById('dashboard-supplier-count').textContent = event.suppliers.length;
             
             // Calcular totais de pagamentos
-            const totalReceived = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
-            const totalPending = state.guests.reduce((sum, guest) => {
+            const totalReceived = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalPending = event.guests.reduce((sum, guest) => {
                 const total = guest.totalAmount || 0;
                 const paid = guest.paidAmount || 0;
                 return sum + (total - paid);
@@ -763,8 +1044,8 @@
             document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalReceived);
             
             // Atualizar resumo financeiro
-            const totalCost = calculateTotalCost();
-            const costPerGuest = state.guests.length > 0 ? totalCost / state.guests.length : 0;
+            const totalCost = calculateTotalCost(); // Já usa getActiveEvent()
+            const costPerGuest = event.guests.length > 0 ? totalCost / event.guests.length : 0;
             
             document.getElementById('total-cost').textContent = formatCurrency(totalCost);
             document.getElementById('cost-per-guest').textContent = formatCurrency(costPerGuest);
@@ -776,11 +1057,17 @@
         };
 
         const renderRecentPayments = () => {
+            const event = getActiveEvent();
             const container = document.getElementById('recent-payments-list');
             container.innerHTML = '';
             
+            if (!event || event.guests.length === 0) {
+                container.innerHTML = '<li class="list-item">Nenhum pagamento recebido ainda</li>';
+                return;
+            }
+            
             // Obter pagamentos recentes (últimos 5)
-            const recentPayments = state.guests
+            const recentPayments = event.guests
                 .filter(guest => guest.paidAmount > 0)
                 .sort((a, b) => new Date(b.lastPaymentDate || 0) - new Date(a.lastPaymentDate || 0))
                 .slice(0, 5);
@@ -807,8 +1094,15 @@
             });
         };
 
-        // ===== PÁGINA DO EVENTO =====
+        // ===== PÁGINA DO EVENTO (Refatorado) =====
         const renderEventPage = () => {
+            const event = getActiveEvent();
+            if (!event) {
+                document.getElementById('event-info').innerHTML = '<p>Nenhum evento selecionado.</p>';
+                document.getElementById('costs-info').innerHTML = '';
+                return;
+            }
+
             // Configurar botões de edição
             document.getElementById('edit-event-btn').onclick = () => showEventModal();
             document.getElementById('edit-costs-btn').onclick = () => showCostsModal();
@@ -819,24 +1113,30 @@
         };
 
         const renderEventInfo = () => {
+            const event = getActiveEvent();
+            if (!event) return; // Segurança
+
             const container = document.getElementById('event-info');
-            const event = state.eventData;
+            const eventData = event.eventData; // Pega os dados do evento ativo
             
             container.innerHTML = `
                 <div class="form-grid">
-                    <div><strong>Nome do Evento:</strong> ${event.name || 'Não definido'}</div>
-                    <div><strong>Data:</strong> ${event.date ? new Date(event.date).toLocaleDateString('pt-BR') : 'Não definida'}</div>
-                    <div><strong>Local:</strong> ${event.location || 'Não definido'}</div>
-                    <div><strong>Descrição:</strong> ${event.description || 'Não definida'}</div>
+                    <div><strong>Nome do Evento:</strong> ${eventData.name || 'Não definido'}</div>
+                    <div><strong>Data:</strong> ${eventData.date ? new Date(eventData.date).toLocaleDateString('pt-BR') : 'Não definida'}</div>
+                    <div><strong>Local:</strong> ${eventData.location || 'Não definido'}</div>
+                    <div><strong>Descrição:</strong> ${eventData.description || 'Não definida'}</div>
                 </div>
             `;
         };
 
         const renderCostsInfo = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const container = document.getElementById('costs-info');
-            const costs = state.eventData.costs || {};
-            const suppliersTotal = state.suppliers.reduce((sum, supplier) => sum + (supplier.cost || 0), 0);
-            const totalCost = calculateTotalCost();
+            const costs = event.eventData.costs || {};
+            const suppliersTotal = event.suppliers.reduce((sum, supplier) => sum + (supplier.cost || 0), 0);
+            const totalCost = calculateTotalCost(); // Já usa o evento ativo
             
             let html = `
                 <div class="form-grid">
@@ -856,32 +1156,35 @@
         };
 
         const showEventModal = () => {
+            const event = getActiveEvent();
+            if (!event) return; // Não pode editar se não houver evento
+
             const modal = document.getElementById('event-modal');
             const title = document.getElementById('event-modal-title');
             const form = document.getElementById('event-form');
             
-            title.textContent = state.eventData.name ? 'Editar Evento' : 'Criar Evento';
+            title.textContent = event.eventData.name ? 'Editar Evento' : 'Criar Evento';
             
             form.innerHTML = `
                 <div class="form-control">
                     <label for="event-name">Nome do Evento</label>
-                    <input type="text" id="event-name" value="${state.eventData.name || ''}" required>
+                    <input type="text" id="event-name" value="${event.eventData.name || ''}" required>
                 </div>
                 <div class="form-control">
                     <label for="event-date">Data do Evento</label>
-                    <input type="date" id="event-date" value="${state.eventData.date || ''}" required>
+                    <input type="date" id="event-date" value="${event.eventData.date || ''}" required>
                 </div>
                 <div class="form-control">
                     <label for="event-location">Local</label>
-                    <input type="text" id="event-location" value="${state.eventData.location || ''}" required>
+                    <input type="text" id="event-location" value="${event.eventData.location || ''}" required>
                 </div>
                 <div class="form-control">
                     <label for="event-description">Descrição</label>
-                    <textarea id="event-description" rows="3">${state.eventData.description || ''}</textarea>
+                    <textarea id="event-description" rows="3">${event.eventData.description || ''}</textarea>
                 </div>
                 <div class="modal-actions">
                     <div class="spacer"></div>
-                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="button" class="btn secondary">Cancelar</button>
                     <button type="submit" class="btn primary">Salvar</button>
                 </div>
             `;
@@ -895,12 +1198,15 @@
         };
 
         const showCostsModal = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const modal = document.getElementById('costs-modal');
             const title = document.getElementById('costs-modal-title');
             const form = document.getElementById('costs-form');
             
             title.textContent = 'Editar Custos do Evento';
-            const costs = state.eventData.costs || { food: 0, music: 0, venue: 0, drinks: 0, other: 0 };
+            const costs = event.eventData.costs || { food: 0, music: 0, venue: 0, drinks: 0, other: 0 };
             
             form.innerHTML = `
                 <div class="form-control">
@@ -925,7 +1231,7 @@
                 </div>
                 <div class="modal-actions">
                     <div class="spacer"></div>
-                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="button" class="btn secondary">Cancelar</button>
                     <button type="submit" class="btn primary">Salvar</button>
                 </div>
             `;
@@ -939,8 +1245,11 @@
         };
 
         const saveEventData = () => {
-            state.eventData = {
-                ...state.eventData,
+            const event = getActiveEvent();
+            if (!event) return;
+            
+            event.eventData = {
+                ...event.eventData,
                 name: document.getElementById('event-name').value,
                 date: document.getElementById('event-date').value,
                 location: document.getElementById('event-location').value,
@@ -950,11 +1259,15 @@
             saveData();
             renderEventInfo();
             renderDashboard();
+            populateEventSelector(); // O nome do evento pode ter mudado
             closeAllModals();
         };
 
         const saveCostsData = () => {
-            state.eventData.costs = {
+            const event = getActiveEvent();
+            if (!event) return;
+
+            event.eventData.costs = {
                 food: parseFloat(document.getElementById('cost-food').value) || 0,
                 music: parseFloat(document.getElementById('cost-music').value) || 0,
                 venue: parseFloat(document.getElementById('cost-venue').value) || 0,
@@ -968,11 +1281,19 @@
             closeAllModals();
         };
 
-        // ===== PÁGINA DE CONVIDADOS =====
+        // ===== PÁGINA DE CONVIDADOS (Refatorado) =====
         const renderGuestsPage = () => {
             const container = document.getElementById('guests-list');
             const searchInput = document.getElementById('guest-search');
             
+            const event = getActiveEvent();
+            if (!event) {
+                container.innerHTML = '<li class="list-item">Selecione um evento para ver os convidados</li>';
+                searchInput.disabled = true;
+                return;
+            }
+            
+            searchInput.disabled = false;
             // Configurar busca
             searchInput.oninput = () => renderGuestsList();
             
@@ -981,11 +1302,17 @@
         };
 
         const renderGuestsList = () => {
+            const event = getActiveEvent();
             const container = document.getElementById('guests-list');
             const searchTerm = document.getElementById('guest-search').value.toLowerCase();
             
+            if (!event) {
+                container.innerHTML = '<li class="list-item">Selecione um evento para ver os convidados</li>';
+                return;
+            }
+            
             // Filtrar convidados
-            const filteredGuests = state.guests.filter(guest => 
+            const filteredGuests = event.guests.filter(guest => 
                 guest.name.toLowerCase().includes(searchTerm) || 
                 (guest.phone && guest.phone.includes(searchTerm)) || // Busca por telefone
                 (guest.email && guest.email.toLowerCase().includes(searchTerm))
@@ -1030,12 +1357,18 @@
         };
 
         const showGuestModal = (guestId = null) => {
+            const event = getActiveEvent();
+            if (!event) {
+                alert('Por favor, selecione um evento primeiro.');
+                return;
+            }
+
             const modal = document.getElementById('guest-modal');
             const title = document.getElementById('guest-modal-title');
             const form = document.getElementById('guest-form');
             
             const isEditing = guestId !== null;
-            const guest = isEditing ? state.guests.find(g => g.id === guestId) : null;
+            const guest = isEditing ? event.guests.find(g => g.id === guestId) : null;
             
             title.textContent = isEditing ? 'Editar Convidado' : 'Adicionar Convidado';
 
@@ -1081,7 +1414,7 @@
                 </div>
                 <div class="modal-actions">
                     <div class="spacer"></div>
-                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="button" class="btn secondary">Cancelar</button>
                     <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
                 </div>
             `;
@@ -1095,6 +1428,9 @@
         };
 
         const saveGuestData = (guestId = null) => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const name = document.getElementById('guest-name').value;
             const email = document.getElementById('guest-email').value;
             const phone = document.getElementById('guest-phone').value;
@@ -1107,20 +1443,20 @@
 
             if (guestId !== null) {
                 // Editar convidado existente
-                const index = state.guests.findIndex(g => g.id === guestId);
+                const index = event.guests.findIndex(g => g.id === guestId);
                 if (index !== -1) {
-                    state.guests[index] = {
-                        ...state.guests[index], // Mantém o accessCode e outros dados
+                    event.guests[index] = {
+                        ...event.guests[index], // Mantém o accessCode e outros dados
                         name, email, phone, totalAmount, paidAmount,
                         paymentStatus: finalPaymentStatus,
-                        lastPaymentDate: paidAmount > state.guests[index].paidAmount ? new Date().toISOString() : state.guests[index].lastPaymentDate
+                        lastPaymentDate: paidAmount > event.guests[index].paidAmount ? new Date().toISOString() : event.guests[index].lastPaymentDate
                     };
                 }
             } else {
                 // Adicionar novo convidado
                 
-                // Gerar código de acesso único
-                const existingCodes = new Set(state.guests.map(g => g.accessCode));
+                // Gerar código de acesso único (dentro do evento atual)
+                const existingCodes = new Set(event.guests.map(g => g.accessCode));
                 let newCode;
                 do {
                     newCode = Math.floor(1000 + Math.random() * 9000);
@@ -1131,12 +1467,12 @@
                     name, email, phone, totalAmount, paidAmount,
                     paymentStatus: finalPaymentStatus,
                     checkedIn: false,
-                    regOrder: state.guests.length + 1,
+                    regOrder: event.guests.length + 1,
                     lastPaymentDate: paidAmount > 0 ? new Date().toISOString() : null,
                     accessCode: newCode // Adiciona o novo código
                 };
                 
-                state.guests.push(newGuest);
+                event.guests.push(newGuest);
             }
 
             saveData();
@@ -1150,22 +1486,28 @@
             showGuestModal(guestId);
         };
 
-        // ===== PÁGINA DE FORNECEDORES =====
+        // ===== PÁGINA DE FORNECEDORES (Refatorado) =====
         const renderSuppliersPage = () => {
             renderSuppliersList();
         };
 
         const renderSuppliersList = () => {
+            const event = getActiveEvent();
             const container = document.getElementById('suppliers-list');
             
-            if (state.suppliers.length === 0) {
+            if (!event) {
+                container.innerHTML = '<li class="list-item">Selecione um evento para ver os fornecedores</li>';
+                return;
+            }
+
+            if (event.suppliers.length === 0) {
                 container.innerHTML = '<li class="list-item">Nenhum fornecedor cadastrado</li>';
                 return;
             }
             
             container.innerHTML = '';
             
-            state.suppliers.forEach(supplier => {
+            event.suppliers.forEach(supplier => {
                 const li = document.createElement('li');
                 li.className = 'list-item';
                 
@@ -1189,12 +1531,18 @@
         };
 
         const showSupplierModal = (supplierId = null) => {
+            const event = getActiveEvent();
+            if (!event) {
+                alert('Por favor, selecione um evento primeiro.');
+                return;
+            }
+
             const modal = document.getElementById('supplier-modal');
             const title = document.getElementById('supplier-modal-title');
             const form = document.getElementById('supplier-form');
             
             const isEditing = supplierId !== null;
-            const supplier = isEditing ? state.suppliers.find(s => s.id === supplierId) : null;
+            const supplier = isEditing ? event.suppliers.find(s => s.id === supplierId) : null;
             
             title.textContent = isEditing ? 'Editar Fornecedor' : 'Adicionar Fornecedor';
             
@@ -1221,7 +1569,7 @@
                 </div>
                 <div class="modal-actions">
                     <div class="spacer"></div>
-                    <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
+                    <button type="button" class="btn secondary">Cancelar</button>
                     <button type="submit" class="btn primary">${isEditing ? 'Atualizar' : 'Adicionar'}</button>
                 </div>
             `;
@@ -1235,6 +1583,9 @@
         };
 
         const saveSupplierData = (supplierId = null) => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const name = document.getElementById('supplier-name').value;
             const service = document.getElementById('supplier-service').value;
             const phone = document.getElementById('supplier-phone').value;
@@ -1243,10 +1594,10 @@
             
             if (supplierId !== null) {
                 // Editar fornecedor existente
-                const index = state.suppliers.findIndex(s => s.id === supplierId);
+                const index = event.suppliers.findIndex(s => s.id === supplierId);
                 if (index !== -1) {
-                    state.suppliers[index] = {
-                        ...state.suppliers[index],
+                    event.suppliers[index] = {
+                        ...event.suppliers[index],
                         name,
                         service,
                         phone,
@@ -1256,7 +1607,7 @@
                 }
             } else {
                 // Adicionar novo fornecedor
-                state.suppliers.push({
+                event.suppliers.push({
                     id: Date.now(),
                     name,
                     service,
@@ -1277,11 +1628,20 @@
             showSupplierModal(supplierId);
         };
 
-        // ===== PÁGINA DE PAGAMENTOS =====
+        // ===== PÁGINA DE PAGAMENTOS (Refatorado) =====
         const renderPaymentsPage = () => {
+            const event = getActiveEvent();
+            if (!event) {
+                document.getElementById('payments-total-received').textContent = formatCurrency(0);
+                document.getElementById('payments-total-pending').textContent = formatCurrency(0);
+                document.getElementById('guest-payments-list').innerHTML = '<li class="list-item">Nenhum evento selecionado</li>';
+                document.getElementById('supplier-payments-list').innerHTML = '<li class="list-item">Nenhum evento selecionado</li>';
+                return;
+            }
+
             // Calcular totais
-            const totalReceived = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
-            const totalPending = state.guests.reduce((sum, guest) => {
+            const totalReceived = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalPending = event.guests.reduce((sum, guest) => {
                 const total = guest.totalAmount || 0;
                 const paid = guest.paidAmount || 0;
                 return sum + (total - paid);
@@ -1296,16 +1656,19 @@
         };
 
         const renderGuestPaymentsList = () => {
+            const event = getActiveEvent();
             const container = document.getElementById('guest-payments-list');
             
-            if (state.guests.length === 0) {
+            if (!event) return; // Segurança
+
+            if (event.guests.length === 0) {
                 container.innerHTML = '<li class="list-item">Nenhum convidado cadastrado</li>';
                 return;
             }
             
             container.innerHTML = '';
             
-            state.guests.forEach(guest => {
+            event.guests.forEach(guest => {
                 const li = document.createElement('li');
                 li.className = 'list-item';
                 
@@ -1334,16 +1697,19 @@
         };
 
         const renderSupplierPaymentsList = () => {
+            const event = getActiveEvent();
             const container = document.getElementById('supplier-payments-list');
             
-            if (state.suppliers.length === 0) {
+            if (!event) return; // Segurança
+
+            if (event.suppliers.length === 0) {
                 container.innerHTML = '<li class="list-item">Nenhum fornecedor cadastrado</li>';
                 return;
             }
             
             container.innerHTML = '';
             
-            state.suppliers.forEach(supplier => {
+            event.suppliers.forEach(supplier => {
                 const li = document.createElement('li');
                 li.className = 'list-item';
                 
@@ -1370,7 +1736,7 @@
             });
         };
 
-        // ===== PÁGINA DE CONTROLE DE ENTRADA =====
+        // ===== PÁGINA DE CONTROLE DE ENTRADA (Refatorado) =====
         const renderCheckinPage = () => {
             const form = document.getElementById('checkin-form');
             const input = document.getElementById('checkin-code');
@@ -1388,9 +1754,17 @@
         };
 
         const processCheckinCode = () => {
+            const event = getActiveEvent();
             const input = document.getElementById('checkin-code');
             const code = input.value;
             const resultDiv = document.getElementById('checkin-result');
+            
+            if (!event) {
+                resultDiv.innerHTML = `<h4>Nenhum Evento Ativo</h4><p>Por favor, selecione um evento para iniciar o check-in.</p>`;
+                resultDiv.className = 'checkin-result error';
+                resultDiv.style.display = 'block';
+                return;
+            }
 
             if (!code || code.length !== 4) {
                 resultDiv.innerHTML = `<h4>Código Inválido</h4><p>O código de acesso deve ter 4 dígitos.</p>`;
@@ -1399,8 +1773,8 @@
                 return;
             }
 
-            // Encontra o convidado pelo código de acesso
-            const guest = state.guests.find(g => g.accessCode == code); // Use == para comparar string com número
+            // Encontra o convidado pelo código de acesso (no evento ativo)
+            const guest = event.guests.find(g => g.accessCode == code); // Use == para comparar string com número
 
             if (!guest) {
                 resultDiv.innerHTML = `<h4>Código Inválido</h4><p>Nenhum convidado encontrado com este código.</p>`;
@@ -1433,11 +1807,22 @@
             input.value = ''; // Limpa o campo
         };
 
-        // ===== PÁGINA DE RELATÓRIOS =====
+        // ===== PÁGINA DE RELATÓRIOS (Refatorado) =====
         const renderReportsPage = () => {
+            const event = getActiveEvent();
+            if (!event) {
+                document.getElementById('total-income').textContent = formatCurrency(0);
+                document.getElementById('total-expenses').textContent = formatCurrency(0);
+                document.getElementById('final-balance').textContent = formatCurrency(0);
+                document.getElementById('balance-details').innerHTML = '';
+                document.getElementById('guest-payments-details').innerHTML = '';
+                document.getElementById('expenses-details').innerHTML = '';
+                return;
+            }
+
             // Calcular totais
-            const totalIncome = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
-            const totalExpenses = calculateTotalCost();
+            const totalIncome = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalExpenses = calculateTotalCost(); // Já usa o evento ativo
             const finalBalance = totalIncome - totalExpenses;
             
             document.getElementById('total-income').textContent = formatCurrency(totalIncome);
@@ -1445,9 +1830,9 @@
             document.getElementById('final-balance').textContent = formatCurrency(finalBalance);
             
             // Renderizar detalhes
-            renderBalanceDetails();
+            renderBalanceDetails(totalIncome, totalExpenses, finalBalance);
             renderGuestPaymentsDetails();
-            renderExpensesDetails();
+            renderExpensesDetails(totalExpenses);
             
             // Configurar botões de geração de PDF
             document.getElementById('generate-balance-report-btn').onclick = () => generateBalancePDF();
@@ -1455,12 +1840,8 @@
             document.getElementById('generate-expenses-report-btn').onclick = () => generateExpensesPDF();
         };
 
-        const renderBalanceDetails = () => {
+        const renderBalanceDetails = (totalIncome, totalExpenses, finalBalance) => {
             const container = document.getElementById('balance-details');
-            const totalIncome = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
-            const totalExpenses = calculateTotalCost();
-            const finalBalance = totalIncome - totalExpenses;
-            
             container.innerHTML = `
                 <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Total de Receitas</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(totalIncome)}</td></tr>
                 <tr><td style="padding: 10px; border-bottom: 1px solid #eee;">Total de Despesas</td><td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatCurrency(totalExpenses)}</td></tr>
@@ -1469,15 +1850,18 @@
         };
 
         const renderGuestPaymentsDetails = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const container = document.getElementById('guest-payments-details');
             
-            if (state.guests.length === 0) {
+            if (event.guests.length === 0) {
                 container.innerHTML = '<tr><td colspan="3" style="padding: 10px; text-align: center;">Nenhum convidado cadastrado</td></tr>';
                 return;
             }
             
             let html = '';
-            state.guests.forEach(guest => {
+            event.guests.forEach(guest => {
                 const totalAmount = guest.totalAmount || 0;
                 const paidAmount = guest.paidAmount || 0;
                 const pendingAmount = totalAmount - paidAmount;
@@ -1494,11 +1878,12 @@
             container.innerHTML = html;
         };
 
-        const renderExpensesDetails = () => {
+        const renderExpensesDetails = (totalCost) => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const container = document.getElementById('expenses-details');
-            const costs = state.eventData.costs || {};
-            const suppliersTotal = state.suppliers.reduce((sum, supplier) => sum + (supplier.cost || 0), 0);
-            const totalCost = calculateTotalCost();
+            const costs = event.eventData.costs || {};
             
             let html = '';
             
@@ -1515,7 +1900,7 @@
             });
             
             // Custos com fornecedores
-            state.suppliers.forEach(supplier => {
+            event.suppliers.forEach(supplier => {
                 html += `
                     <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #eee;">${supplier.name} (${supplier.service})</td>
@@ -1535,7 +1920,7 @@
             container.innerHTML = html;
         };
 
-        // ===== PÁGINA DE BACKUP =====
+        // ===== PÁGINA DE BACKUP (Refatorado) =====
         const renderBackupPage = () => {
             // Configurar botões de exportação
             document.getElementById('export-data-btn').onclick = exportAllData;
@@ -1544,26 +1929,41 @@
             document.getElementById('clear-data-btn').onclick = confirmClearData;
         };
 
+        /**
+         * Exporta TODOS os eventos (estrutura v3)
+         */
         const exportAllData = () => {
             const data = {
-                eventData: state.eventData,
-                guests: state.guests,
-                suppliers: state.suppliers,
+                events: state.events,
+                activeEventId: state.activeEventId,
                 exportDate: new Date().toISOString()
             };
             
-            downloadJSON(data, 'eventos-pro-backup-completo.json');
+            downloadJSON(data, 'eventos-pro-backup-completo-v3.json');
         };
 
+        /**
+         * Exporta convidados APENAS do evento ativo
+         */
         const exportGuestsData = () => {
+            const event = getActiveEvent();
+            if (!event) {
+                alert('Selecione um evento para exportar os convidados.');
+                return;
+            }
+
             const data = {
-                guests: state.guests,
+                eventName: event.eventData.name,
+                guests: event.guests,
                 exportDate: new Date().toISOString()
             };
             
-            downloadJSON(data, 'eventos-pro-convidados.json');
+            downloadJSON(data, `eventos-pro-convidados-${event.eventData.name.replace(/ /g, '_')}.json`);
         };
 
+        /**
+         * Importa um backup v3, mesclando dados
+         */
         const importData = () => {
             const fileInput = document.getElementById('backup-file');
             const file = fileInput.files[0];
@@ -1578,38 +1978,32 @@
                 try {
                     const importedData = JSON.parse(e.target.result);
                     
-                    // Mesclar dados importados com dados existentes
-                    if (importedData.eventData) {
-                        state.eventData = { ...state.eventData, ...importedData.eventData };
-                    }
-                    
-                    if (importedData.guests) {
-                        // Adicionar novos convidados (evitar duplicação por ID)
-                        importedData.guests.forEach(importedGuest => {
-                            const existingIndex = state.guests.findIndex(g => g.id === importedGuest.id);
+                    // Verifica se é um backup v3
+                    if (importedData.events) {
+                        importedData.events.forEach(importedEvent => {
+                            const existingIndex = state.events.findIndex(e => e.id === importedEvent.id);
                             if (existingIndex === -1) {
-                                state.guests.push(importedGuest);
+                                state.events.push(importedEvent); // Adiciona novo
                             } else {
-                                state.guests[existingIndex] = importedGuest;
+                                state.events[existingIndex] = importedEvent; // Sobrescreve
                             }
                         });
-                    }
-                    
-                    if (importedData.suppliers) {
-                        // Adicionar novos fornecedores (evitar duplicação por ID)
-                        importedData.suppliers.forEach(importedSupplier => {
-                            const existingIndex = state.suppliers.findIndex(s => s.id === importedSupplier.id);
-                            if (existingIndex === -1) {
-                                state.suppliers.push(importedSupplier);
-                            } else {
-                                state.suppliers[existingIndex] = importedSupplier;
-                            }
-                        });
+                        
+                        // Opcional: setar o evento ativo do backup
+                        if (importedData.activeEventId) {
+                            state.activeEventId = importedData.activeEventId;
+                        }
+
+                    } else if (importedData.eventData || importedData.guests) {
+                        alert('Este parece ser um arquivo de backup antigo (v2) ou parcial. A importação v2 não é suportada, apenas v3.');
+                    } else {
+                        alert('Arquivo de backup inválido.');
+                        return;
                     }
                     
                     saveData();
-                    alert('Dados importados com sucesso!');
-                    location.reload(); // Recarregar para atualizar todas as visualizações
+                    alert('Dados importados com sucesso! Recarregando a página.');
+                    location.reload(); 
                 } catch (error) {
                     console.error('Erro ao importar dados:', error);
                     alert('Erro ao importar dados. Verifique se o arquivo é válido.');
@@ -1620,8 +2014,8 @@
         };
 
         const confirmClearData = () => {
-            if (confirm('Tem certeza que deseja limpar todos os dados? Esta ação não pode ser desfeita.')) {
-                localStorage.removeItem('eventManagementData_v2');
+            if (confirm('Tem certeza que deseja limpar TODOS OS DADOS de TODOS OS EVENTOS? Esta ação não pode ser desfeita.')) {
+                localStorage.removeItem('eventManagementData_v3');
                 alert('Todos os dados foram removidos.');
                 location.reload();
             }
@@ -1639,9 +2033,14 @@
             URL.revokeObjectURL(url);
         };
 
-        // ===== COMPROVANTE DE PAGAMENTO (PDF) =====
+        // ===== COMPROVANTE DE PAGAMENTO (PDF) (Refatorado) =====
         const showReceipt = (guestId) => {
-            const guest = state.guests.find(g => g.id === guestId);
+            const event = getActiveEvent();
+            if (!event) {
+                alert('Convidado não encontrado!');
+                return;
+            }
+            const guest = event.guests.find(g => g.id === guestId);
             if (!guest) {
                 alert('Convidado não encontrado!');
                 return;
@@ -1663,11 +2062,12 @@
             const margin = 10;
             let yPosition = 15;
 
-            // --- Cabeçalho ---
+            // --- Cabeçalho (MODIFICADO) ---
             doc.setFontSize(16);
             doc.setTextColor(primaryColor);
             doc.setFont(undefined, 'bold');
-            doc.text('Eventos Pro', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            // MODIFICAÇÃO: Usar o nome do evento
+            doc.text(event.eventData.name || 'Comprovante', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
             yPosition += 6;
             
             doc.setFontSize(10);
@@ -1680,6 +2080,7 @@
             doc.setDrawColor(primaryColor);
             doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
             yPosition += 10;
+            // --- Fim Cabeçalho ---
 
             // --- Detalhes ---
             const addDetail = (label, value) => {
@@ -1697,7 +2098,9 @@
 
             addDetail('Convidado:', guest.name);
             addDetail('Telefone:', guest.phone || 'N/A');
-            addDetail('Data do Evento:', state.eventData.date ? new Date(state.eventData.date).toLocaleDateString('pt-BR') : 'N/A');
+            // Usa os dados do evento ativo
+            addDetail('Evento:', event.eventData.name || 'N/A');
+            addDetail('Data do Evento:', event.eventData.date ? new Date(event.eventData.date).toLocaleDateString('pt-BR') : 'N/A');
             yPosition += 3; // Espaço
             addDetail('Valor Total:', formatCurrency(guest.totalAmount || 0));
             addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
@@ -1717,7 +2120,6 @@
             doc.text(String(guest.accessCode), doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
             yPosition += 15;
             
-            // ===== INÍCIO DA MODIFICAÇÃO =====
             // Adicionar aviso de pendência ou mensagem de sucesso
             if (guest.paymentStatus !== 'paid') {
                 doc.setFontSize(10);
@@ -1741,9 +2143,8 @@
                 doc.text(splitText, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
                 yPosition += (splitText.length * 5) + 5;
             }
-            // ===== FIM DA MODIFICAÇÃO =====
 
-            // --- Rodapé ---
+            // --- Rodapé (MODIFICADO) ---
             doc.setLineWidth(0.2);
             doc.setDrawColor(lightTextColor);
             doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
@@ -1752,13 +2153,30 @@
             doc.setFontSize(8);
             doc.setTextColor(lightTextColor);
             doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            yPosition += 5; // Mais espaço
+
+            // MODIFICAÇÃO: Adicionar nome do sistema e desenvolvedor
+            doc.setFontSize(9);
+            doc.setTextColor(textColor);
+            doc.setFont(undefined, 'bold');
+            doc.text('Eventos Pro', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            yPosition += 4;
+
+            doc.setFontSize(8);
+            doc.setTextColor(lightTextColor);
+            doc.setFont(undefined, 'normal');
+            doc.text('Desenvolvido por: Dj Alek', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            // --- Fim Rodapé ---
             
             // --- Salvar ---
             doc.save(`recibo-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
         };
 
-        // ===== EXCLUSÃO DE ITENS =====
+        // ===== EXCLUSÃO DE ITENS (Refatorado) =====
         const confirmDelete = (id, type) => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const modal = document.getElementById('delete-modal');
             const title = document.getElementById('delete-modal-title');
             const message = document.getElementById('delete-message');
@@ -1767,11 +2185,11 @@
             state.currentEditingType = type;
             
             if (type === 'guest') {
-                const guest = state.guests.find(g => g.id === id);
+                const guest = event.guests.find(g => g.id === id);
                 title.textContent = 'Excluir Convidado';
                 message.textContent = `Tem certeza que deseja excluir o convidado "${guest.name}"? Esta ação não pode ser desfeita.`;
             } else if (type === 'supplier') {
-                const supplier = state.suppliers.find(s => s.id === id);
+                const supplier = event.suppliers.find(s => s.id === id);
                 title.textContent = 'Excluir Fornecedor';
                 message.textContent = `Tem certeza que deseja excluir o fornecedor "${supplier.name}"? Esta ação não pode ser desfeita.`;
             }
@@ -1781,14 +2199,17 @@
 
         // Configurar botões de confirmação de exclusão
         document.getElementById('confirm-delete-btn').onclick = () => {
+            const event = getActiveEvent();
+            if (!event) return; // Segurança
+
             if (state.currentEditingType === 'guest') {
-                state.guests = state.guests.filter(g => g.id !== state.currentEditingId);
+                event.guests = event.guests.filter(g => g.id !== state.currentEditingId);
                 saveData();
                 renderGuestsList();
                 renderDashboard();
                 renderPaymentsPage();
             } else if (state.currentEditingType === 'supplier') {
-                state.suppliers = state.suppliers.filter(s => s.id !== state.currentEditingId);
+                event.suppliers = event.suppliers.filter(s => s.id !== state.currentEditingId);
                 saveData();
                 renderSuppliersList();
                 renderDashboard();
@@ -1798,10 +2219,11 @@
             closeAllModals();
         };
 
-        document.getElementById('cancel-delete-btn').onclick = closeAllModals;
-
-        // ===== GERAÇÃO DE PDF (Relatórios) =====
+        // ===== GERAÇÃO DE PDF (Relatórios) (Refatorado) =====
         const generateBalancePDF = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
@@ -1812,11 +2234,11 @@
             
             doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
-            doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 20, 35);
+            doc.text(`Evento: ${event.eventData.name || 'Não definido'}`, 20, 35);
             doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
             
             // Resumo
-            const totalIncome = state.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+            const totalIncome = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
             const totalExpenses = calculateTotalCost();
             const finalBalance = totalIncome - totalExpenses;
             
@@ -1835,7 +2257,7 @@
             yPosition += 10;
             
             doc.setFontSize(10);
-            const costs = state.eventData.costs || {};
+            const costs = event.eventData.costs || {};
             Object.entries(costs).forEach(([category, amount]) => {
                 if (amount > 0) {
                     doc.text(`${getCostCategoryName(category)}: ${formatCurrency(amount)}`, 20, yPosition);
@@ -1843,16 +2265,19 @@
                 }
             });
             
-            state.suppliers.forEach(supplier => {
+            event.suppliers.forEach(supplier => {
                 doc.text(`${supplier.name} (${supplier.service}): ${formatCurrency(supplier.cost || 0)}`, 20, yPosition);
                 yPosition += 6;
             });
             
             // Salvar PDF
-            doc.save(`relatorio-financeiro-${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`relatorio-financeiro-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
 
         const generateGuestPaymentsPDF = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
@@ -1863,7 +2288,7 @@
             
             doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
-            doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 20, 35);
+            doc.text(`Evento: ${event.eventData.name || 'Não definido'}`, 20, 35);
             doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
             
             // Tabela de pagamentos
@@ -1884,7 +2309,7 @@
             doc.setTextColor(0, 0, 0);
             
             // Dados da tabela
-            state.guests.forEach(guest => {
+            event.guests.forEach(guest => {
                 const totalAmount = guest.totalAmount || 0;
                 const paidAmount = guest.paidAmount || 0;
                 const pendingAmount = totalAmount - paidAmount;
@@ -1902,10 +2327,13 @@
             });
             
             // Salvar PDF
-            doc.save(`relatorio-pagamentos-${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`relatorio-pagamentos-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
 
         const generateExpensesPDF = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
@@ -1916,7 +2344,7 @@
             
             doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
-            doc.text(`Evento: ${state.eventData.name || 'Não definido'}`, 20, 35);
+            doc.text(`Evento: ${event.eventData.name || 'Não definido'}`, 20, 35);
             doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
             
             // Tabela de despesas
@@ -1936,7 +2364,7 @@
             doc.setTextColor(0, 0, 0);
             
             // Custos fixos
-            const costs = state.eventData.costs || {};
+            const costs = event.eventData.costs || {};
             Object.entries(costs).forEach(([category, amount]) => {
                 if (amount > 0) {
                     if (yPosition > 270) {
@@ -1951,7 +2379,7 @@
             });
             
             // Fornecedores
-            state.suppliers.forEach(supplier => {
+            event.suppliers.forEach(supplier => {
                 if (yPosition > 270) {
                     doc.addPage();
                     yPosition = 20;
@@ -1970,15 +2398,19 @@
             doc.text(formatCurrency(totalCost), 150, yPosition + 6);
             
             // Salvar PDF
-            doc.save(`relatorio-despesas-${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`relatorio-despesas-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
 
         // ===== INICIALIZAÇÃO =====
         const init = () => {
-            initializeData();
+            initializeData(); // Carrega dados (v3) ou migra (v2) e preenche o seletor
+            setupEventSelector(); // Configura os botões e o seletor de eventos
             setupNavigation();
             setupModals();
-            renderDashboard();
+            
+            // A página ativa padrão é 'dashboard-page', então vamos renderizá-la.
+            // A própria função navigateToPage chamará renderDashboard
+            navigateToPage(state.activePage); 
             
             // Expor funções globais para uso nos event handlers
             window.editGuest = editGuest;
