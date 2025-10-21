@@ -555,6 +555,11 @@
         .form-control { margin-bottom: 1rem; }
         .form-control label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
         .form-control input, .form-control select, .form-control textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 1rem; }
+        /* Checkbox especial no modal */
+        .form-control.form-control-inline { flex-direction: row; display: flex; align-items: center; gap: 10px; }
+        .form-control.form-control-inline input[type="checkbox"] { width: auto; }
+        .form-control.form-control-inline label { margin-bottom: 0; }
+        
         .modal-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
         .modal-actions .spacer { flex-grow: 1; }
         
@@ -571,6 +576,8 @@
         .checkin-status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .checkin-status.checked { background-color: #d4edda; color: #155724; }
         .checkin-status.not-checked { background-color: #f8d7da; color: #721c24; }
+        /* NOVO: Status de check-in parcial */
+        .checkin-status.partial { background-color: #cce7ff; color: #004085; }
         
         /* Responsividade */
         @media (max-width: 992px) {
@@ -649,7 +656,7 @@
                         <p id="dashboard-event-name">Configurar</p>
                     </div>
                     <div class="card guests" data-page="guests-page">
-                        <div class="card-header"><span>Convidados</span><i class="fa-solid fa-users"></i></div>
+                        <div class="card-header"><span id="dashboard-guest-title">Convidados</span><i class="fa-solid fa-users"></i></div>
                         <p id="dashboard-guest-count">0</p>
                     </div>
                     <div class="card suppliers" data-page="suppliers-page">
@@ -671,12 +678,12 @@
                         <canvas id="payment-status-chart"></canvas>
                     </div>
                     <div class="card chart-container">
-                        <h3>Status de Check-in</h3>
+                        <h3>Status de Check-in (Grupos)</h3>
                         <canvas id="checkin-status-chart"></canvas>
                     </div>
                 </div>
                 
-                <div class="card">
+                <div class="card" id="financial-summary-card">
                     <h3>Resumo Financeiro</h3>
                     <div class="form-grid">
                         <div><strong>Custo Total do Evento:</strong> <span id="total-cost">R$ 0,00</span></div>
@@ -746,7 +753,7 @@
             
             <div class="card">
                 <h3>Verificação por QR Code</h3>
-                <p>Aponte a câmera para o QR Code do recibo do convidado.</p>
+                <p>Aponte a câmera para o QR Code do convite/recibo do convidado.</p>
                 <div class="modal-actions" style="justify-content: center; margin-top: 1rem;">
                     <button id="start-qr-scanner-btn" class="btn success"><i class="fa-solid fa-qrcode"></i> Iniciar Leitor QR</button>
                 </div>
@@ -859,8 +866,8 @@
             activePage: 'dashboard-page',
             currentEditingId: null,
             currentEditingType: null,
-            charts: {}, // NOVO: Armazenar instâncias dos gráficos
-            qrScanner: null // NOVO: Armazenar instância do leitor de QR
+            charts: {}, // Armazenar instâncias dos gráficos
+            qrScanner: null // Armazenar instância do leitor de QR
         };
 
         // ===== SELETORES DE ELEMENTOS COMUNS =====
@@ -902,6 +909,9 @@
 
         // ===== PERSISTÊNCIA DE DADOS (LocalStorage) (Refatorado para v3) =====
         
+        /**
+         * NOVO: Migra dados de convidados para incluir familyCount e checkedInCount
+         */
         const migrateGuestData = (event) => {
             let needsSave = false;
             const existingCodes = new Set(event.guests.map(g => g.accessCode).filter(Boolean));
@@ -924,6 +934,26 @@
                     delete guest.qrCode;
                     needsSave = true;
                 }
+                
+                // --- NOVAS MIGRAÇÕES (familyCount, checkedInCount) ---
+                if (guest.familyCount === undefined) {
+                    guest.familyCount = 1; // Padrão é 1
+                    needsSave = true;
+                }
+                if (guest.checkedInCount === undefined) {
+                    // Se o convidado estava marcado como checkedIn, assume 1 e familyCount 1
+                    if (guest.checkedIn === true) {
+                        guest.checkedInCount = 1;
+                        guest.familyCount = 1; // Força contagem 1 para dados antigos
+                    } else {
+                        guest.checkedInCount = 0;
+                    }
+                    needsSave = true;
+                }
+                
+                // Garante que o booleano 'checkedIn' reflete o estado da contagem
+                guest.checkedIn = (guest.checkedInCount >= guest.familyCount);
+                // --- FIM DAS NOVAS MIGRAÇÕES ---
             });
             return needsSave;
         };
@@ -945,10 +975,10 @@
                 const newEventId = Date.now();
                 const migratedEvent = {
                     id: newEventId,
-                    eventData: savedData_v2.eventData || { name: 'Evento Migrado', date: '', location: '', description: '', costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } },
+                    eventData: savedData_v2.eventData || { name: 'Evento Migrado', date: '', location: '', description: '', isFree: false, costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } },
                     guests: savedData_v2.guests || [],
                     suppliers: savedData_v2.suppliers || [],
-                    tasks: [] // NOVO: Adiciona array de tarefas
+                    tasks: [] 
                 };
                 
                 migrateGuestData(migratedEvent);
@@ -964,12 +994,26 @@
                 state.activeEventId = null;
             }
 
-            // NOVO: Garantir que eventos existentes tenham o array de tarefas
+            // Garantir que eventos existentes tenham campos novos (tasks, isFree, e migração de convidados)
+            let anyMigration = false;
             state.events.forEach(event => {
                 if (!event.tasks) {
                     event.tasks = [];
+                    anyMigration = true;
+                }
+                if (event.eventData.isFree === undefined) {
+                    event.eventData.isFree = false; // Padrão para eventos antigos
+                    anyMigration = true;
+                }
+                if (migrateGuestData(event)) { // Roda a migração de convidados
+                    anyMigration = true;
                 }
             });
+            
+            if (anyMigration) {
+                console.log("Dados migrados para o formato mais recente.");
+                saveData();
+            }
             
             populateEventSelector();
         };
@@ -1017,7 +1061,7 @@
         };
 
         const navigateToPage = (pageId) => {
-            // NOVO: Parar o leitor de QR se sair da página de check-in
+            // Parar o leitor de QR se sair da página de check-in
             if (state.activePage === 'checkin-page' && pageId !== 'checkin-page') {
                 stopQrScanner();
             }
@@ -1033,14 +1077,12 @@
             document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             
-            updateFAB(pageId);
             state.activePage = pageId;
-            renderPageContent(pageId);
+            renderPageContent(pageId); // Movido para depois de definir a página ativa
         };
 
         const updateFAB = (pageId) => {
             const fab = selectors.fab;
-            // Modificado: FAB também aparece na página de Tarefas
             const showFab = ['guests-page', 'suppliers-page'].includes(pageId) && getActiveEvent();
             fab.style.display = showFab ? 'flex' : 'none';
             
@@ -1053,8 +1095,28 @@
         };
 
         const renderPageContent = (pageId) => {
-            selectors.fab.style.display = 'none';
             const activeEvent = getActiveEvent();
+
+            // --- NOVO: Lógica para Evento Gratuito ---
+            const paymentsNavLink = document.querySelector('a[data-page="payments-page"]').parentElement;
+            const reportsNavLink = document.querySelector('a[data-page="reports-page"]').parentElement;
+            
+            if (activeEvent && activeEvent.eventData.isFree) {
+                // Esconde links de navegação
+                paymentsNavLink.style.display = 'none';
+                reportsNavLink.style.display = 'none';
+
+                // Se o usuário tentar acessar a página de pagamentos ou relatórios, redireciona
+                if (pageId === 'payments-page' || pageId === 'reports-page') {
+                    navigateToPage('dashboard-page');
+                    return; // Para a execução para evitar renderizar a página errada
+                }
+            } else if (activeEvent) {
+                // Garante que eles estão visíveis se o evento não for gratuito
+                paymentsNavLink.style.display = 'list-item';
+                reportsNavLink.style.display = 'list-item';
+            }
+            // --- FIM DA LÓGICA DE EVENTO GRATUITO ---
 
             if (!activeEvent && pageId !== 'backup-page') { 
                 navigateToPage('dashboard-page');
@@ -1070,7 +1132,7 @@
                 case 'event-page':
                     renderEventPage();
                     break;
-                case 'tasks-page': // NOVO: Renderiza página de tarefas
+                case 'tasks-page': 
                     renderTasksPage();
                     break;
                 case 'guests-page':
@@ -1132,7 +1194,8 @@
             state.activeEventId = eventId;
             saveData();
             populateEventSelector(); 
-            renderPageContent(state.activePage);
+            // Renderiza a página atual com o contexto do novo evento
+            renderPageContent(state.activePage); 
         };
 
         const showNewEventModal = () => {
@@ -1159,11 +1222,12 @@
                     date: '', 
                     location: '', 
                     description: '', 
+                    isFree: false, // NOVO: Padrão é falso
                     costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } 
                 },
                 guests: [],
                 suppliers: [],
-                tasks: [] // NOVO: Adiciona array de tarefas
+                tasks: []
             };
             
             state.events.push(newEvent);
@@ -1173,11 +1237,8 @@
             populateEventSelector();
             closeAllModals();
             
-            if(state.activePage !== 'dashboard-page') {
-                navigateToPage('dashboard-page');
-            } else {
-                renderDashboard();
-            }
+            // Sempre navega para o dashboard após criar um novo evento
+            navigateToPage('dashboard-page');
         };
 
         // ===== GERENCIAMENTO DE MODAIS =====
@@ -1221,100 +1282,116 @@
             
             selectors.noEventMessage.style.display = 'none';
             selectors.eventContentContainer.style.display = 'block';
+            
+            const isFree = event.eventData.isFree;
 
             document.getElementById('dashboard-event-name').textContent = event.eventData.name || 'Configurar';
-            document.getElementById('dashboard-guest-count').textContent = event.guests.length;
+            
+            // NOVO: Conta o total de pessoas (familiares)
+            const totalPeople = event.guests.reduce((sum, guest) => sum + (guest.familyCount || 1), 0);
+            document.getElementById('dashboard-guest-title').textContent = 'Total de Pessoas';
+            document.getElementById('dashboard-guest-count').textContent = totalPeople;
+            
             document.getElementById('dashboard-supplier-count').textContent = event.suppliers.length;
-            // NOVO: Card de Tarefas
+            
             const pendingTasks = event.tasks.filter(task => !task.completed).length;
             document.getElementById('dashboard-tasks-count').textContent = pendingTasks;
             
-            const totalReceived = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
-            const totalPending = event.guests.reduce((sum, guest) => {
-                const total = guest.totalAmount || 0;
-                const paid = guest.paidAmount || 0;
-                return sum + (total - paid);
-            }, 0);
+            // Lógica de Pagamentos (apenas se não for gratuito)
+            const paymentsCard = document.querySelector('#dashboard-cards .payments');
+            const financialSummaryCard = document.getElementById('financial-summary-card');
             
-            document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalReceived);
-            
-            const totalCost = calculateTotalCost();
-            const costPerGuest = event.guests.length > 0 ? totalCost / event.guests.length : 0;
-            
-            document.getElementById('total-cost').textContent = formatCurrency(totalCost);
-            document.getElementById('cost-per-guest').textContent = formatCurrency(costPerGuest);
-            document.getElementById('total-received').textContent = formatCurrency(totalReceived);
-            document.getElementById('total-pending').textContent = formatCurrency(totalPending);
+            if (isFree) {
+                paymentsCard.style.display = 'none';
+                financialSummaryCard.style.display = 'none';
+            } else {
+                paymentsCard.style.display = 'block';
+                financialSummaryCard.style.display = 'block';
+
+                const totalReceived = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
+                const totalPending = event.guests.reduce((sum, guest) => {
+                    const total = guest.totalAmount || 0;
+                    const paid = guest.paidAmount || 0;
+                    return sum + (total - paid);
+                }, 0);
+                
+                document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalReceived);
+                
+                const totalCost = calculateTotalCost();
+                // NOVO: Custo por pessoa (total de pessoas) em vez de por convite
+                const costPerGuest = totalPeople > 0 ? totalCost / totalPeople : 0;
+                
+                document.getElementById('total-cost').textContent = formatCurrency(totalCost);
+                document.getElementById('cost-per-guest').textContent = formatCurrency(costPerGuest);
+                document.getElementById('total-received').textContent = formatCurrency(totalReceived);
+                document.getElementById('total-pending').textContent = formatCurrency(totalPending);
+            }
             
             renderRecentPayments();
-            renderDashboardCharts(); // NOVO: Renderiza os gráficos
+            renderDashboardCharts(); // Renderiza os gráficos
         };
 
         /**
-         * NOVO: Renderiza os gráficos do dashboard
+         * Renderiza os gráficos do dashboard
          */
         const renderDashboardCharts = () => {
             const event = getActiveEvent();
             if (!event) return;
+            
+            const isFree = event.eventData.isFree;
+            const chartsContainer = document.getElementById('dashboard-charts');
+            const paymentChartContainer = document.getElementById('payment-status-chart').closest('.chart-container');
 
             // --- 1. Gráfico de Pagamentos ---
-            const guestStats = {
-                paid: 0,
-                partial: 0,
-                pending: 0,
-                total: event.guests.length
-            };
-            
-            event.guests.forEach(guest => {
-                guestStats[guest.paymentStatus || 'pending']++;
-            });
+            if (isFree) {
+                paymentChartContainer.style.display = 'none';
+                // Ajusta o grid para o gráfico restante ocupar o espaço
+                chartsContainer.style.gridTemplateColumns = '1fr';
+            } else {
+                paymentChartContainer.style.display = 'flex';
+                chartsContainer.style.gridTemplateColumns = '1fr 1fr';
+                
+                const guestStats = { paid: 0, partial: 0, pending: 0, total: event.guests.length };
+                event.guests.forEach(guest => {
+                    guestStats[guest.paymentStatus || 'pending']++;
+                });
 
-            const paymentCtx = document.getElementById('payment-status-chart').getContext('2d');
-            
-            // Destruir gráfico antigo para evitar sobreposição
-            if (state.charts.paymentChart) {
-                state.charts.paymentChart.destroy();
+                const paymentCtx = document.getElementById('payment-status-chart').getContext('2d');
+                
+                if (state.charts.paymentChart) {
+                    state.charts.paymentChart.destroy();
+                }
+
+                state.charts.paymentChart = new Chart(paymentCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pago', 'Parcial', 'Pendente'],
+                        datasets: [{
+                            label: 'Status de Pagamento',
+                            data: [guestStats.paid, guestStats.partial, guestStats.pending],
+                            backgroundColor: [
+                                'rgba(18, 164, 84, 0.8)', // Success
+                                'rgba(75, 144, 247, 0.8)', // Pending
+                                'rgba(232, 63, 91, 0.8)'  // Danger
+                            ],
+                            borderColor: ['#FFFFFF', '#FFFFFF', '#FFFFFF'],
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
             }
 
-            state.charts.paymentChart = new Chart(paymentCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pago', 'Parcial', 'Pendente'],
-                    datasets: [{
-                        label: 'Status de Pagamento',
-                        data: [guestStats.paid, guestStats.partial, guestStats.pending],
-                        backgroundColor: [
-                            'rgba(18, 164, 84, 0.8)', // Success
-                            'rgba(75, 144, 247, 0.8)', // Pending
-                            'rgba(232, 63, 91, 0.8)'  // Danger
-                        ],
-                        borderColor: [
-                            '#FFFFFF',
-                            '#FFFFFF',
-                            '#FFFFFF'
-                        ],
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                        }
-                    }
-                }
-            });
-
             // --- 2. Gráfico de Check-in ---
-            const checkinStats = {
-                checked: 0,
-                notChecked: 0
-            };
-            
+            // A lógica aqui (guest.checkedIn) está correta, pois atualizamos
+            // o 'checkedIn' para true apenas quando o check-in do GRUPO está completo.
+            const checkinStats = { checked: 0, notChecked: 0 };
             event.guests.forEach(guest => {
-                if (guest.checkedIn) {
+                if (guest.checkedIn) { // guest.checkedIn (booleano) significa check-in completo do grupo
                     checkinStats.checked++;
                 } else {
                     checkinStats.notChecked++;
@@ -1330,31 +1407,29 @@
             state.charts.checkinChart = new Chart(checkinCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Check-in Realizado', 'Aguardando'],
+                    labels: ['Check-in Completo', 'Aguardando'],
                     datasets: [{
-                        label: 'Status de Check-in',
+                        label: 'Status de Check-in (Grupos)',
                         data: [checkinStats.checked, checkinStats.notChecked],
                         backgroundColor: [
                             'rgba(86, 54, 211, 0.8)', // Primary
                             'rgba(234, 235, 240, 0.8)' // Border
                         ],
-                        borderColor: [
-                            '#FFFFFF',
-                            '#FFFFFF'
-                        ],
+                        borderColor: ['#FFFFFF', '#FFFFFF'],
                         borderWidth: 3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                        }
-                    }
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
+            
+            // Em telas menores, força uma coluna se ambos os gráficos estiverem visíveis
+             if (window.innerWidth <= 992 && !isFree) {
+                 chartsContainer.style.gridTemplateColumns = '1fr';
+             }
         };
 
 
@@ -1363,7 +1438,14 @@
             const container = document.getElementById('recent-payments-list');
             container.innerHTML = '';
             
-            if (!event || event.guests.length === 0) {
+            // NOVO: Oculta se o evento for gratuito
+            if (!event || event.eventData.isFree) {
+                container.parentElement.style.display = 'none';
+                return;
+            }
+            container.parentElement.style.display = 'block';
+            
+            if (event.guests.length === 0) {
                 container.innerHTML = '<li class="list-item" style="justify-content: center; opacity: 0.7;">Nenhum pagamento recebido ainda</li>';
                 return;
             }
@@ -1422,6 +1504,7 @@
                     <div><strong>Nome do Evento:</strong> ${eventData.name || 'Não definido'}</div>
                     <div><strong>Data:</strong> ${eventData.date ? new Date(eventData.date).toLocaleDateString('pt-BR') : 'Não definida'}</div>
                     <div><strong>Local:</strong> ${eventData.location || 'Não definido'}</div>
+                    <div><strong>Tipo:</strong> ${eventData.isFree ? 'Gratuito (Controle de Acesso)' : 'Pago'}</div>
                     <div style="grid-column: span 2;"><strong>Descrição:</strong> ${eventData.description || 'Não definida'}</div>
                 </div>
             `;
@@ -1475,6 +1558,10 @@
                 <div class="form-control">
                     <label for="event-description">Descrição</label>
                     <textarea id="event-description" rows="3">${event.eventData.description || ''}</textarea>
+                </div>
+                <div class="form-control form-control-inline">
+                    <input type="checkbox" id="event-is-free" ${event.eventData.isFree ? 'checked' : ''}>
+                    <label for="event-is-free">Evento Gratuito (Apenas controle de acesso)</label>
                 </div>
                 <div class="modal-actions">
                     <div class="spacer"></div>
@@ -1534,12 +1621,14 @@
                 name: document.getElementById('event-name').value,
                 date: document.getElementById('event-date').value,
                 location: document.getElementById('event-location').value,
-                description: document.getElementById('event-description').value
+                description: document.getElementById('event-description').value,
+                isFree: document.getElementById('event-is-free').checked // NOVO
             };
             saveData();
             renderEventInfo();
             renderDashboard();
             populateEventSelector();
+            renderPageContent(state.activePage); // Re-renderiza a página para ocultar/mostrar menus
             closeAllModals();
         };
 
@@ -1559,7 +1648,7 @@
             closeAllModals();
         };
 
-        // ===== NOVO: PÁGINA DE TAREFAS =====
+        // ===== PÁGINA DE TAREFAS =====
         const renderTasksPage = () => {
             const event = getActiveEvent();
             const container = document.getElementById('tasks-list');
@@ -1589,7 +1678,7 @@
             const event = getActiveEvent();
             const container = document.getElementById('tasks-list');
             
-            if (!event) return; // Segurança
+            if (!event) return; 
 
             if (event.tasks.length === 0) {
                 container.innerHTML = '<li class="list-item" style="justify-content: center; opacity: 0.7;">Nenhuma tarefa cadastrada</li>';
@@ -1598,7 +1687,6 @@
             
             container.innerHTML = '';
             
-            // Separa concluídas de pendentes
             const pendingTasks = event.tasks.filter(t => !t.completed);
             const completedTasks = event.tasks.filter(t => t.completed);
 
@@ -1633,7 +1721,7 @@
             event.tasks.push(newTask);
             saveData();
             renderTasksList();
-            renderDashboard(); // Atualizar contagem no dashboard
+            renderDashboard(); 
         };
 
         const toggleTaskCompletion = (taskId) => {
@@ -1647,7 +1735,7 @@
             
             saveData();
             renderTasksList();
-            renderDashboard(); // Atualizar contagem no dashboard
+            renderDashboard(); 
         };
         
         const deleteTask = (taskId) => {
@@ -1658,7 +1746,7 @@
             
             saveData();
             renderTasksList();
-            renderDashboard(); // Atualizar contagem no dashboard
+            renderDashboard(); 
         };
 
 
@@ -1689,6 +1777,8 @@
                 return;
             }
             
+            const isFree = event.eventData.isFree;
+            
             const filteredGuests = event.guests.filter(guest => 
                 guest.name.toLowerCase().includes(searchTerm) || 
                 (guest.phone && guest.phone.includes(searchTerm)) ||
@@ -1706,23 +1796,35 @@
                 const li = document.createElement('li');
                 li.className = 'list-item';
                 
-                const totalAmount = guest.totalAmount || 0;
-                const paidAmount = guest.paidAmount || 0;
-                const paymentStatus = guest.paymentStatus || 'pending';
-                const checkinStatus = guest.checkedIn ? 'checked' : 'not-checked';
+                const familyCount = guest.familyCount || 1;
+                const checkedInCount = guest.checkedInCount || 0;
+                
+                // NOVO: Lógica de status de check-in (parcial)
+                const checkinStatus = guest.checkedIn ? 'checked' : (checkedInCount > 0 ? 'partial' : 'not-checked');
+                const checkinText = guest.checkedIn ? 'Check-in Completo' : (checkedInCount > 0 ? `Entrada Parcial (${checkedInCount}/${familyCount})` : 'Não Entrou');
+                
+                let paymentHtml = '';
+                if (!isFree) {
+                    const totalAmount = guest.totalAmount || 0;
+                    const paidAmount = guest.paidAmount || 0;
+                    const paymentStatus = guest.paymentStatus || 'pending';
+                    paymentHtml = `
+                        <span class="status ${paymentStatus}">${getPaymentStatusText(paymentStatus)}</span>
+                        <span style="font-weight: 500;">${formatCurrency(paidAmount)} / ${formatCurrency(totalAmount)}</span>
+                    `;
+                }
                 
                 li.innerHTML = `
                     <div class="list-item-main">
-                        <i class="fa-solid fa-user" style="color: ${checkinStatus === 'checked' ? 'var(--success-color)' : 'var(--text-light-color)'};"></i>
+                        <i class="fa-solid fa-user" style="color: ${checkinStatus === 'not-checked' ? 'var(--text-light-color)' : 'var(--success-color)'};"></i>
                         <div>
-                            <div><strong>${guest.name}</strong></div>
+                            <div><strong>${guest.name}</strong> (${familyCount} ${familyCount > 1 ? 'pessoas' : 'pessoa'})</div>
                             <div style="font-size: 0.8rem; color: var(--text-light-color);">${guest.phone || 'Sem telefone'}</div>
                         </div>
                     </div>
                     <div class="list-item-actions">
-                        <span class="status ${paymentStatus}">${getPaymentStatusText(paymentStatus)}</span>
-                        <span class="checkin-status ${checkinStatus}">${guest.checkedIn ? 'Entrada Confirmada' : 'Não Entrou'}</span>
-                        <span style="font-weight: 500;">${formatCurrency(paidAmount)} / ${formatCurrency(totalAmount)}</span>
+                        ${paymentHtml}
+                        <span class="checkin-status ${checkinStatus}">${checkinText}</span>
                         <button class="btn secondary" onclick="editGuest(${guest.id})" style="padding: 8px 10px;"><i class="fa-solid fa-edit"></i></button>
                         <button class="btn secondary" onclick="showReceipt(${guest.id})" style="padding: 8px 10px;"><i class="fa-solid fa-receipt"></i></button>
                         <button class="delete-btn" onclick="confirmDelete(${guest.id}, 'guest')"><i class="fa-solid fa-trash"></i></button>
@@ -1744,6 +1846,8 @@
             const isEditing = guestId !== null;
             const guest = isEditing ? event.guests.find(g => g.id === guestId) : null;
             
+            const isFree = event.eventData.isFree; // NOVO
+            
             title.textContent = isEditing ? 'Editar Convidado' : 'Adicionar Convidado';
 
             let accessCodeHtml = '';
@@ -1757,27 +1861,31 @@
             
             form.innerHTML = `
                 <div class="form-control">
-                    <label for="guest-name">Nome</label>
+                    <label for="guest-name">Nome (Responsável/Família)</label>
                     <input type="text" id="guest-name" value="${guest ? guest.name : ''}" required>
                 </div>
                 <div class="form-control">
                     <label for="guest-phone">Telefone</label>
                     <input type="tel" id="guest-phone" value="${guest ? guest.phone : ''}" required>
                 </div>
+                <div class="form-control">
+                    <label for="guest-family-count">Total de Pessoas (incl. convidado)</label>
+                    <input type="number" id="guest-family-count" min="1" step="1" value="${guest ? (guest.familyCount || 1) : '1'}" required>
+                </div>
                 ${accessCodeHtml} 
                 <div class="form-control">
                     <label for="guest-email">E-mail (Opcional)</label>
                     <input type="email" id="guest-email" value="${guest ? guest.email : ''}">
                 </div>
-                <div class="form-control">
+                <div class="form-control" ${isFree ? 'style="display:none;"' : ''}>
                     <label for="guest-total-amount">Valor Total</label>
                     <input type="number" id="guest-total-amount" step="0.01" value="${guest ? guest.totalAmount : '0'}" required>
                 </div>
-                <div class="form-control">
+                <div class="form-control" ${isFree ? 'style="display:none;"' : ''}>
                     <label for="guest-paid-amount">Valor Pago</label>
                     <input type="number" id="guest-paid-amount" step="0.01" value="${guest ? guest.paidAmount : '0'}" required>
                 </div>
-                <div class="form-control">
+                <div class="form-control" ${isFree ? 'style="display:none;"' : ''}>
                     <label for="guest-payment-status">Status do Pagamento</label>
                     <select id="guest-payment-status">
                         <option value="pending" ${guest && guest.paymentStatus === 'pending' ? 'selected' : ''}>Pendente</option>
@@ -1798,23 +1906,45 @@
         const saveGuestData = (guestId = null) => {
             const event = getActiveEvent();
             if (!event) return;
+            
+            const isFree = event.eventData.isFree;
+            
             const name = document.getElementById('guest-name').value;
             const email = document.getElementById('guest-email').value;
             const phone = document.getElementById('guest-phone').value;
-            const totalAmount = parseFloat(document.getElementById('guest-total-amount').value) || 0;
-            const paidAmount = parseFloat(document.getElementById('guest-paid-amount').value) || 0;
-            const paymentStatus = document.getElementById('guest-payment-status').value;
-            const autoPaymentStatus = paidAmount === 0 ? 'pending' : (paidAmount >= totalAmount ? 'paid' : 'partial');
-            const finalPaymentStatus = paymentStatus || autoPaymentStatus;
+            const familyCount = parseInt(document.getElementById('guest-family-count').value) || 1; // NOVO
+            
+            // NOVO: Lógica de pagamento para evento gratuito
+            const totalAmount = isFree ? 0 : (parseFloat(document.getElementById('guest-total-amount').value) || 0);
+            const paidAmount = isFree ? 0 : (parseFloat(document.getElementById('guest-paid-amount').value) || 0);
+            
+            let paymentStatus;
+            if (isFree) {
+                paymentStatus = 'paid'; // Evento gratuito é considerado 'pago' para fins de acesso
+            } else {
+                paymentStatus = document.getElementById('guest-payment-status').value;
+                const autoPaymentStatus = paidAmount === 0 ? 'pending' : (paidAmount >= totalAmount ? 'paid' : 'partial');
+                paymentStatus = paymentStatus || autoPaymentStatus;
+            }
 
             if (guestId !== null) {
                 const index = event.guests.findIndex(g => g.id === guestId);
                 if (index !== -1) {
+                    // Mantém checkedInCount se familyCount não for alterado
+                    const oldFamilyCount = event.guests[index].familyCount || 1;
+                    let checkedInCount = event.guests[index].checkedInCount || 0;
+                    if (familyCount !== oldFamilyCount) {
+                         checkedInCount = 0; // Reseta o check-in se o total de pessoas mudou
+                    }
+                    
                     event.guests[index] = {
                         ...event.guests[index],
                         name, email, phone, totalAmount, paidAmount,
-                        paymentStatus: finalPaymentStatus,
-                        lastPaymentDate: paidAmount > event.guests[index].paidAmount ? new Date().toISOString() : event.guests[index].lastPaymentDate
+                        familyCount: familyCount, // NOVO
+                        checkedInCount: checkedInCount, // NOVO
+                        checkedIn: (checkedInCount >= familyCount), // NOVO
+                        paymentStatus: paymentStatus,
+                        lastPaymentDate: (paidAmount > event.guests[index].paidAmount && !isFree) ? new Date().toISOString() : event.guests[index].lastPaymentDate
                     };
                 }
             } else {
@@ -1827,10 +1957,12 @@
                 const newGuest = {
                     id: Date.now(),
                     name, email, phone, totalAmount, paidAmount,
-                    paymentStatus: finalPaymentStatus,
-                    checkedIn: false,
+                    paymentStatus: paymentStatus,
+                    familyCount: familyCount, // NOVO
+                    checkedIn: false, // NOVO
+                    checkedInCount: 0, // NOVO
                     regOrder: event.guests.length + 1,
-                    lastPaymentDate: paidAmount > 0 ? new Date().toISOString() : null,
+                    lastPaymentDate: (paidAmount > 0 && !isFree) ? new Date().toISOString() : null,
                     accessCode: newCode
                 };
                 event.guests.push(newGuest);
@@ -1962,6 +2094,14 @@
                 document.getElementById('supplier-payments-list').innerHTML = '<li class="list-item">Nenhum evento selecionado</li>';
                 return;
             }
+            
+            // Esta página não deve ser acessível se o evento for gratuito,
+            // mas colocamos esta verificação por segurança.
+            if (event.eventData.isFree) {
+                 navigateToPage('dashboard-page');
+                 return;
+            }
+            
             const totalReceived = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
             const totalPending = event.guests.reduce((sum, guest) => {
                 const total = guest.totalAmount || 0;
@@ -2052,18 +2192,14 @@
             const input = document.getElementById('checkin-code');
             const resultDiv = document.getElementById('checkin-result');
             
-            // Botões do QR Scanner
             const startBtn = document.getElementById('start-qr-scanner-btn');
             const stopBtn = document.getElementById('stop-qr-scanner-btn');
-            
-            // ===== INÍCIO DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
             const toggleManualBtn = document.getElementById('toggle-manual-checkin');
             const manualContainer = document.getElementById('manual-checkin-container');
-            // ===== FIM DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
             
             form.onsubmit = (e) => {
                 e.preventDefault();
-                processCheckinCode(input.value); // Modificado
+                processCheckinCode(input.value); 
             };
 
             input.onfocus = () => {
@@ -2073,7 +2209,6 @@
             startBtn.onclick = startQrScanner;
             stopBtn.onclick = stopQrScanner;
             
-            // ===== INÍCIO DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
             toggleManualBtn.onclick = (e) => {
                 e.preventDefault();
                 if (manualContainer.style.display === 'none') {
@@ -2085,58 +2220,56 @@
                     toggleManualBtn.innerHTML = '<i class="fa-solid fa-keyboard"></i> Não conseguiu ler? Digite o código manual.';
                 }
             };
-            // ===== FIM DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
         };
 
         /**
-         * NOVO: Inicia o leitor de QR Code
+         * Inicia o leitor de QR Code
          */
         const startQrScanner = () => {
             const resultDiv = document.getElementById('checkin-result');
-            resultDiv.style.display = 'none'; // Limpa resultado anterior
+            resultDiv.style.display = 'none'; 
             
-            // Mostrar container do leitor
             document.getElementById('qr-scanner-container').style.display = 'block';
 
-            // Parar scanner anterior se existir
             if (state.qrScanner) {
                 stopQrScanner();
             }
 
-            // Callback de sucesso
             const onScanSuccess = (decodedText, decodedResult) => {
                 console.log(`Code matched = ${decodedText}`, decodedResult);
-                processCheckinCode(decodedText); // Processa o código lido
-                stopQrScanner(); // Para o scanner após sucesso
+                processCheckinCode(decodedText); 
+                // Não para mais o scanner, permite múltiplas leituras
+                // stopQrScanner(); 
+                
+                // Pisca o resultado
+                setTimeout(() => {
+                    document.getElementById('checkin-result').style.display = 'none';
+                }, 2000); // Esconde o resultado após 2 segundos
             };
 
-            // Callback de falha (opcional, mas bom para debug)
             const onScanFailure = (error) => {
                 // console.warn(`Code scan error = ${error}`);
             };
 
-            // Inicializa o novo scanner
             state.qrScanner = new Html5Qrcode("qr-reader");
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
             
-            // Tenta usar a câmera traseira ("environment")
             state.qrScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
                 .catch((err) => {
                     console.log("Falha ao iniciar a câmera traseira, tentando câmera frontal.", err);
-                    // Se falhar, tenta usar a câmera frontal ("user")
                     state.qrScanner.start({ facingMode: "user" }, config, onScanSuccess, onScanFailure)
                         .catch((err2) => {
                             console.error("Não foi possível iniciar nenhuma câmera.", err2);
                             resultDiv.innerHTML = `<h4>Erro de Câmera</h4><p>Não foi possível acessar a câmera para o leitor de QR Code.</p>`;
                             resultDiv.className = 'checkin-result error';
                             resultDiv.style.display = 'block';
-                            stopQrScanner(); // Limpa
+                            stopQrScanner(); 
                         });
                 });
         };
 
         /**
-         * NOVO: Para o leitor de QR Code
+         * Para o leitor de QR Code
          */
         const stopQrScanner = () => {
             const container = document.getElementById('qr-scanner-container');
@@ -2163,7 +2296,7 @@
 
 
         /**
-         * MODIFICADO: Processa um código (manual ou QR)
+         * NOVO: Processa código de check-in com lógica de contagem
          */
         const processCheckinCode = (code) => {
             const event = getActiveEvent();
@@ -2184,31 +2317,52 @@
                 return;
             }
 
-            // Encontra o convidado pelo código de acesso (string ou número)
+            // Encontra o convidado pelo código de acesso
             const guest = event.guests.find(g => String(g.accessCode) === String(code));
 
             if (!guest) {
                 resultDiv.innerHTML = `<h4>Código Invállido</h4><p>Nenhum convidado encontrado com este código (${code}).</p>`;
                 resultDiv.className = 'checkin-result error';
             } else {
-                if (guest.checkedIn) {
-                    resultDiv.innerHTML = `<h4>Entrada já Registrada</h4><p><strong>${guest.name}</strong> já fez check-in.</p><p>Horário: ${new Date(guest.checkinTime).toLocaleString('pt-BR')}</p>`;
-                    resultDiv.className = 'checkin-result pending';
-                } else if (guest.paymentStatus === 'paid') {
-                    guest.checkedIn = true;
-                    guest.checkinTime = new Date().toISOString();
-                    saveData();
-                    
-                    resultDiv.innerHTML = `<h4>Acesso Liberado!</h4><p>Bem-vindo(a), <strong>${guest.name}</strong>!</p><p>Pagamento confirmado.</p>`;
-                    resultDiv.className = 'checkin-result success';
-                    
-                    // Atualiza a lista de convidados e dashboard (se estiverem renderizados)
-                    if (state.activePage === 'guests-page') renderGuestsList();
-                    if (state.activePage === 'dashboard-page') renderDashboard();
-                    
-                } else {
+                const familyCount = guest.familyCount || 1;
+                let checkedInCount = guest.checkedInCount || 0;
+                const isFree = event.eventData.isFree;
+
+                // 1. Verifica se o pagamento é necessário e se está pendente
+                if (!isFree && guest.paymentStatus !== 'paid') {
                     resultDiv.innerHTML = `<h4>Pagamento Pendente</h4><p>A entrada de <strong>${guest.name}</strong> não pode ser liberada.</p><p>Status do Pagamento: <strong>${getPaymentStatusText(guest.paymentStatus)}</strong>.</p><p>Favor regularizar a situação.</p>`;
                     resultDiv.className = 'checkin-result error';
+                
+                // 2. Verifica se o check-in do grupo já está completo
+                } else if (guest.checkedIn || checkedInCount >= familyCount) {
+                    guest.checkedIn = true; // Garante que está marcado
+                    resultDiv.innerHTML = `<h4>Check-in Completo</h4><p><strong>${guest.name}</strong> já registrou todas as ${familyCount} entradas.</p>`;
+                    resultDiv.className = 'checkin-result pending'; // 'pending' (amarelo) para "já registrado"
+                
+                // 3. Processa a nova entrada
+                } else {
+                    checkedInCount++;
+                    guest.checkedInCount = checkedInCount;
+                    guest.checkinTime = new Date().toISOString(); // Atualiza para a hora da última entrada
+
+                    // 3a. Verifica se esta foi a última entrada
+                    if (checkedInCount >= familyCount) {
+                        guest.checkedIn = true; // Marca o grupo como totalmente check-in
+                        resultDiv.innerHTML = `<h4>Entrada Registrada (${checkedInCount}/${familyCount})</h4><p>Bem-vindo(a), <strong>${guest.name}</strong>!</p><p>Este foi o último membro. Check-in completo.</p>`;
+                        resultDiv.className = 'checkin-result success';
+                    
+                    // 3b. Ainda faltam entradas
+                    } else {
+                        guest.checkedIn = false; // Garante que não está marcado como completo
+                        resultDiv.innerHTML = `<h4>Entrada Registrada (${checkedInCount}/${familyCount})</h4><p>Bem-vindo(a), <strong>${guest.name}</strong>!</p><p>Ainda restam ${familyCount - checkedInCount} entradas para este convite.</p>`;
+                        resultDiv.className = 'checkin-result success'; // Sucesso, mas parcial
+                    }
+                    
+                    saveData();
+                    
+                    // Atualiza a lista de convidados e dashboard
+                    if (state.activePage === 'guests-page') renderGuestsList();
+                    renderDashboard(); // Sempre atualiza o dashboard (gráfico de check-in)
                 }
             }
 
@@ -2225,6 +2379,13 @@
                 document.getElementById('final-balance').textContent = formatCurrency(0);
                 return;
             }
+            
+            // Segurança: redireciona se for gratuito
+            if (event.eventData.isFree) {
+                 navigateToPage('dashboard-page');
+                 return;
+            }
+            
             const totalIncome = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
             const totalExpenses = calculateTotalCost();
             const finalBalance = totalIncome - totalExpenses;
@@ -2232,9 +2393,6 @@
             document.getElementById('total-income').textContent = formatCurrency(totalIncome);
             document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
             document.getElementById('final-balance').textContent = formatCurrency(finalBalance);
-            
-            // Funções de renderização de tabelas HTML foram removidas,
-            // pois os dados agora são gerados diretamente no PDF.
             
             document.getElementById('generate-balance-report-btn').onclick = () => generateBalancePDF();
             document.getElementById('generate-guest-payments-report-btn').onclick = () => generateGuestPaymentsPDF();
@@ -2330,7 +2488,7 @@
             URL.revokeObjectURL(url);
         };
 
-        // ===== COMPROVANTE DE PAGAMENTO (PDF com QR Code) (Refatorado) =====
+        // ===== COMPROVANTE / CONVITE (PDF com QR Code) (Refatorado) =====
         const showReceipt = (guestId) => {
             const event = getActiveEvent();
             if (!event) {
@@ -2342,6 +2500,10 @@
                 alert('Convidado não encontrado!');
                 return;
             }
+
+            const isFree = event.eventData.isFree; // NOVO
+            const docTitle = isFree ? 'Convite' : 'Comprovante de Pagamento';
+            const docFileName = isFree ? 'convite' : 'recibo';
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({
@@ -2362,13 +2524,13 @@
             doc.setFontSize(16);
             doc.setTextColor(primaryColor);
             doc.setFont(undefined, 'bold');
-            doc.text(event.eventData.name || 'Comprovante', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            doc.text(event.eventData.name || (isFree ? 'Convite' : 'Comprovante'), doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
             yPosition += 6;
             
             doc.setFontSize(10);
             doc.setTextColor(textColor);
             doc.setFont(undefined, 'normal');
-            doc.text('Comprovante de Pagamento', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+            doc.text(docTitle, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
             yPosition += 4;
             
             doc.setLineWidth(0.5);
@@ -2392,36 +2554,39 @@
 
             addDetail('Convidado:', guest.name);
             addDetail('Telefone:', guest.phone || 'N/A');
+            addDetail('Total de Pessoas:', guest.familyCount || 1); // NOVO
             addDetail('Evento:', event.eventData.name || 'N/A');
             addDetail('Data do Evento:', event.eventData.date ? new Date(event.eventData.date).toLocaleDateString('pt-BR') : 'N/A');
             yPosition += 3;
-            addDetail('Valor Total:', formatCurrency(guest.totalAmount || 0));
-            addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
-            addDetail('Status:', getPaymentStatusText(guest.paymentStatus));
+            
+            // NOVO: Detalhes de pagamento ou entrada gratuita
+            if (isFree) {
+                addDetail('Entrada:', 'Gratuita');
+            } else {
+                addDetail('Valor Total:', formatCurrency(guest.totalAmount || 0));
+                addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
+                addDetail('Status:', getPaymentStatusText(guest.paymentStatus));
+            }
             yPosition += 5;
 
-            // --- NOVO: Geração do QR Code ---
+            // --- Geração do QR Code ---
             try {
-                const qr = qrcode(0, 'M'); // Nível de correção de erro Médio
-                qr.addData(String(guest.accessCode)); // O QR Code conterá o código de 4 dígitos
+                const qr = qrcode(0, 'M'); 
+                qr.addData(String(guest.accessCode)); 
                 qr.make();
-                const qrImgData = qr.createDataURL(5, 5); // Módulos de 5px, margem de 5px
+                const qrImgData = qr.createDataURL(5, 5); 
 
-                // Centraliza o QR Code (40x40 mm)
                 const qrSize = 40;
                 const qrX = (doc.internal.pageSize.getWidth() / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPosition, qrSize, qrSize);
                 
-                yPosition += qrSize + 7; // Adiciona espaço após o QR Code
+                yPosition += qrSize + 7; 
 
-                // ===== INÍCIO DA ALTERAÇÃO (Exibir código em texto) =====
                 doc.setFontSize(14);
                 doc.setTextColor(textColor);
                 doc.setFont(undefined, 'bold');
-                // Adiciona o código de acesso logo abaixo do QR Code
                 doc.text(`CÓDIGO: ${guest.accessCode}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-                yPosition += 7; // Adiciona espaço após o código
-                // ===== FIM DA ALTERAÇÃO =====
+                yPosition += 7; 
 
             } catch (qrError) {
                 console.error("Erro ao gerar QR Code:", qrError);
@@ -2432,32 +2597,9 @@
             }
             // --- Fim do QR Code ---
 
-            // ===== BLOCO REMOVIDO A PEDIDO DO USUÁRIO =====
-            /*
-            // Aviso de pendência ou sucesso
-            if (guest.paymentStatus !== 'paid') {
-                doc.setFontSize(9);
-                doc.setTextColor(dangerColor);
-                doc.setFont(undefined, 'bold');
-                const avisoText = "A entrada só será liberada com o PAGAMENTO INTEGRAL.";
-                const splitText = doc.splitTextToSize(avisoText, doc.internal.pageSize.getWidth() - (margin * 2)); 
-                doc.text(splitText, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-                yPosition += (splitText.length * 5) + 5; 
-            } else {
-                doc.setFontSize(9);
-                doc.setTextColor(successColor);
-                doc.setFont(undefined, 'bold');
-                const avisoText = "Pagamento total efetuado. Apresente este recibo (com QR Code) na entrada.";
-                const splitText = doc.splitTextToSize(avisoText, doc.internal.pageSize.getWidth() - (margin * 2));
-                doc.text(splitText, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-                yPosition += (splitText.length * 5) + 5;
-            }
-            */
-            // ===== FIM DO BLOCO REMOVIDO =====
-
 
             // Rodapé
-            yPosition = 135; // Posição fixa para o rodapé
+            yPosition = 135; 
             doc.setLineWidth(0.2);
             doc.setDrawColor(lightTextColor);
             doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
@@ -2479,7 +2621,8 @@
             doc.setFont(undefined, 'normal');
             doc.text('Desenvolvido por: Dj Alek', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
             
-            doc.save(`recibo-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
+            // NOVO: Nome do arquivo dinâmico
+            doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
         };
 
         // ===== EXCLUSÃO DE ITENS =====
@@ -2516,18 +2659,15 @@
                 saveData();
                 renderSuppliersList();
             }
-            // Atualiza o dashboard em ambos os casos
+            
             renderDashboard();
             renderPaymentsPage();
             closeAllModals();
         };
 
         
-        // ===== INÍCIO DA ALTERAÇÃO: RELATÓRIOS PDF (SOLICITAÇÃO 3) =====
+        // ===== RELATÓRIOS PDF =====
 
-        /**
-         * NOVO: Adiciona cabeçalho e rodapé padronizados aos PDFs
-         */
         const addPdfHeaderAndFooter = (doc, title) => {
             const pageCount = doc.internal.getNumberOfPages();
             const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
@@ -2564,12 +2704,9 @@
             }
         };
 
-        /**
-         * NOVO: Refatorado para usar autoTable com melhor design
-         */
         const generateBalancePDF = () => {
             const event = getActiveEvent();
-            if (!event) return;
+            if (!event || event.eventData.isFree) return;
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
@@ -2577,7 +2714,6 @@
             const totalExpenses = calculateTotalCost();
             const finalBalance = totalIncome - totalExpenses;
             
-            // Tabela de Resumo
             doc.setFontSize(14);
             doc.setTextColor(54, 63, 95);
             doc.text('Resumo Financeiro', 20, 45);
@@ -2593,11 +2729,10 @@
                 theme: 'grid',
                 styles: { font: 'helvetica', cellPadding: 3, fontSize: 10 },
                 headStyles: { fillColor: [86, 54, 211], textColor: [255, 255, 255] },
-                alternateRowStyles: { fillColor: [247, 248, 252] }, // var(--background-color)
+                alternateRowStyles: { fillColor: [247, 248, 252] }, 
                 margin: { left: 20, right: 20 }
             });
             
-            // Tabela de Detalhes das Despesas
             const head = [['Descrição da Despesa', 'Valor']];
             const body = [];
             
@@ -2637,31 +2772,33 @@
             doc.save(`relatorio-financeiro-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
 
-        /**
-         * NOVO: Refatorado para usar autoTable com melhor design
-         */
         const generateGuestPaymentsPDF = () => {
             const event = getActiveEvent();
-            if (!event) return;
+            if (!event || event.eventData.isFree) return;
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            const head = [['#', 'Nome', 'Valor Total', 'Valor Pago', 'Valor Pendente', 'Status']];
+            // NOVO: Adiciona coluna 'Pessoas'
+            const head = [['#', 'Nome', 'Pessoas', 'Valor Total', 'Valor Pago', 'Valor Pendente', 'Status']];
             
             let totalAmountSum = 0;
             let paidAmountSum = 0;
+            let totalPeopleSum = 0;
             
             const body = event.guests.map((guest, index) => {
                 const totalAmount = guest.totalAmount || 0;
                 const paidAmount = guest.paidAmount || 0;
                 const pendingAmount = totalAmount - paidAmount;
+                const familyCount = guest.familyCount || 1;
                 
                 totalAmountSum += totalAmount;
                 paidAmountSum += paidAmount;
+                totalPeopleSum += familyCount;
                 
                 return [
                     index + 1,
                     guest.name,
+                    familyCount, // NOVO
                     formatCurrency(totalAmount),
                     formatCurrency(paidAmount),
                     formatCurrency(pendingAmount),
@@ -2673,6 +2810,7 @@
             
             const foot = [[
                 { content: 'Total', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: totalPeopleSum, styles: { fontStyle: 'bold' } }, // NOVO
                 { content: formatCurrency(totalAmountSum), styles: { fontStyle: 'bold' } },
                 { content: formatCurrency(paidAmountSum), styles: { fontStyle: 'bold' } },
                 { content: formatCurrency(pendingAmountSum), styles: { fontStyle: 'bold' } },
@@ -2689,16 +2827,13 @@
                 headStyles: { fillColor: [86, 54, 211], textColor: [255, 255, 255] },
                 footStyles: { fillColor: [234, 235, 240], textColor: [54, 63, 95], fontStyle: 'bold' },
                 alternateRowStyles: { fillColor: [247, 248, 252] },
-                margin: { left: 20, right: 20 }
+                margin: { left: 15, right: 15 } // Ajustado para caber a nova coluna
             });
             
             addPdfHeaderAndFooter(doc, 'Relatório de Pagamentos de Convidados');
             doc.save(`relatorio-pagamentos-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
 
-        /**
-         * NOVO: Refatorado para usar autoTable com melhor design
-         */
         const generateExpensesPDF = () => {
             const event = getActiveEvent();
             if (!event) return;
@@ -2742,9 +2877,6 @@
             doc.save(`relatorio-despesas-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
         
-        // ===== FIM DA ALTERAÇÃO: RELATÓRIOS PDF =====
-
-
         // ===== INICIALIZAÇÃO =====
         const init = () => {
             initializeData();
@@ -2759,7 +2891,6 @@
             window.confirmDelete = confirmDelete;
             window.showReceipt = showReceipt;
             window.closeAllModals = closeAllModals;
-            // NOVO: Expor funções de tarefas
             window.toggleTaskCompletion = toggleTaskCompletion;
             window.deleteTask = deleteTask;
         };
