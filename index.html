@@ -898,6 +898,16 @@
         const getPaymentStatusText = (status) => ({ paid: 'Pago', partial: 'Parcial', pending: 'Pendente' }[status] || 'Pendente');
         const getCostCategoryName = (category) => ({ food: 'Alimentação', music: 'Música', venue: 'Aluguel do Espaço', drinks: 'Bebidas', other: 'Outros Custos' }[category] || category);
         
+        // ** NOVO: Formata data e hora **
+        const formatEventDate = (dateString) => {
+            if (!dateString) return 'Data não definida';
+            const date = new Date(dateString);
+            // Adiciona o fuso horário para corrigir a data
+            const offset = date.getTimezoneOffset();
+            const correctedDate = new Date(date.getTime() + (offset * 60 * 1000));
+            return correctedDate.toLocaleDateString('pt-BR');
+        };
+
         const calculateTotalCost = () => {
             const event = getActiveEvent();
             if (!event) return 0;
@@ -1005,6 +1015,22 @@
                     event.eventData.isFree = false; // Padrão para eventos antigos
                     anyMigration = true;
                 }
+                // ** NOVAS MIGRAÇÕES (time, locationLink) **
+                if (event.eventData.time === undefined) {
+                    event.eventData.time = '';
+                    anyMigration = true;
+                }
+                if (event.eventData.locationLink === undefined) {
+                    event.eventData.locationLink = '';
+                    anyMigration = true;
+                }
+                // ** NOVO: Migração de Tema **
+                if (event.eventData.theme === undefined) {
+                    event.eventData.theme = 'padrao'; 
+                    anyMigration = true;
+                }
+                // ** FIM DAS NOVAS MIGRAÇÕES **
+
                 if (migrateGuestData(event)) { // Roda a migração de convidados
                     anyMigration = true;
                 }
@@ -1220,9 +1246,12 @@
                 eventData: { 
                     name: name, 
                     date: '', 
+                    time: '', // ** NOVO **
                     location: '', 
+                    locationLink: '', // ** NOVO **
+                    theme: 'padrao', // ** NOVO: Tema Padrão **
                     description: '', 
-                    isFree: false, // NOVO: Padrão é falso
+                    isFree: false, 
                     costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } 
                 },
                 guests: [],
@@ -1499,12 +1528,18 @@
             const container = document.getElementById('event-info');
             const eventData = event.eventData;
             
+            // ** ATUALIZADO para incluir novos campos **
             container.innerHTML = `
                 <div class="form-grid">
                     <div><strong>Nome do Evento:</strong> ${eventData.name || 'Não definido'}</div>
-                    <div><strong>Data:</strong> ${eventData.date ? new Date(eventData.date).toLocaleDateString('pt-BR') : 'Não definida'}</div>
-                    <div><strong>Local:</strong> ${eventData.location || 'Não definido'}</div>
                     <div><strong>Tipo:</strong> ${eventData.isFree ? 'Gratuito (Controle de Acesso)' : 'Pago'}</div>
+                    <div><strong>Data:</strong> ${formatEventDate(eventData.date)}</div>
+                    <div><strong>Horário:</strong> ${eventData.time || 'Não definido'}</div>
+                    <div style="grid-column: span 2;"><strong>Local:</strong> ${eventData.location || 'Não definido'}</div>
+                    <div style="grid-column: span 2; word-break: break-all;">
+                        <strong>Link do Local:</strong> 
+                        ${eventData.locationLink ? `<a href="${eventData.locationLink}" target="_blank">${eventData.locationLink}</a>` : 'Não definido'}
+                    </div>
                     <div style="grid-column: span 2;"><strong>Descrição:</strong> ${eventData.description || 'Não definida'}</div>
                 </div>
             `;
@@ -1542,23 +1577,45 @@
             const form = document.getElementById('event-form');
             title.textContent = event.eventData.name ? 'Editar Evento' : 'Criar Evento';
             
+            // ** ATUALIZADO para incluir novos campos (e Tema) **
             form.innerHTML = `
                 <div class="form-control">
                     <label for="event-name">Nome do Evento</label>
                     <input type="text" id="event-name" value="${event.eventData.name || ''}" required>
                 </div>
-                <div class="form-control">
-                    <label for="event-date">Data do Evento</label>
-                    <input type="date" id="event-date" value="${event.eventData.date || ''}" required>
+                <div class="form-grid">
+                    <div class="form-control">
+                        <label for="event-date">Data do Evento</label>
+                        <input type="date" id="event-date" value="${event.eventData.date || ''}" required>
+                    </div>
+                    <div class="form-control">
+                        <label for="event-time">Horário do Evento</label>
+                        <input type="time" id="event-time" value="${event.eventData.time || ''}">
+                    </div>
                 </div>
                 <div class="form-control">
                     <label for="event-location">Local</label>
                     <input type="text" id="event-location" value="${event.eventData.location || ''}" required>
                 </div>
                 <div class="form-control">
+                    <label for="event-location-link">Link da Localização (Google Maps, etc.)</label>
+                    <input type="url" id="event-location-link" value="${event.eventData.locationLink || ''}" placeholder="https://maps.app.goo.gl/...">
+                </div>
+                <div class="form-control">
                     <label for="event-description">Descrição</label>
                     <textarea id="event-description" rows="3">${event.eventData.description || ''}</textarea>
                 </div>
+                
+                <div class="form-control">
+                    <label for="event-theme">Tema do Convite (Eventos Gratuitos)</label>
+                    <select id="event-theme">
+                        <option value="padrao">Padrão (Roxo)</option>
+                        <option value="elegante">Elegante (Dourado/Preto)</option>
+                        <option value="festa">Festa (Vermelho/Rosa)</option>
+                        <option value="corporativo">Corporativo (Azul)</option>
+                    </select>
+                </div>
+                
                 <div class="form-control form-control-inline">
                     <input type="checkbox" id="event-is-free" ${event.eventData.isFree ? 'checked' : ''}>
                     <label for="event-is-free">Evento Gratuito (Apenas controle de acesso)</label>
@@ -1569,6 +1626,10 @@
                     <button type="submit" class="btn primary">Salvar</button>
                 </div>
             `;
+            
+            // ** NOVO: Define o valor do select de tema **
+            document.getElementById('event-theme').value = event.eventData.theme || 'padrao';
+
             form.onsubmit = (e) => { e.preventDefault(); saveEventData(); };
             modal.classList.add('active');
         };
@@ -1616,13 +1677,17 @@
         const saveEventData = () => {
             const event = getActiveEvent();
             if (!event) return;
+            // ** ATUALIZADO para salvar novos campos (e Tema) **
             event.eventData = {
                 ...event.eventData,
                 name: document.getElementById('event-name').value,
                 date: document.getElementById('event-date').value,
+                time: document.getElementById('event-time').value,
                 location: document.getElementById('event-location').value,
+                locationLink: document.getElementById('event-location-link').value,
                 description: document.getElementById('event-description').value,
-                isFree: document.getElementById('event-is-free').checked // NOVO
+                theme: document.getElementById('event-theme').value, // ** NOVO: Salva Tema **
+                isFree: document.getElementById('event-is-free').checked
             };
             saveData();
             renderEventInfo();
@@ -1814,6 +1879,9 @@
                     `;
                 }
                 
+                // ** ATUALIZADO: O ícone do recibo agora é 'fa-ticket' para convite e 'fa-receipt' para recibo **
+                const receiptIcon = isFree ? 'fa-ticket' : 'fa-receipt';
+
                 li.innerHTML = `
                     <div class="list-item-main">
                         <i class="fa-solid fa-user" style="color: ${checkinStatus === 'not-checked' ? 'var(--text-light-color)' : 'var(--success-color)'};"></i>
@@ -1826,7 +1894,7 @@
                         ${paymentHtml}
                         <span class="checkin-status ${checkinStatus}">${checkinText}</span>
                         <button class="btn secondary" onclick="editGuest(${guest.id})" style="padding: 8px 10px;"><i class="fa-solid fa-edit"></i></button>
-                        <button class="btn secondary" onclick="showReceipt(${guest.id})" style="padding: 8px 10px;"><i class="fa-solid fa-receipt"></i></button>
+                        <button class="btn secondary" onclick="showReceipt(${guest.id})" style="padding: 8px 10px;"><i class="fa-solid ${receiptIcon}"></i></button>
                         <button class="delete-btn" onclick="confirmDelete(${guest.id}, 'guest')"><i class="fa-solid fa-trash"></i></button>
                     </div>
                 `;
@@ -2489,6 +2557,7 @@
         };
 
         // ===== COMPROVANTE / CONVITE (PDF com QR Code) (Refatorado) =====
+        // ** FUNÇÃO TOTALMENTE ATUALIZADA **
         const showReceipt = (guestId) => {
             const event = getActiveEvent();
             if (!event) {
@@ -2501,129 +2570,240 @@
                 return;
             }
 
-            const isFree = event.eventData.isFree; // NOVO
-            const docTitle = isFree ? 'Convite' : 'Comprovante de Pagamento';
-            const docFileName = isFree ? 'convite' : 'recibo';
+            const isFree = event.eventData.isFree;
+            const eventData = event.eventData;
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: [100, 150]
-            });
-
-            const primaryColor = '#5636D3';
-            const textColor = '#363F5F';
-            const lightTextColor = '#969CB2';
-            const dangerColor = '#E83F5B';
-            const successColor = '#12A454';
-            const margin = 10;
-            let yPosition = 15;
-
-            // Cabeçalho
-            doc.setFontSize(16);
-            doc.setTextColor(primaryColor);
-            doc.setFont(undefined, 'bold');
-            doc.text(event.eventData.name || (isFree ? 'Convite' : 'Comprovante'), doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-            yPosition += 6;
-            
-            doc.setFontSize(10);
-            doc.setTextColor(textColor);
-            doc.setFont(undefined, 'normal');
-            doc.text(docTitle, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-            yPosition += 4;
-            
-            doc.setLineWidth(0.5);
-            doc.setDrawColor(primaryColor);
-            doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
-            yPosition += 10;
-
-            // Detalhes
-            const addDetail = (label, value) => {
-                doc.setFontSize(10);
-                doc.setTextColor(lightTextColor);
-                doc.setFont(undefined, 'normal');
-                doc.text(label, margin, yPosition);
-                
-                doc.setTextColor(textColor);
-                doc.setFont(undefined, 'bold');
-                doc.text(String(value), doc.internal.pageSize.getWidth() - margin, yPosition, { align: 'right' });
-                
-                yPosition += 6; // <<<< CORREÇÃO: Reduzido de 7 para 6
+            // ** NOVO: Paleta de Cores baseada no Tema **
+            const themePalettes = {
+                'padrao': { main: '#5636D3', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' },
+                'elegante': { main: '#BFA16A', text: '#333333', light: '#777777', headerText: '#FFFFFF' }, // Dourado
+                'festa': { main: '#E83F5B', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' }, // Rosa/Vermelho
+                'corporativo': { main: '#4B90F7', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' } // Azul
             };
-
-            addDetail('Convidado:', guest.name);
-            addDetail('Telefone:', guest.phone || 'N/A');
-            addDetail('Total de Pessoas:', guest.familyCount || 1); // NOVO
-            addDetail('Evento:', event.eventData.name || 'N/A');
-            addDetail('Data do Evento:', event.eventData.date ? new Date(event.eventData.date).toLocaleDateString('pt-BR') : 'N/A');
-            yPosition += 2; // <<<< CORREÇÃO: Reduzido de 3 para 2
+            const selectedTheme = themePalettes[event.eventData.theme || 'padrao'];
             
-            // NOVO: Detalhes de pagamento ou entrada gratuita
-            if (isFree) {
-                addDetail('Entrada:', 'Gratuita');
-            } else {
-                addDetail('Valor Total:', formatCurrency(guest.totalAmount || 0));
-                addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
-                addDetail('Status:', getPaymentStatusText(guest.paymentStatus));
-            }
-            yPosition += 3; // <<<< CORREÇÃO: Reduzido de 5 para 3
-
+            // Cores
+            const primaryColor = selectedTheme.main;
+            const textColor = selectedTheme.text;
+            const lightTextColor = selectedTheme.light;
+            const headerTextColor = selectedTheme.headerText;
+            
             // --- Geração do QR Code ---
+            let qrImgData = null;
             try {
                 const qr = qrcode(0, 'M'); 
                 qr.addData(String(guest.accessCode)); 
                 qr.make();
-                const qrImgData = qr.createDataURL(4, 4); // <<<< CORREÇÃO: Margem do QR reduzida
+                qrImgData = qr.createDataURL(4, 2); // (modules, margin)
+            } catch (qrError) {
+                console.error("Erro ao gerar QR Code:", qrError);
+                alert("Erro ao gerar QR Code para o PDF.");
+                return;
+            }
 
-                const qrSize = 35; // <<<< CORREÇÃO: Tamanho do QR reduzido de 40 para 35
+            // --- Lógica de Template ---
+            if (isFree) {
+                // *** NOVO: TEMPLATE CONVITE (A6) ***
+                const docTitle = 'Convite';
+                const docFileName = 'convite';
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a6' // [105, 148]
+                });
+                
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const margin = 10;
+                let yPos = 15;
+
+                // Fundo (Exemplo de elemento festivo)
+                doc.setFillColor(primaryColor);
+                doc.rect(0, 0, pageWidth, 35, 'F'); // Faixa superior
+                
+                // Título
+                doc.setFontSize(22);
+                doc.setTextColor(headerTextColor); // ** NOVO: Cor do Tema **
+                doc.setFont('helvetica', 'bold');
+                doc.text(eventData.name || 'Convite Especial', pageWidth / 2, yPos + 5, { align: 'center' });
+                yPos += 15;
+                
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Você é nosso convidado!', pageWidth / 2, yPos + 5, { align: 'center' });
+                yPos += 20;
+
+                // Detalhes do Convidado
+                doc.setFontSize(10);
+                doc.setTextColor(lightTextColor);
+                doc.text('Para:', margin, yPos);
+                
+                doc.setFontSize(16);
+                doc.setTextColor(textColor);
+                doc.setFont('helvetica', 'bold');
+                doc.text(guest.name, margin, yPos + 7);
+                yPos += 12;
+
+                doc.setFontSize(10);
+                doc.setTextColor(textColor);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`(Válido para ${guest.familyCount || 1} ${guest.familyCount > 1 ? 'pessoas' : 'pessoa'})`, margin, yPos);
+                yPos += 10;
+
+                // Linha
+                doc.setDrawColor(primaryColor);
+                doc.setLineWidth(0.3);
+                doc.line(margin, yPos, pageWidth - margin, yPos);
+                yPos += 8;
+
+                // Detalhes do Evento
+                const addDetail = (label, value) => {
+                    doc.setFontSize(10);
+                    doc.setTextColor(lightTextColor);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(label, margin, yPos);
+                    
+                    doc.setTextColor(textColor);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(String(value), margin + 18, yPos);
+                    
+                    yPos += 7;
+                };
+                
+                addDetail('Data:', formatEventDate(eventData.date));
+                addDetail('Horário:', eventData.time || 'N/A');
+                addDetail('Local:', eventData.location || 'N/A');
+
+                // Link Clicável
+                if (eventData.locationLink) {
+                    doc.setFontSize(10);
+                    doc.setTextColor(0, 0, 238); // Cor de link (azul)
+                    doc.setFont('helvetica', 'normal');
+                    doc.textWithLink('Abrir Localização no Mapa', margin, yPos, { url: eventData.locationLink });
+                    yPos += 7; 
+                } else {
+                    yPos += 4; 
+                }
+
+                // QR Code e Código de Acesso
+                const qrSize = 28; 
+                const qrX = (pageWidth / 2) - (qrSize / 2);
+                doc.addImage(qrImgData, 'PNG', qrX, yPos, qrSize, qrSize);
+                yPos += qrSize + 5; // ** NOVO: Espaço aumentado (era 3) **
+                
+                doc.setFontSize(14);
+                doc.setTextColor(textColor);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`CÓDIGO: ${guest.accessCode}`, pageWidth / 2, yPos, { align: 'center' });
+                yPos += 5; // ** NOVO: Espaço aumentado (era 4) **
+                
+                // (Linha de texto vazia removida)
+
+                // Rodapé
+                doc.setFontSize(9);
+                doc.setTextColor(lightTextColor);
+                doc.text('Eventos Pro | by Dj Alek', pageWidth / 2, doc.internal.pageSize.getHeight() - 4, { align: 'center' }); 
+
+                doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
+
+            } else {
+                // *** TEMPLATE ANTIGO (RECIBO) ***
+                const docTitle = 'Comprovante de Pagamento';
+                const docFileName = 'recibo';
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: [100, 150]
+                });
+                
+                const margin = 10;
+                let yPosition = 15;
+
+                // Cabeçalho
+                doc.setFontSize(16);
+                doc.setTextColor(primaryColor);
+                doc.setFont(undefined, 'bold');
+                doc.text(eventData.name || docTitle, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                yPosition += 6;
+                
+                doc.setFontSize(10);
+                doc.setTextColor(textColor);
+                doc.setFont(undefined, 'normal');
+                doc.text(docTitle, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                yPosition += 4;
+                
+                doc.setLineWidth(0.5);
+                doc.setDrawColor(primaryColor);
+                doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
+                yPosition += 10;
+
+                // Detalhes
+                const addDetail = (label, value) => {
+                    doc.setFontSize(10);
+                    doc.setTextColor(lightTextColor);
+                    doc.setFont(undefined, 'normal');
+                    doc.text(label, margin, yPosition);
+                    
+                    doc.setTextColor(textColor);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(String(value), doc.internal.pageSize.getWidth() - margin, yPosition, { align: 'right' });
+                    
+                    yPosition += 6;
+                };
+
+                addDetail('Convidado:', guest.name);
+                addDetail('Telefone:', guest.phone || 'N/A');
+                addDetail('Total de Pessoas:', guest.familyCount || 1);
+                addDetail('Evento:', eventData.name || 'N/A');
+                addDetail('Data do Evento:', formatEventDate(eventData.date));
+                yPosition += 2;
+                
+                // Detalhes de pagamento
+                addDetail('Valor Total:', formatCurrency(guest.totalAmount || 0));
+                addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
+                addDetail('Status:', getPaymentStatusText(guest.paymentStatus));
+                yPosition += 3; 
+
+                // QR Code
+                const qrSize = 35; 
                 const qrX = (doc.internal.pageSize.getWidth() / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPosition, qrSize, qrSize);
-                
-                yPosition += qrSize + 3; // <<<< CORREÇÃO: Espaçador reduzido de 7 para 3
+                yPosition += qrSize + 3;
 
                 doc.setFontSize(14);
                 doc.setTextColor(textColor);
                 doc.setFont(undefined, 'bold');
                 doc.text(`CÓDIGO: ${guest.accessCode}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-                yPosition += 5; // <<<< CORREÇÃO: Espaçador reduzido de 7 para 5
+                yPosition += 5;
 
-            } catch (qrError) {
-                console.error("Erro ao gerar QR Code:", qrError);
-                doc.setFontSize(10);
-                doc.setTextColor(dangerColor);
-                doc.text('Erro ao gerar QR Code.', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-                yPosition += 10;
+                // Rodapé
+                yPosition = 135; 
+                doc.setLineWidth(0.2);
+                doc.setDrawColor(lightTextColor);
+                doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
+                yPosition += 5;
+
+                doc.setFontSize(8);
+                doc.setTextColor(lightTextColor);
+                doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                yPosition += 4;
+                
+                doc.setFontSize(9);
+                doc.setTextColor(textColor);
+                doc.setFont(undefined, 'bold');
+                doc.text('Eventos Pro', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                yPosition += 4;
+                
+                doc.setFontSize(8);
+                doc.setTextColor(lightTextColor);
+                doc.setFont(undefined, 'normal');
+                doc.text('Desenvolvido por: Dj Alek', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                
+                doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
             }
-            // --- Fim do QR Code ---
-
-
-            // Rodapé
-            yPosition = 135; 
-            doc.setLineWidth(0.2);
-            doc.setDrawColor(lightTextColor);
-            doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
-            yPosition += 5;
-
-            doc.setFontSize(8);
-            doc.setTextColor(lightTextColor);
-            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-            yPosition += 4;
-            
-            doc.setFontSize(9);
-            doc.setTextColor(textColor);
-            doc.setFont(undefined, 'bold');
-            doc.text('Eventos Pro', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-            yPosition += 4;
-            
-            doc.setFontSize(8);
-            doc.setTextColor(lightTextColor);
-            doc.setFont(undefined, 'normal');
-            doc.text('Desenvolvido por: Dj Alek', doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-            
-            // NOVO: Nome do arquivo dinâmico
-            doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
         };
+
 
         // ===== EXCLUSÃO DE ITENS =====
         const confirmDelete = (id, type) => {
