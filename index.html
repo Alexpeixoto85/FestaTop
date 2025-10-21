@@ -455,6 +455,39 @@
             box-shadow: 0 2px 8px rgba(232, 63, 91, 0.3);
         }
 
+        /* --- NOVO: Página de Backup (Melhoria Visual) --- */
+        #backup-page .card {
+            border-left: 5px solid var(--border-color);
+        }
+        #backup-page .card:nth-of-type(1) { border-left-color: var(--success-color); }
+        #backup-page .card:nth-of-type(2) { border-left-color: var(--pending-color); }
+        #backup-page .card:nth-of-type(3) { border-left-color: var(--danger-color); }
+        
+        #backup-page .card h3 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        #backup-page .card h3 i {
+            font-size: 1.6rem; /* Ajustado */
+            padding: 10px;
+            border-radius: 50%;
+            color: #fff;
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #backup-page .card .icon-success { background-color: var(--success-color); }
+        #backup-page .card .icon-pending { background-color: var(--pending-color); }
+        #backup-page .card .icon-danger { background-color: var(--danger-color); }
+
 
         /* ... (restante do CSS existente: management-page, reports-page, modal, fab, etc.) ... */
         /* (Copiei o CSS restante do seu arquivo original para manter a funcionalidade) */
@@ -710,36 +743,44 @@
 
         <section id="checkin-page" class="page-content">
             <header><h2>Controle de Entrada</h2></header>
-            <div class="card">
-                <h3>Verificação por Código Manual</h3>
-                <p>Digite o código de 4 dígitos do convidado para validar a entrada.</p>
-                <div class="checkin-container">
-                    <form id="checkin-form">
-                        <div class="form-control">
-                            <label for="checkin-code">Código de Acesso (4 dígitos)</label>
-                            <input type="tel" id="checkin-code" maxlength="4" pattern="\d{4}" inputmode="numeric" required>
-                        </div>
-                        <div class="modal-actions" style="justify-content: center;">
-                            <button type="submit" class="btn primary">Verificar Entrada</button>
-                        </div>
-                    </form>
-                    <div id="checkin-result" class="checkin-result"></div>
-                </div>
-            </div>
             
             <div class="card">
                 <h3>Verificação por QR Code</h3>
-                <p>Clique no botão para abrir o leitor de QR Code e aponte para o recibo do convidado.</p>
+                <p>Aponte a câmera para o QR Code do recibo do convidado.</p>
                 <div class="modal-actions" style="justify-content: center; margin-top: 1rem;">
                     <button id="start-qr-scanner-btn" class="btn success"><i class="fa-solid fa-qrcode"></i> Iniciar Leitor QR</button>
                 </div>
+                
                 <div id="qr-scanner-container">
                     <div id="qr-reader"></div>
                     <button id="stop-qr-scanner-btn" class="btn danger" style="margin-top: 1rem;">Parar Leitor</button>
                 </div>
+                
+                <div style="text-align: center; margin-top: 2rem;">
+                    <a href="#" id="toggle-manual-checkin" style="color: var(--primary-color); text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-keyboard"></i> Não conseguiu ler? Digite o código manual.
+                    </a>
+                </div>
+
+                <div id="manual-checkin-container" style="display: none; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
+                    <h3>Verificação por Código Manual</h3>
+                    <p>Digite o código de 4 dígitos do convidado para validar a entrada.</p>
+                    <div class="checkin-container">
+                        <form id="checkin-form">
+                            <div class="form-control">
+                                <label for="checkin-code">Código de Acesso (4 dígitos)</label>
+                                <input type="tel" id="checkin-code" maxlength="4" pattern="\d{4}" inputmode="numeric" required>
+                            </div>
+                            <div class="modal-actions" style="justify-content: center;">
+                                <button type="submit" class="btn primary">Verificar Entrada</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="checkin-result" class="checkin-result" style="margin-top: 2rem;"></div>
             </div>
         </section>
-
         <section id="reports-page" class="page-content">
             <header><h2>Relatórios Financeiros</h2></header>
              <div id="report-summary">
@@ -761,7 +802,7 @@
         <section id="backup-page" class="page-content">
             <header><h2>Backup e Restauração</h2></header>
             <div class="card">
-                <h3>Exportar Dados</h3>
+                <h3><i class="fa-solid fa-download icon-success"></i> Exportar Dados</h3>
                 <p>Faça backup de todos os dados do sistema para um arquivo JSON.</p>
                 <div class="modal-actions">
                     <button class="btn success" id="export-data-btn"><i class="fa-solid fa-download"></i> Exportar Tudo (v3)</button>
@@ -769,20 +810,20 @@
                 </div>
             </div>
             <div class="card">
-                <h3>Importar Dados</h3>
+                <h3><i class="fa-solid fa-upload icon-pending"></i> Importar Dados</h3>
                 <p>Restaurar dados de um backup v3. A importação adicionará novos eventos e atualizará eventos existentes com o mesmo ID.</p>
                 <div class="form-control"><label for="backup-file">Selecionar arquivo de backup (.json)</label><input type="file" id="backup-file" accept=".json"></div>
                 <div class="modal-actions">
-                    <button class="btn secondary" id="import-data-btn"><i class="fa-solid fa-upload"></i> Importar Dados</button>
+                    <button class="btn download" id="import-data-btn"><i class="fa-solid fa-upload"></i> Importar Dados</button>
                 </div>
             </div>
             <div class="card">
-                <h3>Limpar Dados</h3>
+                <h3><i class="fa-solid fa-trash-alt icon-danger"></i> Limpar Dados</h3>
                 <p>Remover todos os dados do sistema (v3). Esta ação não pode ser desfeita.</p>
                 <div class="modal-actions"><button class="btn danger" id="clear-data-btn"><i class="fa-solid fa-trash-alt"></i> Limpar Todos os Dados</button></div>
             </div>
         </section>
-    </main>
+        </main>
 
     <button class="fab" id="fab-add-btn" style="display: none;"><i class="fa-solid fa-plus"></i></button>
 
@@ -2015,6 +2056,11 @@
             const startBtn = document.getElementById('start-qr-scanner-btn');
             const stopBtn = document.getElementById('stop-qr-scanner-btn');
             
+            // ===== INÍCIO DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
+            const toggleManualBtn = document.getElementById('toggle-manual-checkin');
+            const manualContainer = document.getElementById('manual-checkin-container');
+            // ===== FIM DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
+            
             form.onsubmit = (e) => {
                 e.preventDefault();
                 processCheckinCode(input.value); // Modificado
@@ -2026,6 +2072,20 @@
             
             startBtn.onclick = startQrScanner;
             stopBtn.onclick = stopQrScanner;
+            
+            // ===== INÍCIO DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
+            toggleManualBtn.onclick = (e) => {
+                e.preventDefault();
+                if (manualContainer.style.display === 'none') {
+                    manualContainer.style.display = 'block';
+                    toggleManualBtn.innerHTML = '<i class="fa-solid fa-qrcode"></i> Voltar para o Leitor QR';
+                    stopQrScanner(); // Para o scanner se estiver ativo
+                } else {
+                    manualContainer.style.display = 'none';
+                    toggleManualBtn.innerHTML = '<i class="fa-solid fa-keyboard"></i> Não conseguiu ler? Digite o código manual.';
+                }
+            };
+            // ===== FIM DA ALTERAÇÃO JS (SOLICITAÇÃO 1) =====
         };
 
         /**
@@ -2079,24 +2139,25 @@
          * NOVO: Para o leitor de QR Code
          */
         const stopQrScanner = () => {
-            if (state.qrScanner) {
+            const container = document.getElementById('qr-scanner-container');
+            if (state.qrScanner && state.qrScanner.isScanning) {
                 try {
                     state.qrScanner.stop().then((ignore) => {
                         console.log("QR Scanner parado.");
-                        document.getElementById('qr-scanner-container').style.display = 'none';
+                        container.style.display = 'none';
                         state.qrScanner = null;
                     }).catch((err) => {
                         console.log("Falha ao parar QR Scanner (provavelmente já estava parado).");
-                        document.getElementById('qr-scanner-container').style.display = 'none';
+                        container.style.display = 'none';
                         state.qrScanner = null;
                     });
                 } catch (err) {
                      console.log("Falha ao parar QR Scanner.", err);
-                     document.getElementById('qr-scanner-container').style.display = 'none';
+                     container.style.display = 'none';
                      state.qrScanner = null;
                 }
             } else {
-                 document.getElementById('qr-scanner-container').style.display = 'none';
+                 container.style.display = 'none';
             }
         };
 
@@ -2127,7 +2188,7 @@
             const guest = event.guests.find(g => String(g.accessCode) === String(code));
 
             if (!guest) {
-                resultDiv.innerHTML = `<h4>Código Inválido</h4><p>Nenhum convidado encontrado com este código (${code}).</p>`;
+                resultDiv.innerHTML = `<h4>Código Invállido</h4><p>Nenhum convidado encontrado com este código (${code}).</p>`;
                 resultDiv.className = 'checkin-result error';
             } else {
                 if (guest.checkedIn) {
@@ -2351,7 +2412,16 @@
                 const qrX = (doc.internal.pageSize.getWidth() / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPosition, qrSize, qrSize);
                 
-                yPosition += qrSize + 5; // Adiciona espaço após o QR Code
+                yPosition += qrSize + 7; // Adiciona espaço após o QR Code
+
+                // ===== INÍCIO DA ALTERAÇÃO (Exibir código em texto) =====
+                doc.setFontSize(14);
+                doc.setTextColor(textColor);
+                doc.setFont(undefined, 'bold');
+                // Adiciona o código de acesso logo abaixo do QR Code
+                doc.text(`CÓDIGO: ${guest.accessCode}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+                yPosition += 7; // Adiciona espaço após o código
+                // ===== FIM DA ALTERAÇÃO =====
 
             } catch (qrError) {
                 console.error("Erro ao gerar QR Code:", qrError);
@@ -2452,10 +2522,50 @@
             closeAllModals();
         };
 
-        // ===== GERAÇÃO DE PDF (Relatórios) - REFATORADO COM AUTOTABLE =====
         
+        // ===== INÍCIO DA ALTERAÇÃO: RELATÓRIOS PDF (SOLICITAÇÃO 3) =====
+
         /**
-         * NOVO: Refatorado para usar autoTable
+         * NOVO: Adiciona cabeçalho e rodapé padronizados aos PDFs
+         */
+        const addPdfHeaderAndFooter = (doc, title) => {
+            const pageCount = doc.internal.getNumberOfPages();
+            const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+            const event = getActiveEvent();
+            
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                
+                // --- CABEÇALHO ---
+                doc.setFontSize(18);
+                doc.setTextColor(86, 54, 211); // var(--primary-color)
+                doc.setFont('helvetica', 'bold');
+                doc.text('Eventos Pro', 20, 20);
+                
+                doc.setFontSize(12);
+                doc.setTextColor(54, 63, 95); // var(--text-color)
+                doc.setFont('helvetica', 'normal');
+                doc.text(title, 20, 28);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(150, 156, 178); // var(--text-light-color)
+                doc.text(`Evento: ${event.eventData.name || 'N/D'}`, pageWidth - 20, 20, { align: 'right' });
+                doc.text(`Data: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 20, 28, { align: 'right' });
+
+                // Linha
+                doc.setDrawColor(234, 235, 240); // var(--border-color)
+                doc.line(20, 35, pageWidth - 20, 35);
+
+                // --- RODAPÉ ---
+                doc.setFontSize(9);
+                doc.setTextColor(150, 156, 178);
+                doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            }
+        };
+
+        /**
+         * NOVO: Refatorado para usar autoTable com melhor design
          */
         const generateBalancePDF = () => {
             const event = getActiveEvent();
@@ -2463,31 +2573,28 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            doc.setFontSize(20);
-            doc.setTextColor(86, 54, 211);
-            doc.text('Relatório Financeiro - Eventos Pro', 20, 20);
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Evento: ${event.eventData.name || 'Não definido'}`, 20, 35);
-            doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
-            
             const totalIncome = event.guests.reduce((sum, guest) => sum + (guest.paidAmount || 0), 0);
             const totalExpenses = calculateTotalCost();
             const finalBalance = totalIncome - totalExpenses;
             
-            doc.setFontSize(14);
-            doc.text('Resumo Financeiro', 20, 60);
-
             // Tabela de Resumo
+            doc.setFontSize(14);
+            doc.setTextColor(54, 63, 95);
+            doc.text('Resumo Financeiro', 20, 45);
+            
             doc.autoTable({
-                startY: 65,
+                startY: 50,
                 body: [
-                    ['Total de Receitas', formatCurrency(totalIncome)],
-                    ['Total de Despesas', formatCurrency(totalExpenses)],
-                    [{ content: 'Saldo Final', styles: { fontStyle: 'bold' } }, { content: formatCurrency(finalBalance), styles: { fontStyle: 'bold' } }],
+                    ['Total de Receitas (Convidados)', formatCurrency(totalIncome)],
+                    ['Total de Despesas (Custos + Fornecedores)', formatCurrency(totalExpenses)],
+                    [{ content: 'Saldo Final', styles: { fontStyle: 'bold', fontSize: 11 } }, 
+                     { content: formatCurrency(finalBalance), styles: { fontStyle: 'bold', fontSize: 11 } }],
                 ],
                 theme: 'grid',
-                styles: { cellPadding: 3 },
+                styles: { font: 'helvetica', cellPadding: 3, fontSize: 10 },
+                headStyles: { fillColor: [86, 54, 211], textColor: [255, 255, 255] },
+                alternateRowStyles: { fillColor: [247, 248, 252] }, // var(--background-color)
+                margin: { left: 20, right: 20 }
             });
             
             // Tabela de Detalhes das Despesas
@@ -2501,27 +2608,37 @@
                 }
             });
             event.suppliers.forEach(supplier => {
-                body.push([`${supplier.name} (${supplier.service})`, formatCurrency(supplier.cost || 0)]);
+                body.push([`${supplier.name} (Fornecedor)`, formatCurrency(supplier.cost || 0)]);
             });
-            body.push([{ content: 'Total de Despesas', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalExpenses), styles: { fontStyle: 'bold' } }]);
             
+            const foot = [[
+                { content: 'Total de Despesas', styles: { fontStyle: 'bold', halign: 'right' } }, 
+                { content: formatCurrency(totalExpenses), styles: { fontStyle: 'bold' } }
+            ]];
+            
+            doc.setFontSize(14);
+            doc.setTextColor(54, 63, 95);
+            doc.text('Detalhes das Despesas', 20, doc.autoTable.previous.finalY + 15);
+
             doc.autoTable({
                 head: head,
                 body: body,
-                startY: doc.autoTable.previous.finalY + 15, // Inicia após a tabela anterior
-                headStyles: { fillColor: [86, 54, 211] },
-                didDrawPage: (data) => {
-                    // Adiciona título para a segunda tabela
-                    doc.setFontSize(14);
-                    doc.text('Detalhes das Despesas', 20, doc.autoTable.previous.finalY + 10);
-                }
+                foot: foot,
+                startY: doc.autoTable.previous.finalY + 20,
+                theme: 'grid',
+                styles: { font: 'helvetica', cellPadding: 3, fontSize: 10 },
+                headStyles: { fillColor: [86, 54, 211], textColor: [255, 255, 255] },
+                footStyles: { fillColor: [234, 235, 240], textColor: [54, 63, 95], fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [247, 248, 252] },
+                margin: { left: 20, right: 20 }
             });
             
+            addPdfHeaderAndFooter(doc, 'Relatório Financeiro (Balanço)');
             doc.save(`relatorio-financeiro-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
 
         /**
-         * NOVO: Refatorado para usar autoTable
+         * NOVO: Refatorado para usar autoTable com melhor design
          */
         const generateGuestPaymentsPDF = () => {
             const event = getActiveEvent();
@@ -2529,20 +2646,21 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            doc.setFontSize(20);
-            doc.setTextColor(86, 54, 211);
-            doc.text('Relatório de Pagamentos - Convidados', 20, 20);
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Evento: ${event.eventData.name || 'Não definido'}`, 20, 35);
-            doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
+            const head = [['#', 'Nome', 'Valor Total', 'Valor Pago', 'Valor Pendente', 'Status']];
             
-            const head = [['Nome', 'Valor Total', 'Valor Pago', 'Valor Pendente', 'Status']];
-            const body = event.guests.map(guest => {
+            let totalAmountSum = 0;
+            let paidAmountSum = 0;
+            
+            const body = event.guests.map((guest, index) => {
                 const totalAmount = guest.totalAmount || 0;
                 const paidAmount = guest.paidAmount || 0;
                 const pendingAmount = totalAmount - paidAmount;
+                
+                totalAmountSum += totalAmount;
+                paidAmountSum += paidAmount;
+                
                 return [
+                    index + 1,
                     guest.name,
                     formatCurrency(totalAmount),
                     formatCurrency(paidAmount),
@@ -2550,19 +2668,36 @@
                     getPaymentStatusText(guest.paymentStatus)
                 ];
             });
+            
+            const pendingAmountSum = totalAmountSum - paidAmountSum;
+            
+            const foot = [[
+                { content: 'Total', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatCurrency(totalAmountSum), styles: { fontStyle: 'bold' } },
+                { content: formatCurrency(paidAmountSum), styles: { fontStyle: 'bold' } },
+                { content: formatCurrency(pendingAmountSum), styles: { fontStyle: 'bold' } },
+                ''
+            ]];
 
             doc.autoTable({
                 head: head,
                 body: body,
-                startY: 55,
-                headStyles: { fillColor: [86, 54, 211] }
+                foot: foot,
+                startY: 40,
+                theme: 'grid',
+                styles: { font: 'helvetica', cellPadding: 3, fontSize: 9 },
+                headStyles: { fillColor: [86, 54, 211], textColor: [255, 255, 255] },
+                footStyles: { fillColor: [234, 235, 240], textColor: [54, 63, 95], fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [247, 248, 252] },
+                margin: { left: 20, right: 20 }
             });
             
+            addPdfHeaderAndFooter(doc, 'Relatório de Pagamentos de Convidados');
             doc.save(`relatorio-pagamentos-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
 
         /**
-         * NOVO: Refatorado para usar autoTable
+         * NOVO: Refatorado para usar autoTable com melhor design
          */
         const generateExpensesPDF = () => {
             const event = getActiveEvent();
@@ -2570,41 +2705,45 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            doc.setFontSize(20);
-            doc.setTextColor(86, 54, 211);
-            doc.text('Relatório de Despesas - Eventos Pro', 20, 20);
-            doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Evento: ${event.eventData.name || 'Não definido'}`, 20, 35);
-            doc.text(`Data do Relatório: ${new Date().toLocaleDateString('pt-BR')}`, 20, 42);
-            
-            const head = [['Descrição da Despesa', 'Valor']];
+            const head = [['Descrição da Despesa', 'Categoria', 'Valor']];
             const body = [];
             
             const costs = event.eventData.costs || {};
             Object.entries(costs).forEach(([category, amount]) => {
                 if (amount > 0) {
-                    body.push([getCostCategoryName(category), formatCurrency(amount)]);
+                    body.push([getCostCategoryName(category), 'Custo Fixo', formatCurrency(amount)]);
                 }
             });
             
             event.suppliers.forEach(supplier => {
-                body.push([`${supplier.name} (${supplier.service})`, formatCurrency(supplier.cost || 0)]);
+                body.push([supplier.name, supplier.service || 'Fornecedor', formatCurrency(supplier.cost || 0)]);
             });
             
-            // Adicionar total
             const totalCost = calculateTotalCost();
-            body.push([{ content: 'Total de Despesas', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCost), styles: { fontStyle: 'bold' } }]);
+            const foot = [[
+                { content: 'Total de Despesas', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } }, 
+                { content: formatCurrency(totalCost), styles: { fontStyle: 'bold' } }
+            ]];
             
             doc.autoTable({
                 head: head,
                 body: body,
-                startY: 55,
-                headStyles: { fillColor: [86, 54, 211] }
+                foot: foot,
+                startY: 40,
+                theme: 'grid',
+                styles: { font: 'helvetica', cellPadding: 3, fontSize: 10 },
+                headStyles: { fillColor: [86, 54, 211], textColor: [255, 255, 255] },
+                footStyles: { fillColor: [234, 235, 240], textColor: [54, 63, 95], fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [247, 248, 252] },
+                margin: { left: 20, right: 20 }
             });
             
+            addPdfHeaderAndFooter(doc, 'Relatório de Despesas');
             doc.save(`relatorio-despesas-${event.eventData.name.replace(/ /g, '_')}.pdf`);
         };
+        
+        // ===== FIM DA ALTERAÇÃO: RELATÓRIOS PDF =====
+
 
         // ===== INICIALIZAÇÃO =====
         const init = () => {
