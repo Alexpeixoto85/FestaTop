@@ -18,6 +18,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 
     <style>
         :root {
@@ -216,9 +218,23 @@
             letter-spacing: 0.5px;
             display: inline-flex;
             align-items: center;
+            justify-content: center; /* NOVO: Garante centralização do ícone */
             gap: 8px;
         }
-        
+
+        /* NOVO: Estilo para label de input file */
+        .btn.secondary:disabled,
+        .btn.primary:disabled,
+        .btn.success:disabled,
+        .btn.danger:disabled,
+        .btn.download:disabled {
+            background: #ccc;
+            background-image: none; /* Remove gradiente do estado desabilitado */
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.7;
+        }
+
         .btn:active {
             transform: translateY(2px);
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -229,7 +245,7 @@
             color: white;
             box-shadow: 0 4px 12px rgba(86, 54, 211, 0.3);
         }
-        .btn.primary:hover {
+        .btn.primary:hover:not(:disabled) {
              box-shadow: 0 6px 16px rgba(86, 54, 211, 0.4);
         }
         
@@ -238,7 +254,7 @@
             color: var(--text-color);
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .btn.secondary:hover {
+        .btn.secondary:hover:not(:disabled) {
             background-color: #e6e8eb;
         }
         
@@ -247,7 +263,7 @@
             color: white;
             box-shadow: 0 4px 12px rgba(18, 164, 84, 0.3);
         }
-        .btn.success:hover {
+        .btn.success:hover:not(:disabled) {
             box-shadow: 0 6px 16px rgba(18, 164, 84, 0.4);
         }
         
@@ -256,7 +272,7 @@
             color: white;
             box-shadow: 0 4px 12px rgba(232, 63, 91, 0.3);
         }
-        .btn.danger:hover {
+        .btn.danger:hover:not(:disabled) {
             box-shadow: 0 6px 16px rgba(232, 63, 91, 0.4);
         }
         
@@ -265,7 +281,7 @@
             color: white;
             box-shadow: 0 4px 12px rgba(75, 144, 247, 0.3);
         }
-         .btn.download:hover {
+         .btn.download:hover:not(:disabled) {
             box-shadow: 0 6px 16px rgba(75, 144, 247, 0.4);
         }
         
@@ -725,6 +741,22 @@
 
         <section id="guests-page" class="page-content management-page">
             <header><h2>Lista de Convidados</h2></header>
+            
+            <div class="card" id="guest-import-card" style="display: none;">
+                <h3><i class="fa-solid fa-file-excel"></i> Importar Convidados em Massa</h3>
+                <p style="margin-top: 0.5rem; margin-bottom: 1rem; color: var(--text-light-color);">
+                    Selecione um arquivo Excel (.xlsx, .xls, .csv). O arquivo deve ter duas colunas: <strong>Nome</strong> (Coluna A) e <strong>Telefone</strong> (Coluna B). A primeira linha será ignorada (cabeçalho).
+                </p>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <input type="file" id="guest-import-file" accept=".xlsx, .xls, .csv" style="display: none;">
+                    <label for="guest-import-file" class="btn secondary"><i class="fa-solid fa-folder-open"></i> Selecionar Arquivo</label>
+                    <span id="guest-import-filename" style="font-style: italic;">Nenhum arquivo selecionado</span>
+                </div>
+                <div class="modal-actions" style="margin-top: 1rem; justify-content: flex-start;">
+                    <button id="guest-import-btn" class="btn primary" disabled><i class="fa-solid fa-upload"></i> Importar Convidados</button>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="form-control"><input type="text" id="guest-search" placeholder="Buscar convidado..."></div>
             </div>
@@ -856,6 +888,24 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="action-modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 id="action-modal-title">Recibo/Convite</h3>
+            <p id="action-modal-message" style="margin-bottom: 1.5rem;"></p>
+            <div class="modal-actions" style="flex-direction: column; gap: 1rem;">
+                <button type="button" class="btn primary" id="action-pdf-btn">
+                    <i class="fa-solid fa-file-pdf"></i> Baixar PDF
+                </button>
+                <button type="button" class="btn success" id="action-whatsapp-btn">
+                    <i class="fa-brands fa-whatsapp"></i> Enviar por WhatsApp 
+                </button>
+                <button type="button" class="btn secondary" id="action-cancel-btn" style="margin-top: 1rem;">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -866,6 +916,7 @@
             activePage: 'dashboard-page',
             currentEditingId: null,
             currentEditingType: null,
+            currentActionGuestId: null, // NOVO: Armazena o convidado para ação (PDF/WPP)
             charts: {}, // Armazenar instâncias dos gráficos
             qrScanner: null // Armazenar instância do leitor de QR
         };
@@ -1281,7 +1332,7 @@
             });
 
             document.querySelectorAll('.modal-actions .btn.secondary').forEach(btn => {
-                if (btn.id !== 'cancel-delete-btn') {
+                if (btn.id !== 'cancel-delete-btn' && btn.id !== 'action-cancel-btn') { // NOVO: não fecha no cancelar
                     btn.addEventListener('click', (e) => {
                         e.preventDefault(); 
                         closeAllModals();
@@ -1289,6 +1340,11 @@
                 }
             });
             document.getElementById('cancel-delete-btn').onclick = closeAllModals;
+            
+            // NOVO: Listeners para o modal de Ação (PDF/WPP)
+            document.getElementById('action-pdf-btn').onclick = generateGuestPDF;
+            document.getElementById('action-whatsapp-btn').onclick = sendWhatsAppMessage;
+            document.getElementById('action-cancel-btn').onclick = closeAllModals;
         };
 
         const closeAllModals = () => {
@@ -1297,6 +1353,7 @@
             });
             state.currentEditingId = null;
             state.currentEditingType = null;
+            state.currentActionGuestId = null; // NOVO: Limpa o ID do convidado em ação
         };
 
         // ===== DASHBOARD (Refatorado com Gráficos) =====
@@ -1815,22 +1872,132 @@
         };
 
 
-        // ===== PÁGINA DE CONVIDADOS =====
+        // ===== PÁGINA DE CONVIDADOS (COM IMPORTAÇÃO) =====
         const renderGuestsPage = () => {
             const container = document.getElementById('guests-list');
             const searchInput = document.getElementById('guest-search');
             const event = getActiveEvent();
+            
+            // NOVO: Seletores de Importação
+            const importCard = document.getElementById('guest-import-card');
+            const importFileInput = document.getElementById('guest-import-file');
+            const importButton = document.getElementById('guest-import-btn');
+            const importFileName = document.getElementById('guest-import-filename');
 
             if (!event) {
                 container.innerHTML = '<li class="list-item">Selecione um evento para ver os convidados</li>';
                 searchInput.disabled = true;
+                importCard.style.display = 'none'; // NOVO: Oculta o card de importação
                 return;
             }
             
             searchInput.disabled = false;
+            importCard.style.display = 'block'; // NOVO: Mostra o card de importação
+            
+            // NOVO: Lógica de listeners de importação
+            importFileInput.onchange = () => {
+                if (importFileInput.files.length > 0) {
+                    importFileName.textContent = importFileInput.files[0].name;
+                    importButton.disabled = false;
+                } else {
+                    importFileName.textContent = 'Nenhum arquivo selecionado';
+                    importButton.disabled = true;
+                }
+            };
+            
+            importButton.onclick = () => {
+                const file = importFileInput.files[0];
+                if (file) {
+                    processGuestImport(file);
+                }
+            };
+            
             searchInput.oninput = () => renderGuestsList();
             renderGuestsList();
         };
+
+        /**
+         * NOVO: Processa a importação de convidados de um arquivo Excel
+         */
+        const processGuestImport = (file) => {
+            const event = getActiveEvent();
+            if (!event) {
+                alert('Nenhum evento ativo selecionado.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    // Pega todos os códigos de acesso existentes
+                    const existingCodes = new Set(event.guests.map(g => g.accessCode));
+                    let importedCount = 0;
+                    const newGuests = [];
+                    const initialGuestCount = event.guests.length;
+                    
+                    // Começa do 1 para pular o cabeçalho
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        const name = row[0] ? String(row[0]).trim() : null;
+                        const phone = row[1] ? String(row[1]).trim() : ''; // Telefone é opcional
+
+                        if (name && name.length > 0) {
+                            // Cria o convidado com os padrões definidos na requisição
+                            const guestData = {
+                                name: name,
+                                phone: phone,
+                                familyCount: 1, // Padrão 1
+                                totalAmount: 0, // Padrão 0
+                                paidAmount: 0,  // Padrão 0
+                                regOrder: initialGuestCount + importedCount + 1
+                            };
+
+                            const newGuest = createNewGuestObject(event, existingCodes, guestData);
+                            
+                            newGuest.id = Date.now() + i; // Garante ID único no loop
+                            
+                            newGuests.push(newGuest);
+                            importedCount++;
+                        }
+                    }
+                    
+                    if (importedCount > 0) {
+                        event.guests.push(...newGuests); // Adiciona todos de uma vez
+                        saveData();
+                        renderGuestsList();
+                        renderDashboard();
+                        alert(`${importedCount} convidados importados com sucesso!`);
+                    } else {
+                        alert('Nenhum convidado válido encontrado no arquivo. Verifique o formato (Coluna A: Nome, Coluna B: Telefone) e se a primeira linha é um cabeçalho.');
+                    }
+
+                } catch (error) {
+                    console.error("Erro ao importar arquivo:", error);
+                    alert("Ocorreu um erro ao processar o arquivo. Verifique se é um arquivo Excel válido.");
+                } finally {
+                    // Limpa o input de arquivo
+                    const importFileInput = document.getElementById('guest-import-file');
+                    const importButton = document.getElementById('guest-import-btn');
+                    const importFileName = document.getElementById('guest-import-filename');
+                    importFileInput.value = ''; // Reseta o input
+                    importFileName.textContent = 'Nenhum arquivo selecionado';
+                    importButton.disabled = true;
+                }
+            };
+
+            reader.onerror = () => {
+                alert('Não foi possível ler o arquivo.');
+            };
+
+            reader.readAsArrayBuffer(file);
+        };
+
 
         const renderGuestsList = () => {
             const event = getActiveEvent();
@@ -1971,6 +2138,57 @@
             modal.classList.add('active');
         };
 
+        /**
+         * NOVO: Gera um código de acesso único de 4 dígitos.
+         * @param {Set<number>} existingCodes - Um Set de códigos já em uso (será modificado).
+         */
+        const generateUniqueAccessCode = (existingCodes) => {
+            let newCode;
+            do {
+                newCode = Math.floor(1000 + Math.random() * 9000);
+            } while (existingCodes.has(newCode));
+            existingCodes.add(newCode); // Adiciona ao set para o próximo
+            return newCode;
+        };
+
+        /**
+         * NOVO: Cria um novo objeto de convidado com valores padrão.
+         * @param {object} event - O evento ativo.
+         * @param {Set<number>} existingCodes - Set de códigos existentes.
+         * @param {object} guestData - Dados do convidado (name, phone, etc.).
+         */
+        const createNewGuestObject = (event, existingCodes, guestData) => {
+            const isFree = event.eventData.isFree;
+            
+            const familyCount = guestData.familyCount || 1;
+            const totalAmount = isFree ? 0 : (guestData.totalAmount || 0);
+            const paidAmount = isFree ? 0 : (guestData.paidAmount || 0);
+            
+            let paymentStatus;
+            if (isFree) {
+                paymentStatus = 'paid';
+            } else {
+                paymentStatus = guestData.paymentStatus || (paidAmount === 0 ? 'pending' : (paidAmount >= totalAmount ? 'paid' : 'partial'));
+            }
+
+            return {
+                // ID será definido pelo chamador (saveGuestData ou processGuestImport)
+                name: guestData.name || 'Nome Inválido',
+                email: guestData.email || '',
+                phone: guestData.phone || '',
+                totalAmount: totalAmount,
+                paidAmount: paidAmount,
+                paymentStatus: paymentStatus,
+                familyCount: familyCount,
+                checkedIn: false,
+                checkedInCount: 0,
+                regOrder: guestData.regOrder || (event.guests.length + 1),
+                lastPaymentDate: (paidAmount > 0 && !isFree) ? new Date().toISOString() : null,
+                accessCode: generateUniqueAccessCode(existingCodes)
+            };
+        };
+
+
         const saveGuestData = (guestId = null) => {
             const event = getActiveEvent();
             if (!event) return;
@@ -2016,23 +2234,13 @@
                     };
                 }
             } else {
+                // NOVO: Refatorado para usar createNewGuestObject
                 const existingCodes = new Set(event.guests.map(g => g.accessCode));
-                let newCode;
-                do {
-                    newCode = Math.floor(1000 + Math.random() * 9000);
-                } while (existingCodes.has(newCode));
-
-                const newGuest = {
-                    id: Date.now(),
-                    name, email, phone, totalAmount, paidAmount,
-                    paymentStatus: paymentStatus,
-                    familyCount: familyCount, // NOVO
-                    checkedIn: false, // NOVO
-                    checkedInCount: 0, // NOVO
-                    regOrder: event.guests.length + 1,
-                    lastPaymentDate: (paidAmount > 0 && !isFree) ? new Date().toISOString() : null,
-                    accessCode: newCode
-                };
+                const newGuestData = { name, email, phone, totalAmount, paidAmount, paymentStatus, familyCount };
+                const newGuest = createNewGuestObject(event, existingCodes, newGuestData);
+                
+                newGuest.id = Date.now(); // Define o ID aqui
+                
                 event.guests.push(newGuest);
             }
             saveData();
@@ -2557,53 +2765,90 @@
         };
 
         // ===== COMPROVANTE / CONVITE (PDF com QR Code) (Refatorado) =====
-        // ** FUNÇÃO TOTALMENTE ATUALIZADA **
+
+        /**
+         * NOVO: Abre o modal de ações (PDF/WhatsApp) para um convidado
+         * (Antiga 'showReceipt')
+         */
         const showReceipt = (guestId) => {
             const event = getActiveEvent();
-            if (!event) {
-                alert('Nenhum evento ativo selecionado!');
-                return;
-            }
-            const guest = event.guests.find(g => g.id === guestId);
+            const guest = event?.guests.find(g => g.id === guestId);
             if (!guest) {
-                alert('Convidado não encontrado!');
+                alert('Convidado não encontrado.');
                 return;
             }
 
+            // Armazena o ID do convidado no estado para os botões do modal usarem
+            state.currentActionGuestId = guestId; 
+
+            const modal = document.getElementById('action-modal');
+            const title = document.getElementById('action-modal-title');
+            const message = document.getElementById('action-modal-message');
+            const whatsappBtn = document.getElementById('action-whatsapp-btn');
+
+            const isFree = event.eventData.isFree;
+            
+            title.textContent = isFree ? 'Gerar Convite' : 'Gerar Recibo';
+            message.textContent = `Selecione uma ação para ${guest.name}.`;
+
+            // Verifica se o convidado tem telefone cadastrado
+            if (guest.phone && guest.phone.trim() !== '') {
+                whatsappBtn.disabled = false;
+                whatsappBtn.title = `Enviar para ${guest.phone}`;
+            } else {
+                whatsappBtn.disabled = true;
+                whatsappBtn.title = 'Nenhum telefone cadastrado para este convidado.';
+            }
+
+            modal.classList.add('active');
+        };
+
+        /**
+         * NOVO: Função que efetivamente gera o PDF (lógica da antiga 'showReceipt')
+         */
+        const generateGuestPDF = () => {
+            const guestId = state.currentActionGuestId;
+            if (!guestId) return;
+            
+            const event = getActiveEvent();
+            const guest = event?.guests.find(g => g.id === guestId);
+
+            if (!guest) {
+                alert('Erro: Convidado não encontrado para gerar PDF.');
+                return;
+            }
+
+            // --- INÍCIO DA LÓGICA ANTIGA DO showReceipt ---
             const isFree = event.eventData.isFree;
             const eventData = event.eventData;
 
-            // ** NOVO: Paleta de Cores baseada no Tema **
             const themePalettes = {
                 'padrao': { main: '#5636D3', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' },
-                'elegante': { main: '#BFA16A', text: '#333333', light: '#777777', headerText: '#FFFFFF' }, // Dourado
-                'festa': { main: '#E83F5B', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' }, // Rosa/Vermelho
-                'corporativo': { main: '#4B90F7', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' } // Azul
+                'elegante': { main: '#BFA16A', text: '#333333', light: '#777777', headerText: '#FFFFFF' },
+                'festa': { main: '#E83F5B', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' },
+                'corporativo': { main: '#4B90F7', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' }
             };
             const selectedTheme = themePalettes[event.eventData.theme || 'padrao'];
             
-            // Cores
             const primaryColor = selectedTheme.main;
             const textColor = selectedTheme.text;
             const lightTextColor = selectedTheme.light;
             const headerTextColor = selectedTheme.headerText;
             
-            // --- Geração do QR Code ---
             let qrImgData = null;
             try {
                 const qr = qrcode(0, 'M'); 
                 qr.addData(String(guest.accessCode)); 
                 qr.make();
-                qrImgData = qr.createDataURL(4, 2); // (modules, margin)
+                qrImgData = qr.createDataURL(4, 2);
             } catch (qrError) {
                 console.error("Erro ao gerar QR Code:", qrError);
                 alert("Erro ao gerar QR Code para o PDF.");
                 return;
             }
 
-            // --- Lógica de Template ---
             if (isFree) {
-                // *** NOVO: TEMPLATE CONVITE (A6) ***
+                // *** TEMPLATE CONVITE (A6) ***
                 const docTitle = 'Convite';
                 const docFileName = 'convite';
                 const { jsPDF } = window.jspdf;
@@ -2617,13 +2862,11 @@
                 const margin = 10;
                 let yPos = 15;
 
-                // Fundo (Exemplo de elemento festivo)
                 doc.setFillColor(primaryColor);
-                doc.rect(0, 0, pageWidth, 35, 'F'); // Faixa superior
+                doc.rect(0, 0, pageWidth, 35, 'F');
                 
-                // Título
                 doc.setFontSize(22);
-                doc.setTextColor(headerTextColor); // ** NOVO: Cor do Tema **
+                doc.setTextColor(headerTextColor);
                 doc.setFont('helvetica', 'bold');
                 doc.text(eventData.name || 'Convite Especial', pageWidth / 2, yPos + 5, { align: 'center' });
                 yPos += 15;
@@ -2633,7 +2876,6 @@
                 doc.text('Você é nosso convidado!', pageWidth / 2, yPos + 5, { align: 'center' });
                 yPos += 20;
 
-                // Detalhes do Convidado
                 doc.setFontSize(10);
                 doc.setTextColor(lightTextColor);
                 doc.text('Para:', margin, yPos);
@@ -2650,13 +2892,11 @@
                 doc.text(`(Válido para ${guest.familyCount || 1} ${guest.familyCount > 1 ? 'pessoas' : 'pessoa'})`, margin, yPos);
                 yPos += 10;
 
-                // Linha
                 doc.setDrawColor(primaryColor);
                 doc.setLineWidth(0.3);
                 doc.line(margin, yPos, pageWidth - margin, yPos);
                 yPos += 8;
 
-                // Detalhes do Evento
                 const addDetail = (label, value) => {
                     doc.setFontSize(10);
                     doc.setTextColor(lightTextColor);
@@ -2674,10 +2914,9 @@
                 addDetail('Horário:', eventData.time || 'N/A');
                 addDetail('Local:', eventData.location || 'N/A');
 
-                // Link Clicável
                 if (eventData.locationLink) {
                     doc.setFontSize(10);
-                    doc.setTextColor(0, 0, 238); // Cor de link (azul)
+                    doc.setTextColor(0, 0, 238);
                     doc.setFont('helvetica', 'normal');
                     doc.textWithLink('Abrir Localização no Mapa', margin, yPos, { url: eventData.locationLink });
                     yPos += 7; 
@@ -2685,21 +2924,17 @@
                     yPos += 4; 
                 }
 
-                // QR Code e Código de Acesso
                 const qrSize = 28; 
                 const qrX = (pageWidth / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPos, qrSize, qrSize);
-                yPos += qrSize + 5; // ** NOVO: Espaço aumentado (era 3) **
+                yPos += qrSize + 5;
                 
                 doc.setFontSize(14);
                 doc.setTextColor(textColor);
                 doc.setFont('helvetica', 'bold');
                 doc.text(`CÓDIGO: ${guest.accessCode}`, pageWidth / 2, yPos, { align: 'center' });
-                yPos += 5; // ** NOVO: Espaço aumentado (era 4) **
+                yPos += 5;
                 
-                // (Linha de texto vazia removida)
-
-                // Rodapé
                 doc.setFontSize(9);
                 doc.setTextColor(lightTextColor);
                 doc.text('Eventos Pro | by Dj Alek', pageWidth / 2, doc.internal.pageSize.getHeight() - 4, { align: 'center' }); 
@@ -2707,7 +2942,7 @@
                 doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
 
             } else {
-                // *** TEMPLATE ANTIGO (RECIBO) ***
+                // *** TEMPLATE RECIBO ***
                 const docTitle = 'Comprovante de Pagamento';
                 const docFileName = 'recibo';
                 const { jsPDF } = window.jspdf;
@@ -2720,7 +2955,6 @@
                 const margin = 10;
                 let yPosition = 15;
 
-                // Cabeçalho
                 doc.setFontSize(16);
                 doc.setTextColor(primaryColor);
                 doc.setFont(undefined, 'bold');
@@ -2738,7 +2972,6 @@
                 doc.line(margin, yPosition, doc.internal.pageSize.getWidth() - margin, yPosition);
                 yPosition += 10;
 
-                // Detalhes
                 const addDetail = (label, value) => {
                     doc.setFontSize(10);
                     doc.setTextColor(lightTextColor);
@@ -2759,13 +2992,11 @@
                 addDetail('Data do Evento:', formatEventDate(eventData.date));
                 yPosition += 2;
                 
-                // Detalhes de pagamento
                 addDetail('Valor Total:', formatCurrency(guest.totalAmount || 0));
                 addDetail('Valor Pago:', formatCurrency(guest.paidAmount || 0));
                 addDetail('Status:', getPaymentStatusText(guest.paymentStatus));
                 yPosition += 3; 
 
-                // QR Code
                 const qrSize = 35; 
                 const qrX = (doc.internal.pageSize.getWidth() / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPosition, qrSize, qrSize);
@@ -2777,7 +3008,6 @@
                 doc.text(`CÓDIGO: ${guest.accessCode}`, doc.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
                 yPosition += 5;
 
-                // Rodapé
                 yPosition = 135; 
                 doc.setLineWidth(0.2);
                 doc.setDrawColor(lightTextColor);
@@ -2802,6 +3032,76 @@
                 
                 doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
             }
+            // --- FIM DA LÓGICA ANTIGA DO showReceipt ---
+            
+            closeAllModals(); // Fecha o modal de ação após o download
+        };
+        
+        /**
+         * NOVO: Gera e abre o link do WhatsApp com uma mensagem pré-definida
+         */
+        const sendWhatsAppMessage = () => {
+            const guestId = state.currentActionGuestId;
+            if (!guestId) return;
+            
+            const event = getActiveEvent();
+            const guest = event?.guests.find(g => g.id === guestId);
+            const eventData = event?.eventData;
+
+            if (!guest || !eventData) {
+                alert('Erro: Não foi possível encontrar dados do convidado ou do evento.');
+                return;
+            }
+
+            // 1. Formatar o número de telefone
+            let phone = (guest.phone || '').replace(/\D/g, ''); // Remove tudo que não é dígito
+            
+            // Adiciona o DDI 55 (Brasil) se não estiver presente
+            if (phone.length > 0 && !phone.startsWith('55')) {
+                phone = '55' + phone;
+            }
+
+            if (phone.length < 12) { // 55 (DDI) + XX (DDD) + 9... (9 dígitos)
+                console.warn('Número de telefone pode estar incompleto, mas tentando assim mesmo:', phone);
+            }
+            
+            // 2. Montar a mensagem
+            let message = '';
+            const isFree = eventData.isFree;
+
+            if (isFree) {
+                // Mensagem de Convite
+                message = `Olá ${guest.name}!\n\n` +
+                          `Você está convidado(a) para o evento *${eventData.name}*!\n\n` +
+                          `*Data:* ${formatEventDate(eventData.date)}\n` +
+                          `*Horário:* ${eventData.time || 'N/A'}\n` +
+                          `*Local:* ${eventData.location || 'N/A'}\n\n` +
+                          `Este convite é válido para *${guest.familyCount || 1} ${guest.familyCount > 1 ? 'pessoas' : 'pessoa'}*.\n\n` +
+                          `Seu código de acesso para a entrada é: *${guest.accessCode}*\n\n`;
+                if (eventData.locationLink) {
+                    message += `*Veja no mapa:* ${eventData.locationLink}\n`;
+                }
+            } else {
+                // Mensagem de Recibo
+                message = `Olá ${guest.name}!\n\n` +
+                          `Este é o seu comprovante de pagamento para o evento *${eventData.name}*.\n\n` +
+                          `*Convidado:* ${guest.name}\n` +
+                          `*Pessoas:* ${guest.familyCount || 1}\n` +
+                          `*Valor Total:* ${formatCurrency(guest.totalAmount || 0)}\n` +
+                          `*Valor Pago:* ${formatCurrency(guest.paidAmount || 0)}\n` +
+                          `*Status:* ${getPaymentStatusText(guest.paymentStatus)}\n\n` +
+                          `Seu código de acesso para a entrada é: *${guest.accessCode}*\n`;
+            }
+
+            // 3. Gerar e abrir o link
+            const encodedMessage = encodeURIComponent(message);
+            
+            // **** ESTA É A LINHA QUE FOI ALTERADA ****
+            // Troca 'https://wa.me/' por 'whatsapp://send'
+            const whatsappUrl = `whatsapp://send?phone=${phone}&text=${encodedMessage}`;
+            
+            window.open(whatsappUrl, '_blank');
+            closeAllModals();
         };
 
 
