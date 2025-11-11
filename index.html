@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -595,6 +596,52 @@
         /* NOVO: Status de check-in parcial */
         .checkin-status.partial { background-color: #cce7ff; color: #004085; }
         
+        /* NOVO: Estilos para seleção de tipo de evento */
+        .event-type-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .event-type-option {
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--card-bg-color);
+        }
+        
+        .event-type-option:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .event-type-option.selected {
+            border-color: var(--primary-color);
+            background-color: #f0edff;
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .event-type-option i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+        
+        .event-type-option h4 {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .event-type-option p {
+            font-size: 0.9rem;
+            color: var(--text-light-color);
+        }
+        
         /* Responsividade */
         @media (max-width: 992px) {
              #dashboard-charts {
@@ -616,6 +663,7 @@
             .fab { right: 1.5rem; bottom: 1.5rem; }
             .list-item { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .list-item-actions { width: 100%; justify-content: flex-end; }
+            .event-type-options { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -880,6 +928,35 @@
                     <label for="new-event-name">Nome do Evento</label>
                     <input type="text" id="new-event-name" required>
                 </div>
+                
+                <!-- NOVO: Seleção de Tipo de Evento -->
+                <div class="form-control">
+                    <label>Tipo de Evento</label>
+                    <div class="event-type-options">
+                        <div class="event-type-option" data-type="aniversario">
+                            <i class="fa-solid fa-birthday-cake"></i>
+                            <h4>Aniversário</h4>
+                            <p>Evento pessoal com template de aniversário</p>
+                        </div>
+                        <div class="event-type-option" data-type="casamento">
+                            <i class="fa-solid fa-ring"></i>
+                            <h4>Casamento</h4>
+                            <p>Cerimônia com template elegante</p>
+                        </div>
+                        <div class="event-type-option" data-type="fechado">
+                            <i class="fa-solid fa-user-group"></i>
+                            <h4>Evento Fechado</h4>
+                            <p>Evento privado com template moderno</p>
+                        </div>
+                        <div class="event-type-option" data-type="corporativo">
+                            <i class="fa-solid fa-briefcase"></i>
+                            <h4>Corporativo</h4>
+                            <p>Evento empresarial</p>
+                        </div>
+                    </div>
+                    <input type="hidden" id="event-type" name="event-type" required>
+                </div>
+                
                 <div class="modal-actions">
                     <button type="button" class="btn secondary" onclick="closeAllModals()">Cancelar</button>
                     <button type="submit" class="btn primary">Criar e Selecionar</button>
@@ -918,7 +995,8 @@
             currentEditingType: null,
             currentActionGuestId: null, // NOVO: Armazena o convidado para ação (PDF/WPP)
             charts: {}, // Armazenar instâncias dos gráficos
-            qrScanner: null // Armazenar instância do leitor de QR
+            qrScanner: null, // Armazenar instância do leitor de QR
+            lastAddedGuestId: null // NOVO: Armazena o ID do último convidado adicionado
         };
 
         // ===== SELETORES DE ELEMENTOS COMUNS =====
@@ -1078,6 +1156,11 @@
                 // ** NOVO: Migração de Tema **
                 if (event.eventData.theme === undefined) {
                     event.eventData.theme = 'padrao'; 
+                    anyMigration = true;
+                }
+                // ** NOVO: Migração de Tipo de Evento **
+                if (event.eventData.eventType === undefined) {
+                    event.eventData.eventType = 'aniversario'; // Padrão para eventos antigos
                     anyMigration = true;
                 }
                 // ** FIM DAS NOVAS MIGRAÇÕES **
@@ -1275,32 +1358,66 @@
             renderPageContent(state.activePage); 
         };
 
+        // NOVO: Configuração da seleção de tipo de evento
+        const setupEventTypeSelection = () => {
+            const options = document.querySelectorAll('.event-type-option');
+            options.forEach(option => {
+                option.addEventListener('click', () => {
+                    // Remove seleção anterior
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    // Adiciona seleção atual
+                    option.classList.add('selected');
+                    // Define o valor no campo oculto
+                    document.getElementById('event-type').value = option.dataset.type;
+                });
+            });
+        };
+
         const showNewEventModal = () => {
             const modal = document.getElementById('new-event-modal');
             const form = document.getElementById('new-event-form');
             form.reset();
             
+            // NOVO: Reset da seleção de tipo de evento
+            document.querySelectorAll('.event-type-option').forEach(opt => opt.classList.remove('selected'));
+            document.getElementById('event-type').value = '';
+            
+            setupEventTypeSelection();
+            
             form.onsubmit = (e) => {
                 e.preventDefault();
                 const eventName = document.getElementById('new-event-name').value;
-                if (eventName) {
-                    createNewEvent(eventName);
+                const eventType = document.getElementById('event-type').value;
+                
+                if (eventName && eventType) {
+                    createNewEvent(eventName, eventType);
+                } else {
+                    alert('Por favor, preencha o nome do evento e selecione um tipo.');
                 }
             };
             modal.classList.add('active');
         };
 
-        const createNewEvent = (name) => {
+        // NOVO: Criar evento com tipo específico
+        const createNewEvent = (name, eventType) => {
             const newEventId = Date.now();
+            
+            // Define o tema baseado no tipo de evento
+            let theme = 'padrao';
+            if (eventType === 'aniversario') theme = 'festa';
+            if (eventType === 'casamento') theme = 'elegante';
+            if (eventType === 'fechado') theme = 'corporativo';
+            
             const newEvent = {
                 id: newEventId,
                 eventData: { 
                     name: name, 
                     date: '', 
-                    time: '', // ** NOVO **
+                    time: '',
                     location: '', 
-                    locationLink: '', // ** NOVO **
-                    theme: 'padrao', // ** NOVO: Tema Padrão **
+                    locationLink: '',
+                    theme: theme,
+                    eventType: eventType, // NOVO: Armazena o tipo de evento
                     description: '', 
                     isFree: false, 
                     costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } 
@@ -1590,6 +1707,7 @@
                 <div class="form-grid">
                     <div><strong>Nome do Evento:</strong> ${eventData.name || 'Não definido'}</div>
                     <div><strong>Tipo:</strong> ${eventData.isFree ? 'Gratuito (Controle de Acesso)' : 'Pago'}</div>
+                    <div><strong>Tipo de Evento:</strong> ${getEventTypeName(eventData.eventType)}</div>
                     <div><strong>Data:</strong> ${formatEventDate(eventData.date)}</div>
                     <div><strong>Horário:</strong> ${eventData.time || 'Não definido'}</div>
                     <div style="grid-column: span 2;"><strong>Local:</strong> ${eventData.location || 'Não definido'}</div>
@@ -1600,6 +1718,17 @@
                     <div style="grid-column: span 2;"><strong>Descrição:</strong> ${eventData.description || 'Não definida'}</div>
                 </div>
             `;
+        };
+
+        // NOVO: Função para obter nome do tipo de evento
+        const getEventTypeName = (type) => {
+            const types = {
+                'aniversario': 'Aniversário',
+                'casamento': 'Casamento',
+                'fechado': 'Evento Fechado',
+                'corporativo': 'Corporativo'
+            };
+            return types[type] || type || 'Não definido';
         };
 
         const renderCostsInfo = () => {
@@ -1664,7 +1793,7 @@
                 </div>
                 
                 <div class="form-control">
-                    <label for="event-theme">Tema do Convite (Eventos Gratuitos)</label>
+                    <label for="event-theme">Tema do Convite</label>
                     <select id="event-theme">
                         <option value="padrao">Padrão (Roxo)</option>
                         <option value="elegante">Elegante (Dourado/Preto)</option>
@@ -2213,6 +2342,8 @@
                 paymentStatus = paymentStatus || autoPaymentStatus;
             }
 
+            let newGuestId = null; // NOVO: Para armazenar o ID do convidado recém-adicionado
+            
             if (guestId !== null) {
                 const index = event.guests.findIndex(g => g.id === guestId);
                 if (index !== -1) {
@@ -2239,7 +2370,8 @@
                 const newGuestData = { name, email, phone, totalAmount, paidAmount, paymentStatus, familyCount };
                 const newGuest = createNewGuestObject(event, existingCodes, newGuestData);
                 
-                newGuest.id = Date.now(); // Define o ID aqui
+                newGuestId = Date.now(); // Define o ID aqui
+                newGuest.id = newGuestId;
                 
                 event.guests.push(newGuest);
             }
@@ -2248,6 +2380,14 @@
             renderDashboard();
             renderPaymentsPage();
             closeAllModals();
+            
+            // NOVO: Se for um novo convidado com status "Pago", abre o modal de comprovante
+            if (!guestId && paymentStatus === 'paid' && !isFree) {
+                state.lastAddedGuestId = newGuestId;
+                setTimeout(() => {
+                    showReceipt(newGuestId);
+                }, 300); // Pequeno delay para garantir que o convidado foi salvo
+            }
         };
 
         const editGuest = (guestId) => { showGuestModal(guestId); };
@@ -2822,13 +2962,16 @@
             const isFree = event.eventData.isFree;
             const eventData = event.eventData;
 
+            // NOVO: Define o template baseado no tipo de evento
+            const eventType = eventData.eventType || 'aniversario';
+            
             const themePalettes = {
                 'padrao': { main: '#5636D3', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' },
                 'elegante': { main: '#BFA16A', text: '#333333', light: '#777777', headerText: '#FFFFFF' },
                 'festa': { main: '#E83F5B', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' },
                 'corporativo': { main: '#4B90F7', text: '#363F5F', light: '#969CB2', headerText: '#FFFFFF' }
             };
-            const selectedTheme = themePalettes[event.eventData.theme || 'padrao'];
+            const selectedTheme = themePalettes[eventData.theme || 'padrao'];
             
             const primaryColor = selectedTheme.main;
             const textColor = selectedTheme.text;
@@ -2862,69 +3005,153 @@
                 const margin = 10;
                 let yPos = 15;
 
-                doc.setFillColor(primaryColor);
-                doc.rect(0, 0, pageWidth, 35, 'F');
-                
-                doc.setFontSize(22);
-                doc.setTextColor(headerTextColor);
-                doc.setFont('helvetica', 'bold');
-                doc.text(eventData.name || 'Convite Especial', pageWidth / 2, yPos + 5, { align: 'center' });
-                yPos += 15;
-                
-                doc.setFontSize(11);
-                doc.setFont('helvetica', 'normal');
-                doc.text('Você é nosso convidado!', pageWidth / 2, yPos + 5, { align: 'center' });
-                yPos += 20;
-
-                doc.setFontSize(10);
-                doc.setTextColor(lightTextColor);
-                doc.text('Para:', margin, yPos);
-                
-                doc.setFontSize(16);
-                doc.setTextColor(textColor);
-                doc.setFont('helvetica', 'bold');
-                doc.text(guest.name, margin, yPos + 7);
-                yPos += 12;
-
-                doc.setFontSize(10);
-                doc.setTextColor(textColor);
-                doc.setFont('helvetica', 'normal');
-                doc.text(`(Válido para ${guest.familyCount || 1} ${guest.familyCount > 1 ? 'pessoas' : 'pessoa'})`, margin, yPos);
-                yPos += 10;
-
-                doc.setDrawColor(primaryColor);
-                doc.setLineWidth(0.3);
-                doc.line(margin, yPos, pageWidth - margin, yPos);
-                yPos += 8;
-
-                const addDetail = (label, value) => {
-                    doc.setFontSize(10);
-                    doc.setTextColor(lightTextColor);
-                    doc.setFont('helvetica', 'normal');
-                    doc.text(label, margin, yPos);
+                // NOVO: Template específico por tipo de evento
+                if (eventType === 'aniversario') {
+                    // Template Aniversário - Baseado na imagem fornecida
+                    doc.setFillColor(255, 182, 193); // Cor rosa claro do balão
+                    doc.rect(0, 0, pageWidth, 35, 'F');
                     
-                    doc.setTextColor(textColor);
+                    // Balão decorativo
+                    doc.setFillColor(255, 105, 180); // Rosa mais escuro
+                    doc.circle(pageWidth / 2, 20, 15, 'F');
+                    
+                    doc.setFontSize(18);
+                    doc.setTextColor(255, 255, 255);
                     doc.setFont('helvetica', 'bold');
-                    doc.text(String(value), margin + 18, yPos);
+                    doc.text('ANOS DA', pageWidth / 2, 15, { align: 'center' });
+                    doc.text(guest.name.toUpperCase(), pageWidth / 2, 22, { align: 'center' });
                     
-                    yPos += 7;
-                };
-                
-                addDetail('Data:', formatEventDate(eventData.date));
-                addDetail('Horário:', eventData.time || 'N/A');
-                addDetail('Local:', eventData.location || 'N/A');
-
-                if (eventData.locationLink) {
-                    doc.setFontSize(10);
-                    doc.setTextColor(0, 0, 238);
+                    yPos = 45;
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(textColor);
                     doc.setFont('helvetica', 'normal');
-                    doc.textWithLink('Abrir Localização no Mapa', margin, yPos, { url: eventData.locationLink });
-                    yPos += 7; 
+                    doc.text('VENHA COMEMORAR COMIGO', pageWidth / 2, yPos, { align: 'center' });
+                    doc.text('ESTE DIA ESPECIAL', pageWidth / 2, yPos + 6, { align: 'center' });
+                    yPos += 20;
+                    
+                    doc.setFontSize(14);
+                    doc.setTextColor(primaryColor);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(formatEventDate(eventData.date).toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 8;
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(textColor);
+                    doc.text(`ÀS ${eventData.time || '19:00'} HORAS`, pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 15;
+                    
+                    doc.setFontSize(11);
+                    doc.text(eventData.location || 'RUA ALEGRE 123, CIDADE BRASILEIRA', pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 20;
+                    
+                } else if (eventType === 'casamento') {
+                    // Template Casamento - Baseado na imagem fornecida
+                    doc.setFillColor(245, 245, 245); // Fundo elegante
+                    doc.rect(0, 0, pageWidth, 35, 'F');
+                    
+                    doc.setFontSize(16);
+                    doc.setTextColor(150, 150, 150);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('CONVIDAM PARA SEU CASAMENTO', pageWidth / 2, 20, { align: 'center' });
+                    
+                    yPos = 45;
+                    
+                    // Nomes dos noivos (simulado)
+                    const noivo1 = eventData.name.split(' ')[0] || 'Marina';
+                    const noivo2 = 'Telipe'; // Simulado
+                    
+                    doc.setFontSize(20);
+                    doc.setTextColor(primaryColor);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(noivo1, pageWidth / 2 - 20, yPos, { align: 'center' });
+                    doc.text('e', pageWidth / 2, yPos, { align: 'center' });
+                    doc.text(noivo2, pageWidth / 2 + 20, yPos, { align: 'center' });
+                    yPos += 15;
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(textColor);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(formatEventDate(eventData.date).toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 8;
+                    
+                    doc.setFontSize(11);
+                    doc.text(`ÀS ${eventData.time || '20H'} NO ${eventData.location || 'STUDIO SANTANA'}`, pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 6;
+                    doc.text(eventData.location ? `${eventData.location}` : 'RUA ALEGRE, 123 - CIDADE BRASILEIRA', pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 15;
+                    
+                } else if (eventType === 'fechado') {
+                    // Template Evento Fechado - Baseado na imagem fornecida
+                    doc.setFillColor(50, 50, 50); // Fundo escuro
+                    doc.rect(0, 0, pageWidth, 25, 'F');
+                    
+                    doc.setFontSize(16);
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('HELLO RUSSO', pageWidth / 2, 12, { align: 'center' });
+                    doc.text('AO VIVO', pageWidth / 2, 20, { align: 'center' });
+                    
+                    yPos = 35;
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(textColor);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('CLUBE BORCELLE', pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 6;
+                    doc.text(`TIDEZ    ${eventData.time || '19H'}`, pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 15;
+                    
+                    doc.setFontSize(14);
+                    doc.setTextColor(primaryColor);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`N°${String(guest.accessCode).padStart(4, '0')}`, pageWidth / 2, yPos, { align: 'center' });
+                    doc.text('PISTA PREMIUM', pageWidth / 2, yPos + 8, { align: 'center' });
+                    yPos += 25;
+                    
                 } else {
-                    yPos += 4; 
+                    // Template padrão para outros tipos
+                    doc.setFillColor(primaryColor);
+                    doc.rect(0, 0, pageWidth, 35, 'F');
+                    
+                    doc.setFontSize(22);
+                    doc.setTextColor(headerTextColor);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(eventData.name || 'Convite Especial', pageWidth / 2, yPos + 5, { align: 'center' });
+                    yPos += 15;
+                    
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('Você é nosso convidado!', pageWidth / 2, yPos + 5, { align: 'center' });
+                    yPos += 20;
                 }
 
-                const qrSize = 28; 
+                // Informações do convidado (comum a todos os templates)
+                if (eventType !== 'fechado') {
+                    doc.setFontSize(10);
+                    doc.setTextColor(lightTextColor);
+                    doc.text('Para:', margin, yPos);
+                    
+                    doc.setFontSize(16);
+                    doc.setTextColor(textColor);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(guest.name, margin, yPos + 7);
+                    yPos += 12;
+
+                    doc.setFontSize(10);
+                    doc.setTextColor(textColor);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`(Válido para ${guest.familyCount || 1} ${guest.familyCount > 1 ? 'pessoas' : 'pessoa'})`, margin, yPos);
+                    yPos += 10;
+
+                    doc.setDrawColor(primaryColor);
+                    doc.setLineWidth(0.3);
+                    doc.line(margin, yPos, pageWidth - margin, yPos);
+                    yPos += 8;
+                }
+
+                // QR Code (sempre presente)
+                const qrSize = eventType === 'fechado' ? 25 : 28;
                 const qrX = (pageWidth / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPos, qrSize, qrSize);
                 yPos += qrSize + 5;
@@ -2933,8 +3160,8 @@
                 doc.setTextColor(textColor);
                 doc.setFont('helvetica', 'bold');
                 doc.text(`CÓDIGO: ${guest.accessCode}`, pageWidth / 2, yPos, { align: 'center' });
-                yPos += 5;
                 
+                // Rodapé
                 doc.setFontSize(9);
                 doc.setTextColor(lightTextColor);
                 doc.text('Eventos Pro | by Dj Alek', pageWidth / 2, doc.internal.pageSize.getHeight() - 4, { align: 'center' }); 
@@ -2942,7 +3169,7 @@
                 doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
 
             } else {
-                // *** TEMPLATE RECIBO ***
+                // *** TEMPLATE RECIBO (mantido igual) ***
                 const docTitle = 'Comprovante de Pagamento';
                 const docFileName = 'recibo';
                 const { jsPDF } = window.jspdf;
