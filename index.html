@@ -21,7 +21,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-
     <style>
         :root {
             /* Paleta de Cores Refinada */
@@ -31,12 +30,12 @@
             --success-color: #12A454;
             --danger-color: #E83F5B;
             --pending-color: #4B90F7;
-            --background-color: #F7F8FC; /* Cor de fundo mais suave */
+            --background-color: #F7F8FC;
             --text-color: #363F5F;
             --text-light-color: #969CB2;
             --card-bg-color: #FFFFFF;
             --border-color: #EAEBF0;
-            --border-radius: 12px; /* Bordas mais arredondadas */
+            --border-radius: 12px;
 
             /* Sombras e Efeitos 3D */
             --shadow-light: 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -71,7 +70,7 @@
             padding: 2rem 0;
             display: flex;
             flex-direction: column;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.03); /* Sombra mais sutil */
+            box-shadow: 5px 0 15px rgba(0,0,0,0.03);
             border-right: 1px solid var(--border-color);
             position: fixed;
             z-index: 1000;
@@ -207,30 +206,29 @@
         }
         
         .btn {
-            padding: 12px 20px; /* Mais preenchimento */
+            padding: 12px 20px;
             border: none;
-            border-radius: 8px; /* Mais arredondado */
+            border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
-            font-weight: 600; /* Mais forte */
+            font-weight: 600;
             transition: all 0.2s ease;
             box-shadow: var(--shadow-light);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             display: inline-flex;
             align-items: center;
-            justify-content: center; /* NOVO: Garante centralização do ícone */
+            justify-content: center;
             gap: 8px;
         }
 
-        /* NOVO: Estilo para label de input file */
         .btn.secondary:disabled,
         .btn.primary:disabled,
         .btn.success:disabled,
         .btn.danger:disabled,
         .btn.download:disabled {
             background: #ccc;
-            background-image: none; /* Remove gradiente do estado desabilitado */
+            background-image: none;
             cursor: not-allowed;
             box-shadow: none;
             opacity: 0.7;
@@ -370,7 +368,7 @@
         
         .card p {
             font-size: 2rem;
-            font-weight: 600; /* Mais forte */
+            font-weight: 600;
         }
         
         /* NOVO: Dashboard Charts */
@@ -400,11 +398,10 @@
             margin: 2rem auto;
             text-align: center;
         }
-        /* ... (restante do CSS do checkin-container) ... */
         
         /* NOVO: Estilo do Leitor de QR Code */
         #qr-scanner-container {
-            display: none; /* Inicia oculto */
+            display: none;
             margin-top: 2rem;
         }
         #qr-reader {
@@ -460,7 +457,7 @@
             font-style: italic;
         }
         #tasks-list .delete-btn {
-            opacity: 1; /* Sempre visível */
+            opacity: 1;
             background: var(--danger-color);
             color: white;
             border-radius: 5px;
@@ -490,7 +487,7 @@
         }
         
         #backup-page .card h3 i {
-            font-size: 1.6rem; /* Ajustado */
+            font-size: 1.6rem;
             padding: 10px;
             border-radius: 50%;
             color: #fff;
@@ -505,10 +502,6 @@
         #backup-page .card .icon-pending { background-color: var(--pending-color); }
         #backup-page .card .icon-danger { background-color: var(--danger-color); }
 
-
-        /* ... (restante do CSS existente: management-page, reports-page, modal, fab, etc.) ... */
-        /* (Copiei o CSS restante do seu arquivo original para manter a funcionalidade) */
-        
         .transaction-details { display: flex; align-items: center; gap: 1rem; }
         .transaction-status { width: 10px; height: 10px; border-radius: 50%; }
         .transaction-status.paid { background-color: var(--success-color); }
@@ -572,7 +565,6 @@
         .form-control { margin-bottom: 1rem; }
         .form-control label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
         .form-control input, .form-control select, .form-control textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 1rem; }
-        /* Checkbox especial no modal */
         .form-control.form-control-inline { flex-direction: row; display: flex; align-items: center; gap: 10px; }
         .form-control.form-control-inline input[type="checkbox"] { width: auto; }
         .form-control.form-control-inline label { margin-bottom: 0; }
@@ -593,7 +585,6 @@
         .checkin-status { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
         .checkin-status.checked { background-color: #d4edda; color: #155724; }
         .checkin-status.not-checked { background-color: #f8d7da; color: #721c24; }
-        /* NOVO: Status de check-in parcial */
         .checkin-status.partial { background-color: #cce7ff; color: #004085; }
         
         /* NOVO: Estilos para seleção de tipo de evento */
@@ -649,7 +640,7 @@
                 height: auto;
             }
             .chart-container {
-                height: 350px; /* Mantém a altura no mobile */
+                height: 350px;
             }
         }
         @media (max-width: 768px) {
@@ -983,7 +974,6 @@
         </div>
     </div>
 
-
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // ===== ESTADO CENTRAL DA APLICAÇÃO =====
@@ -993,10 +983,10 @@
             activePage: 'dashboard-page',
             currentEditingId: null,
             currentEditingType: null,
-            currentActionGuestId: null, // NOVO: Armazena o convidado para ação (PDF/WPP)
-            charts: {}, // Armazenar instâncias dos gráficos
-            qrScanner: null, // Armazenar instância do leitor de QR
-            lastAddedGuestId: null // NOVO: Armazena o ID do último convidado adicionado
+            currentActionGuestId: null,
+            charts: {},
+            qrScanner: null,
+            lastAddedGuestId: null
         };
 
         // ===== SELETORES DE ELEMENTOS COMUNS =====
@@ -1027,11 +1017,9 @@
         const getPaymentStatusText = (status) => ({ paid: 'Pago', partial: 'Parcial', pending: 'Pendente' }[status] || 'Pendente');
         const getCostCategoryName = (category) => ({ food: 'Alimentação', music: 'Música', venue: 'Aluguel do Espaço', drinks: 'Bebidas', other: 'Outros Custos' }[category] || category);
         
-        // ** NOVO: Formata data e hora **
         const formatEventDate = (dateString) => {
             if (!dateString) return 'Data não definida';
             const date = new Date(dateString);
-            // Adiciona o fuso horário para corrigir a data
             const offset = date.getTimezoneOffset();
             const correctedDate = new Date(date.getTime() + (offset * 60 * 1000));
             return correctedDate.toLocaleDateString('pt-BR');
@@ -1046,11 +1034,8 @@
             return fixedCosts + suppliersCost;
         };
 
-        // ===== PERSISTÊNCIA DE DADOS (LocalStorage) (Refatorado para v3) =====
+        // ===== PERSISTÊNCIA DE DADOS (LocalStorage) =====
         
-        /**
-         * NOVO: Migra dados de convidados para incluir familyCount e checkedInCount
-         */
         const migrateGuestData = (event) => {
             let needsSave = false;
             const existingCodes = new Set(event.guests.map(g => g.accessCode).filter(Boolean));
@@ -1074,25 +1059,21 @@
                     needsSave = true;
                 }
                 
-                // --- NOVAS MIGRAÇÕES (familyCount, checkedInCount) ---
                 if (guest.familyCount === undefined) {
-                    guest.familyCount = 1; // Padrão é 1
+                    guest.familyCount = 1;
                     needsSave = true;
                 }
                 if (guest.checkedInCount === undefined) {
-                    // Se o convidado estava marcado como checkedIn, assume 1 e familyCount 1
                     if (guest.checkedIn === true) {
                         guest.checkedInCount = 1;
-                        guest.familyCount = 1; // Força contagem 1 para dados antigos
+                        guest.familyCount = 1;
                     } else {
                         guest.checkedInCount = 0;
                     }
                     needsSave = true;
                 }
                 
-                // Garante que o booleano 'checkedIn' reflete o estado da contagem
                 guest.checkedIn = (guest.checkedInCount >= guest.familyCount);
-                // --- FIM DAS NOVAS MIGRAÇÕES ---
             });
             return needsSave;
         };
@@ -1133,7 +1114,6 @@
                 state.activeEventId = null;
             }
 
-            // Garantir que eventos existentes tenham campos novos (tasks, isFree, e migração de convidados)
             let anyMigration = false;
             state.events.forEach(event => {
                 if (!event.tasks) {
@@ -1141,10 +1121,9 @@
                     anyMigration = true;
                 }
                 if (event.eventData.isFree === undefined) {
-                    event.eventData.isFree = false; // Padrão para eventos antigos
+                    event.eventData.isFree = false;
                     anyMigration = true;
                 }
-                // ** NOVAS MIGRAÇÕES (time, locationLink) **
                 if (event.eventData.time === undefined) {
                     event.eventData.time = '';
                     anyMigration = true;
@@ -1153,19 +1132,16 @@
                     event.eventData.locationLink = '';
                     anyMigration = true;
                 }
-                // ** NOVO: Migração de Tema **
                 if (event.eventData.theme === undefined) {
                     event.eventData.theme = 'padrao'; 
                     anyMigration = true;
                 }
-                // ** NOVO: Migração de Tipo de Evento **
                 if (event.eventData.eventType === undefined) {
-                    event.eventData.eventType = 'aniversario'; // Padrão para eventos antigos
+                    event.eventData.eventType = 'aniversario';
                     anyMigration = true;
                 }
-                // ** FIM DAS NOVAS MIGRAÇÕES **
 
-                if (migrateGuestData(event)) { // Roda a migração de convidados
+                if (migrateGuestData(event)) {
                     anyMigration = true;
                 }
             });
@@ -1221,7 +1197,6 @@
         };
 
         const navigateToPage = (pageId) => {
-            // Parar o leitor de QR se sair da página de check-in
             if (state.activePage === 'checkin-page' && pageId !== 'checkin-page') {
                 stopQrScanner();
             }
@@ -1238,7 +1213,7 @@
             document.getElementById(pageId).classList.add('active');
             
             state.activePage = pageId;
-            renderPageContent(pageId); // Movido para depois de definir a página ativa
+            renderPageContent(pageId);
         };
 
         const updateFAB = (pageId) => {
@@ -1257,26 +1232,21 @@
         const renderPageContent = (pageId) => {
             const activeEvent = getActiveEvent();
 
-            // --- NOVO: Lógica para Evento Gratuito ---
             const paymentsNavLink = document.querySelector('a[data-page="payments-page"]').parentElement;
             const reportsNavLink = document.querySelector('a[data-page="reports-page"]').parentElement;
             
             if (activeEvent && activeEvent.eventData.isFree) {
-                // Esconde links de navegação
                 paymentsNavLink.style.display = 'none';
                 reportsNavLink.style.display = 'none';
 
-                // Se o usuário tentar acessar a página de pagamentos ou relatórios, redireciona
                 if (pageId === 'payments-page' || pageId === 'reports-page') {
                     navigateToPage('dashboard-page');
-                    return; // Para a execução para evitar renderizar a página errada
+                    return;
                 }
             } else if (activeEvent) {
-                // Garante que eles estão visíveis se o evento não for gratuito
                 paymentsNavLink.style.display = 'list-item';
                 reportsNavLink.style.display = 'list-item';
             }
-            // --- FIM DA LÓGICA DE EVENTO GRATUITO ---
 
             if (!activeEvent && pageId !== 'backup-page') { 
                 navigateToPage('dashboard-page');
@@ -1316,7 +1286,7 @@
             }
         };
 
-        // ===== GERENCIAMENTO DE EVENTOS (Dropdown e Modal) =====
+        // ===== GERENCIAMENTO DE EVENTOS =====
         const populateEventSelector = () => {
             const selector = selectors.eventSelector;
             selector.innerHTML = '';
@@ -1354,20 +1324,15 @@
             state.activeEventId = eventId;
             saveData();
             populateEventSelector(); 
-            // Renderiza a página atual com o contexto do novo evento
             renderPageContent(state.activePage); 
         };
 
-        // NOVO: Configuração da seleção de tipo de evento
         const setupEventTypeSelection = () => {
             const options = document.querySelectorAll('.event-type-option');
             options.forEach(option => {
                 option.addEventListener('click', () => {
-                    // Remove seleção anterior
                     options.forEach(opt => opt.classList.remove('selected'));
-                    // Adiciona seleção atual
                     option.classList.add('selected');
-                    // Define o valor no campo oculto
                     document.getElementById('event-type').value = option.dataset.type;
                 });
             });
@@ -1378,7 +1343,6 @@
             const form = document.getElementById('new-event-form');
             form.reset();
             
-            // NOVO: Reset da seleção de tipo de evento
             document.querySelectorAll('.event-type-option').forEach(opt => opt.classList.remove('selected'));
             document.getElementById('event-type').value = '';
             
@@ -1398,11 +1362,9 @@
             modal.classList.add('active');
         };
 
-        // NOVO: Criar evento com tipo específico
         const createNewEvent = (name, eventType) => {
             const newEventId = Date.now();
             
-            // Define o tema baseado no tipo de evento
             let theme = 'padrao';
             if (eventType === 'aniversario') theme = 'festa';
             if (eventType === 'casamento') theme = 'elegante';
@@ -1417,7 +1379,7 @@
                     location: '', 
                     locationLink: '',
                     theme: theme,
-                    eventType: eventType, // NOVO: Armazena o tipo de evento
+                    eventType: eventType,
                     description: '', 
                     isFree: false, 
                     costs: { food: 0, music: 0, venue: 0, drinks: 0, other: 0 } 
@@ -1434,7 +1396,6 @@
             populateEventSelector();
             closeAllModals();
             
-            // Sempre navega para o dashboard após criar um novo evento
             navigateToPage('dashboard-page');
         };
 
@@ -1449,7 +1410,7 @@
             });
 
             document.querySelectorAll('.modal-actions .btn.secondary').forEach(btn => {
-                if (btn.id !== 'cancel-delete-btn' && btn.id !== 'action-cancel-btn') { // NOVO: não fecha no cancelar
+                if (btn.id !== 'cancel-delete-btn' && btn.id !== 'action-cancel-btn') {
                     btn.addEventListener('click', (e) => {
                         e.preventDefault(); 
                         closeAllModals();
@@ -1458,7 +1419,6 @@
             });
             document.getElementById('cancel-delete-btn').onclick = closeAllModals;
             
-            // NOVO: Listeners para o modal de Ação (PDF/WPP)
             document.getElementById('action-pdf-btn').onclick = generateGuestPDF;
             document.getElementById('action-whatsapp-btn').onclick = sendWhatsAppMessage;
             document.getElementById('action-cancel-btn').onclick = closeAllModals;
@@ -1470,10 +1430,10 @@
             });
             state.currentEditingId = null;
             state.currentEditingType = null;
-            state.currentActionGuestId = null; // NOVO: Limpa o ID do convidado em ação
+            state.currentActionGuestId = null;
         };
 
-        // ===== DASHBOARD (Refatorado com Gráficos) =====
+        // ===== DASHBOARD =====
         const renderDashboard = () => {
             const event = getActiveEvent();
 
@@ -1490,7 +1450,6 @@
 
             document.getElementById('dashboard-event-name').textContent = event.eventData.name || 'Configurar';
             
-            // NOVO: Conta o total de pessoas (familiares)
             const totalPeople = event.guests.reduce((sum, guest) => sum + (guest.familyCount || 1), 0);
             document.getElementById('dashboard-guest-title').textContent = 'Total de Pessoas';
             document.getElementById('dashboard-guest-count').textContent = totalPeople;
@@ -1500,7 +1459,6 @@
             const pendingTasks = event.tasks.filter(task => !task.completed).length;
             document.getElementById('dashboard-tasks-count').textContent = pendingTasks;
             
-            // Lógica de Pagamentos (apenas se não for gratuito)
             const paymentsCard = document.querySelector('#dashboard-cards .payments');
             const financialSummaryCard = document.getElementById('financial-summary-card');
             
@@ -1521,7 +1479,6 @@
                 document.getElementById('dashboard-payment-total').textContent = formatCurrency(totalReceived);
                 
                 const totalCost = calculateTotalCost();
-                // NOVO: Custo por pessoa (total de pessoas) em vez de por convite
                 const costPerGuest = totalPeople > 0 ? totalCost / totalPeople : 0;
                 
                 document.getElementById('total-cost').textContent = formatCurrency(totalCost);
@@ -1531,12 +1488,9 @@
             }
             
             renderRecentPayments();
-            renderDashboardCharts(); // Renderiza os gráficos
+            renderDashboardCharts();
         };
 
-        /**
-         * Renderiza os gráficos do dashboard
-         */
         const renderDashboardCharts = () => {
             const event = getActiveEvent();
             if (!event) return;
@@ -1545,10 +1499,8 @@
             const chartsContainer = document.getElementById('dashboard-charts');
             const paymentChartContainer = document.getElementById('payment-status-chart').closest('.chart-container');
 
-            // --- 1. Gráfico de Pagamentos ---
             if (isFree) {
                 paymentChartContainer.style.display = 'none';
-                // Ajusta o grid para o gráfico restante ocupar o espaço
                 chartsContainer.style.gridTemplateColumns = '1fr';
             } else {
                 paymentChartContainer.style.display = 'flex';
@@ -1573,9 +1525,9 @@
                             label: 'Status de Pagamento',
                             data: [guestStats.paid, guestStats.partial, guestStats.pending],
                             backgroundColor: [
-                                'rgba(18, 164, 84, 0.8)', // Success
-                                'rgba(75, 144, 247, 0.8)', // Pending
-                                'rgba(232, 63, 91, 0.8)'  // Danger
+                                'rgba(18, 164, 84, 0.8)',
+                                'rgba(75, 144, 247, 0.8)',
+                                'rgba(232, 63, 91, 0.8)'
                             ],
                             borderColor: ['#FFFFFF', '#FFFFFF', '#FFFFFF'],
                             borderWidth: 3
@@ -1589,12 +1541,9 @@
                 });
             }
 
-            // --- 2. Gráfico de Check-in ---
-            // A lógica aqui (guest.checkedIn) está correta, pois atualizamos
-            // o 'checkedIn' para true apenas quando o check-in do GRUPO está completo.
             const checkinStats = { checked: 0, notChecked: 0 };
             event.guests.forEach(guest => {
-                if (guest.checkedIn) { // guest.checkedIn (booleano) significa check-in completo do grupo
+                if (guest.checkedIn) {
                     checkinStats.checked++;
                 } else {
                     checkinStats.notChecked++;
@@ -1615,8 +1564,8 @@
                         label: 'Status de Check-in (Grupos)',
                         data: [checkinStats.checked, checkinStats.notChecked],
                         backgroundColor: [
-                            'rgba(86, 54, 211, 0.8)', // Primary
-                            'rgba(234, 235, 240, 0.8)' // Border
+                            'rgba(86, 54, 211, 0.8)',
+                            'rgba(234, 235, 240, 0.8)'
                         ],
                         borderColor: ['#FFFFFF', '#FFFFFF'],
                         borderWidth: 3
@@ -1629,19 +1578,16 @@
                 }
             });
             
-            // Em telas menores, força uma coluna se ambos os gráficos estiverem visíveis
-             if (window.innerWidth <= 992 && !isFree) {
+            if (window.innerWidth <= 992 && !isFree) {
                  chartsContainer.style.gridTemplateColumns = '1fr';
              }
         };
-
 
         const renderRecentPayments = () => {
             const event = getActiveEvent();
             const container = document.getElementById('recent-payments-list');
             container.innerHTML = '';
             
-            // NOVO: Oculta se o evento for gratuito
             if (!event || event.eventData.isFree) {
                 container.parentElement.style.display = 'none';
                 return;
@@ -1702,7 +1648,6 @@
             const container = document.getElementById('event-info');
             const eventData = event.eventData;
             
-            // ** ATUALIZADO para incluir novos campos **
             container.innerHTML = `
                 <div class="form-grid">
                     <div><strong>Nome do Evento:</strong> ${eventData.name || 'Não definido'}</div>
@@ -1720,7 +1665,6 @@
             `;
         };
 
-        // NOVO: Função para obter nome do tipo de evento
         const getEventTypeName = (type) => {
             const types = {
                 'aniversario': 'Aniversário',
@@ -1763,7 +1707,6 @@
             const form = document.getElementById('event-form');
             title.textContent = event.eventData.name ? 'Editar Evento' : 'Criar Evento';
             
-            // ** ATUALIZADO para incluir novos campos (e Tema) **
             form.innerHTML = `
                 <div class="form-control">
                     <label for="event-name">Nome do Evento</label>
@@ -1813,7 +1756,6 @@
                 </div>
             `;
             
-            // ** NOVO: Define o valor do select de tema **
             document.getElementById('event-theme').value = event.eventData.theme || 'padrao';
 
             form.onsubmit = (e) => { e.preventDefault(); saveEventData(); };
@@ -1863,7 +1805,6 @@
         const saveEventData = () => {
             const event = getActiveEvent();
             if (!event) return;
-            // ** ATUALIZADO para salvar novos campos (e Tema) **
             event.eventData = {
                 ...event.eventData,
                 name: document.getElementById('event-name').value,
@@ -1872,14 +1813,14 @@
                 location: document.getElementById('event-location').value,
                 locationLink: document.getElementById('event-location-link').value,
                 description: document.getElementById('event-description').value,
-                theme: document.getElementById('event-theme').value, // ** NOVO: Salva Tema **
+                theme: document.getElementById('event-theme').value,
                 isFree: document.getElementById('event-is-free').checked
             };
             saveData();
             renderEventInfo();
             renderDashboard();
             populateEventSelector();
-            renderPageContent(state.activePage); // Re-renderiza a página para ocultar/mostrar menus
+            renderPageContent(state.activePage);
             closeAllModals();
         };
 
@@ -2000,14 +1941,12 @@
             renderDashboard(); 
         };
 
-
-        // ===== PÁGINA DE CONVIDADOS (COM IMPORTAÇÃO) =====
+        // ===== PÁGINA DE CONVIDADOS =====
         const renderGuestsPage = () => {
             const container = document.getElementById('guests-list');
             const searchInput = document.getElementById('guest-search');
             const event = getActiveEvent();
             
-            // NOVO: Seletores de Importação
             const importCard = document.getElementById('guest-import-card');
             const importFileInput = document.getElementById('guest-import-file');
             const importButton = document.getElementById('guest-import-btn');
@@ -2016,14 +1955,13 @@
             if (!event) {
                 container.innerHTML = '<li class="list-item">Selecione um evento para ver os convidados</li>';
                 searchInput.disabled = true;
-                importCard.style.display = 'none'; // NOVO: Oculta o card de importação
+                importCard.style.display = 'none';
                 return;
             }
             
             searchInput.disabled = false;
-            importCard.style.display = 'block'; // NOVO: Mostra o card de importação
+            importCard.style.display = 'block';
             
-            // NOVO: Lógica de listeners de importação
             importFileInput.onchange = () => {
                 if (importFileInput.files.length > 0) {
                     importFileName.textContent = importFileInput.files[0].name;
@@ -2045,9 +1983,6 @@
             renderGuestsList();
         };
 
-        /**
-         * NOVO: Processa a importação de convidados de um arquivo Excel
-         */
         const processGuestImport = (file) => {
             const event = getActiveEvent();
             if (!event) {
@@ -2064,32 +1999,29 @@
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                    // Pega todos os códigos de acesso existentes
                     const existingCodes = new Set(event.guests.map(g => g.accessCode));
                     let importedCount = 0;
                     const newGuests = [];
                     const initialGuestCount = event.guests.length;
                     
-                    // Começa do 1 para pular o cabeçalho
                     for (let i = 1; i < jsonData.length; i++) {
                         const row = jsonData[i];
                         const name = row[0] ? String(row[0]).trim() : null;
-                        const phone = row[1] ? String(row[1]).trim() : ''; // Telefone é opcional
+                        const phone = row[1] ? String(row[1]).trim() : '';
 
                         if (name && name.length > 0) {
-                            // Cria o convidado com os padrões definidos na requisição
                             const guestData = {
                                 name: name,
                                 phone: phone,
-                                familyCount: 1, // Padrão 1
-                                totalAmount: 0, // Padrão 0
-                                paidAmount: 0,  // Padrão 0
+                                familyCount: 1,
+                                totalAmount: 0,
+                                paidAmount: 0,
                                 regOrder: initialGuestCount + importedCount + 1
                             };
 
                             const newGuest = createNewGuestObject(event, existingCodes, guestData);
                             
-                            newGuest.id = Date.now() + i; // Garante ID único no loop
+                            newGuest.id = Date.now() + i;
                             
                             newGuests.push(newGuest);
                             importedCount++;
@@ -2097,7 +2029,7 @@
                     }
                     
                     if (importedCount > 0) {
-                        event.guests.push(...newGuests); // Adiciona todos de uma vez
+                        event.guests.push(...newGuests);
                         saveData();
                         renderGuestsList();
                         renderDashboard();
@@ -2110,11 +2042,10 @@
                     console.error("Erro ao importar arquivo:", error);
                     alert("Ocorreu um erro ao processar o arquivo. Verifique se é um arquivo Excel válido.");
                 } finally {
-                    // Limpa o input de arquivo
                     const importFileInput = document.getElementById('guest-import-file');
                     const importButton = document.getElementById('guest-import-btn');
                     const importFileName = document.getElementById('guest-import-filename');
-                    importFileInput.value = ''; // Reseta o input
+                    importFileInput.value = '';
                     importFileName.textContent = 'Nenhum arquivo selecionado';
                     importButton.disabled = true;
                 }
@@ -2126,7 +2057,6 @@
 
             reader.readAsArrayBuffer(file);
         };
-
 
         const renderGuestsList = () => {
             const event = getActiveEvent();
@@ -2160,7 +2090,6 @@
                 const familyCount = guest.familyCount || 1;
                 const checkedInCount = guest.checkedInCount || 0;
                 
-                // NOVO: Lógica de status de check-in (parcial)
                 const checkinStatus = guest.checkedIn ? 'checked' : (checkedInCount > 0 ? 'partial' : 'not-checked');
                 const checkinText = guest.checkedIn ? 'Check-in Completo' : (checkedInCount > 0 ? `Entrada Parcial (${checkedInCount}/${familyCount})` : 'Não Entrou');
                 
@@ -2175,7 +2104,6 @@
                     `;
                 }
                 
-                // ** ATUALIZADO: O ícone do recibo agora é 'fa-ticket' para convite e 'fa-receipt' para recibo **
                 const receiptIcon = isFree ? 'fa-ticket' : 'fa-receipt';
 
                 li.innerHTML = `
@@ -2210,7 +2138,7 @@
             const isEditing = guestId !== null;
             const guest = isEditing ? event.guests.find(g => g.id === guestId) : null;
             
-            const isFree = event.eventData.isFree; // NOVO
+            const isFree = event.eventData.isFree;
             
             title.textContent = isEditing ? 'Editar Convidado' : 'Adicionar Convidado';
 
@@ -2267,25 +2195,15 @@
             modal.classList.add('active');
         };
 
-        /**
-         * NOVO: Gera um código de acesso único de 4 dígitos.
-         * @param {Set<number>} existingCodes - Um Set de códigos já em uso (será modificado).
-         */
         const generateUniqueAccessCode = (existingCodes) => {
             let newCode;
             do {
                 newCode = Math.floor(1000 + Math.random() * 9000);
             } while (existingCodes.has(newCode));
-            existingCodes.add(newCode); // Adiciona ao set para o próximo
+            existingCodes.add(newCode);
             return newCode;
         };
 
-        /**
-         * NOVO: Cria um novo objeto de convidado com valores padrão.
-         * @param {object} event - O evento ativo.
-         * @param {Set<number>} existingCodes - Set de códigos existentes.
-         * @param {object} guestData - Dados do convidado (name, phone, etc.).
-         */
         const createNewGuestObject = (event, existingCodes, guestData) => {
             const isFree = event.eventData.isFree;
             
@@ -2301,7 +2219,6 @@
             }
 
             return {
-                // ID será definido pelo chamador (saveGuestData ou processGuestImport)
                 name: guestData.name || 'Nome Inválido',
                 email: guestData.email || '',
                 phone: guestData.phone || '',
@@ -2317,7 +2234,6 @@
             };
         };
 
-
         const saveGuestData = (guestId = null) => {
             const event = getActiveEvent();
             if (!event) return;
@@ -2327,50 +2243,47 @@
             const name = document.getElementById('guest-name').value;
             const email = document.getElementById('guest-email').value;
             const phone = document.getElementById('guest-phone').value;
-            const familyCount = parseInt(document.getElementById('guest-family-count').value) || 1; // NOVO
+            const familyCount = parseInt(document.getElementById('guest-family-count').value) || 1;
             
-            // NOVO: Lógica de pagamento para evento gratuito
             const totalAmount = isFree ? 0 : (parseFloat(document.getElementById('guest-total-amount').value) || 0);
             const paidAmount = isFree ? 0 : (parseFloat(document.getElementById('guest-paid-amount').value) || 0);
             
             let paymentStatus;
             if (isFree) {
-                paymentStatus = 'paid'; // Evento gratuito é considerado 'pago' para fins de acesso
+                paymentStatus = 'paid';
             } else {
                 paymentStatus = document.getElementById('guest-payment-status').value;
                 const autoPaymentStatus = paidAmount === 0 ? 'pending' : (paidAmount >= totalAmount ? 'paid' : 'partial');
                 paymentStatus = paymentStatus || autoPaymentStatus;
             }
 
-            let newGuestId = null; // NOVO: Para armazenar o ID do convidado recém-adicionado
+            let newGuestId = null;
             
             if (guestId !== null) {
                 const index = event.guests.findIndex(g => g.id === guestId);
                 if (index !== -1) {
-                    // Mantém checkedInCount se familyCount não for alterado
                     const oldFamilyCount = event.guests[index].familyCount || 1;
                     let checkedInCount = event.guests[index].checkedInCount || 0;
                     if (familyCount !== oldFamilyCount) {
-                         checkedInCount = 0; // Reseta o check-in se o total de pessoas mudou
+                         checkedInCount = 0;
                     }
                     
                     event.guests[index] = {
                         ...event.guests[index],
                         name, email, phone, totalAmount, paidAmount,
-                        familyCount: familyCount, // NOVO
-                        checkedInCount: checkedInCount, // NOVO
-                        checkedIn: (checkedInCount >= familyCount), // NOVO
+                        familyCount: familyCount,
+                        checkedInCount: checkedInCount,
+                        checkedIn: (checkedInCount >= familyCount),
                         paymentStatus: paymentStatus,
                         lastPaymentDate: (paidAmount > event.guests[index].paidAmount && !isFree) ? new Date().toISOString() : event.guests[index].lastPaymentDate
                     };
                 }
             } else {
-                // NOVO: Refatorado para usar createNewGuestObject
                 const existingCodes = new Set(event.guests.map(g => g.accessCode));
                 const newGuestData = { name, email, phone, totalAmount, paidAmount, paymentStatus, familyCount };
                 const newGuest = createNewGuestObject(event, existingCodes, newGuestData);
                 
-                newGuestId = Date.now(); // Define o ID aqui
+                newGuestId = Date.now();
                 newGuest.id = newGuestId;
                 
                 event.guests.push(newGuest);
@@ -2381,12 +2294,11 @@
             renderPaymentsPage();
             closeAllModals();
             
-            // NOVO: Se for um novo convidado com status "Pago", abre o modal de comprovante
             if (!guestId && paymentStatus === 'paid' && !isFree) {
                 state.lastAddedGuestId = newGuestId;
                 setTimeout(() => {
                     showReceipt(newGuestId);
-                }, 300); // Pequeno delay para garantir que o convidado foi salvo
+                }, 300);
             }
         };
 
@@ -2511,8 +2423,6 @@
                 return;
             }
             
-            // Esta página não deve ser acessível se o evento for gratuito,
-            // mas colocamos esta verificação por segurança.
             if (event.eventData.isFree) {
                  navigateToPage('dashboard-page');
                  return;
@@ -2602,7 +2512,7 @@
             });
         };
 
-        // ===== PÁGINA DE CONTROLE DE ENTRADA (Refatorado com QR Scanner) =====
+        // ===== PÁGINA DE CONTROLE DE ENTRADA =====
         const renderCheckinPage = () => {
             const form = document.getElementById('checkin-form');
             const input = document.getElementById('checkin-code');
@@ -2630,7 +2540,7 @@
                 if (manualContainer.style.display === 'none') {
                     manualContainer.style.display = 'block';
                     toggleManualBtn.innerHTML = '<i class="fa-solid fa-qrcode"></i> Voltar para o Leitor QR';
-                    stopQrScanner(); // Para o scanner se estiver ativo
+                    stopQrScanner();
                 } else {
                     manualContainer.style.display = 'none';
                     toggleManualBtn.innerHTML = '<i class="fa-solid fa-keyboard"></i> Não conseguiu ler? Digite o código manual.';
@@ -2638,9 +2548,6 @@
             };
         };
 
-        /**
-         * Inicia o leitor de QR Code
-         */
         const startQrScanner = () => {
             const resultDiv = document.getElementById('checkin-result');
             resultDiv.style.display = 'none'; 
@@ -2654,17 +2561,13 @@
             const onScanSuccess = (decodedText, decodedResult) => {
                 console.log(`Code matched = ${decodedText}`, decodedResult);
                 processCheckinCode(decodedText); 
-                // Não para mais o scanner, permite múltiplas leituras
-                // stopQrScanner(); 
                 
-                // Pisca o resultado
                 setTimeout(() => {
                     document.getElementById('checkin-result').style.display = 'none';
-                }, 2000); // Esconde o resultado após 2 segundos
+                }, 2000);
             };
 
             const onScanFailure = (error) => {
-                // console.warn(`Code scan error = ${error}`);
             };
 
             state.qrScanner = new Html5Qrcode("qr-reader");
@@ -2684,9 +2587,6 @@
                 });
         };
 
-        /**
-         * Para o leitor de QR Code
-         */
         const stopQrScanner = () => {
             const container = document.getElementById('qr-scanner-container');
             if (state.qrScanner && state.qrScanner.isScanning) {
@@ -2710,10 +2610,6 @@
             }
         };
 
-
-        /**
-         * NOVO: Processa código de check-in com lógica de contagem
-         */
         const processCheckinCode = (code) => {
             const event = getActiveEvent();
             const input = document.getElementById('checkin-code');
@@ -2733,7 +2629,6 @@
                 return;
             }
 
-            // Encontra o convidado pelo código de acesso
             const guest = event.guests.find(g => String(g.accessCode) === String(code));
 
             if (!guest) {
@@ -2744,46 +2639,40 @@
                 let checkedInCount = guest.checkedInCount || 0;
                 const isFree = event.eventData.isFree;
 
-                // 1. Verifica se o pagamento é necessário e se está pendente
                 if (!isFree && guest.paymentStatus !== 'paid') {
                     resultDiv.innerHTML = `<h4>Pagamento Pendente</h4><p>A entrada de <strong>${guest.name}</strong> não pode ser liberada.</p><p>Status do Pagamento: <strong>${getPaymentStatusText(guest.paymentStatus)}</strong>.</p><p>Favor regularizar a situação.</p>`;
                     resultDiv.className = 'checkin-result error';
                 
-                // 2. Verifica se o check-in do grupo já está completo
                 } else if (guest.checkedIn || checkedInCount >= familyCount) {
-                    guest.checkedIn = true; // Garante que está marcado
+                    guest.checkedIn = true;
                     resultDiv.innerHTML = `<h4>Check-in Completo</h4><p><strong>${guest.name}</strong> já registrou todas as ${familyCount} entradas.</p>`;
-                    resultDiv.className = 'checkin-result pending'; // 'pending' (amarelo) para "já registrado"
+                    resultDiv.className = 'checkin-result pending';
                 
-                // 3. Processa a nova entrada
                 } else {
                     checkedInCount++;
                     guest.checkedInCount = checkedInCount;
-                    guest.checkinTime = new Date().toISOString(); // Atualiza para a hora da última entrada
+                    guest.checkinTime = new Date().toISOString();
 
-                    // 3a. Verifica se esta foi a última entrada
                     if (checkedInCount >= familyCount) {
-                        guest.checkedIn = true; // Marca o grupo como totalmente check-in
+                        guest.checkedIn = true;
                         resultDiv.innerHTML = `<h4>Entrada Registrada (${checkedInCount}/${familyCount})</h4><p>Bem-vindo(a), <strong>${guest.name}</strong>!</p><p>Este foi o último membro. Check-in completo.</p>`;
                         resultDiv.className = 'checkin-result success';
                     
-                    // 3b. Ainda faltam entradas
                     } else {
-                        guest.checkedIn = false; // Garante que não está marcado como completo
+                        guest.checkedIn = false;
                         resultDiv.innerHTML = `<h4>Entrada Registrada (${checkedInCount}/${familyCount})</h4><p>Bem-vindo(a), <strong>${guest.name}</strong>!</p><p>Ainda restam ${familyCount - checkedInCount} entradas para este convite.</p>`;
-                        resultDiv.className = 'checkin-result success'; // Sucesso, mas parcial
+                        resultDiv.className = 'checkin-result success';
                     }
                     
                     saveData();
                     
-                    // Atualiza a lista de convidados e dashboard
                     if (state.activePage === 'guests-page') renderGuestsList();
-                    renderDashboard(); // Sempre atualiza o dashboard (gráfico de check-in)
+                    renderDashboard();
                 }
             }
 
             resultDiv.style.display = 'block';
-            input.value = ''; // Limpa o campo manual
+            input.value = '';
         };
 
         // ===== PÁGINA DE RELATÓRIOS =====
@@ -2796,7 +2685,6 @@
                 return;
             }
             
-            // Segurança: redireciona se for gratuito
             if (event.eventData.isFree) {
                  navigateToPage('dashboard-page');
                  return;
@@ -2904,12 +2792,8 @@
             URL.revokeObjectURL(url);
         };
 
-        // ===== COMPROVANTE / CONVITE (PDF com QR Code) (Refatorado) =====
+        // ===== COMPROVANTE / CONVITE =====
 
-        /**
-         * NOVO: Abre o modal de ações (PDF/WhatsApp) para um convidado
-         * (Antiga 'showReceipt')
-         */
         const showReceipt = (guestId) => {
             const event = getActiveEvent();
             const guest = event?.guests.find(g => g.id === guestId);
@@ -2918,7 +2802,6 @@
                 return;
             }
 
-            // Armazena o ID do convidado no estado para os botões do modal usarem
             state.currentActionGuestId = guestId; 
 
             const modal = document.getElementById('action-modal');
@@ -2931,7 +2814,6 @@
             title.textContent = isFree ? 'Gerar Convite' : 'Gerar Recibo';
             message.textContent = `Selecione uma ação para ${guest.name}.`;
 
-            // Verifica se o convidado tem telefone cadastrado
             if (guest.phone && guest.phone.trim() !== '') {
                 whatsappBtn.disabled = false;
                 whatsappBtn.title = `Enviar para ${guest.phone}`;
@@ -2943,9 +2825,6 @@
             modal.classList.add('active');
         };
 
-        /**
-         * NOVO: Função que efetivamente gera o PDF (lógica da antiga 'showReceipt')
-         */
         const generateGuestPDF = () => {
             const guestId = state.currentActionGuestId;
             if (!guestId) return;
@@ -2958,11 +2837,9 @@
                 return;
             }
 
-            // --- INÍCIO DA LÓGICA ANTIGA DO showReceipt ---
             const isFree = event.eventData.isFree;
             const eventData = event.eventData;
 
-            // NOVO: Define o template baseado no tipo de evento
             const eventType = eventData.eventType || 'aniversario';
             
             const themePalettes = {
@@ -2998,21 +2875,19 @@
                 const doc = new jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
-                    format: 'a6' // [105, 148]
+                    format: 'a6'
                 });
                 
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const margin = 10;
                 let yPos = 15;
 
-                // NOVO: Template específico por tipo de evento
                 if (eventType === 'aniversario') {
-                    // Template Aniversário - Baseado na imagem fornecida
-                    doc.setFillColor(255, 182, 193); // Cor rosa claro do balão
+                    // Template Aniversário
+                    doc.setFillColor(255, 182, 193);
                     doc.rect(0, 0, pageWidth, 35, 'F');
                     
-                    // Balão decorativo
-                    doc.setFillColor(255, 105, 180); // Rosa mais escuro
+                    doc.setFillColor(255, 105, 180);
                     doc.circle(pageWidth / 2, 20, 15, 'F');
                     
                     doc.setFontSize(18);
@@ -3046,8 +2921,8 @@
                     yPos += 20;
                     
                 } else if (eventType === 'casamento') {
-                    // Template Casamento - Baseado na imagem fornecida
-                    doc.setFillColor(245, 245, 245); // Fundo elegante
+                    // Template Casamento
+                    doc.setFillColor(245, 245, 245);
                     doc.rect(0, 0, pageWidth, 35, 'F');
                     
                     doc.setFontSize(16);
@@ -3057,9 +2932,8 @@
                     
                     yPos = 45;
                     
-                    // Nomes dos noivos (simulado)
                     const noivo1 = eventData.name.split(' ')[0] || 'Marina';
-                    const noivo2 = 'Telipe'; // Simulado
+                    const noivo2 = 'Telipe';
                     
                     doc.setFontSize(20);
                     doc.setTextColor(primaryColor);
@@ -3082,8 +2956,8 @@
                     yPos += 15;
                     
                 } else if (eventType === 'fechado') {
-                    // Template Evento Fechado - Baseado na imagem fornecida
-                    doc.setFillColor(50, 50, 50); // Fundo escuro
+                    // Template Evento Fechado
+                    doc.setFillColor(50, 50, 50);
                     doc.rect(0, 0, pageWidth, 25, 'F');
                     
                     doc.setFontSize(16);
@@ -3110,7 +2984,7 @@
                     yPos += 25;
                     
                 } else {
-                    // Template padrão para outros tipos
+                    // Template padrão
                     doc.setFillColor(primaryColor);
                     doc.rect(0, 0, pageWidth, 35, 'F');
                     
@@ -3126,7 +3000,6 @@
                     yPos += 20;
                 }
 
-                // Informações do convidado (comum a todos os templates)
                 if (eventType !== 'fechado') {
                     doc.setFontSize(10);
                     doc.setTextColor(lightTextColor);
@@ -3150,7 +3023,6 @@
                     yPos += 8;
                 }
 
-                // QR Code (sempre presente)
                 const qrSize = eventType === 'fechado' ? 25 : 28;
                 const qrX = (pageWidth / 2) - (qrSize / 2);
                 doc.addImage(qrImgData, 'PNG', qrX, yPos, qrSize, qrSize);
@@ -3161,7 +3033,6 @@
                 doc.setFont('helvetica', 'bold');
                 doc.text(`CÓDIGO: ${guest.accessCode}`, pageWidth / 2, yPos, { align: 'center' });
                 
-                // Rodapé
                 doc.setFontSize(9);
                 doc.setTextColor(lightTextColor);
                 doc.text('Eventos Pro | by Dj Alek', pageWidth / 2, doc.internal.pageSize.getHeight() - 4, { align: 'center' }); 
@@ -3169,7 +3040,7 @@
                 doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
 
             } else {
-                // *** TEMPLATE RECIBO (mantido igual) ***
+                // *** TEMPLATE RECIBO ***
                 const docTitle = 'Comprovante de Pagamento';
                 const docFileName = 'recibo';
                 const { jsPDF } = window.jspdf;
@@ -3259,14 +3130,10 @@
                 
                 doc.save(`${docFileName}-${guest.name.replace(/ /g, '_')}-${guest.id}.pdf`);
             }
-            // --- FIM DA LÓGICA ANTIGA DO showReceipt ---
             
-            closeAllModals(); // Fecha o modal de ação após o download
+            closeAllModals();
         };
         
-        /**
-         * NOVO: Gera e abre o link do WhatsApp com uma mensagem pré-definida
-         */
         const sendWhatsAppMessage = () => {
             const guestId = state.currentActionGuestId;
             if (!guestId) return;
@@ -3280,24 +3147,20 @@
                 return;
             }
 
-            // 1. Formatar o número de telefone
-            let phone = (guest.phone || '').replace(/\D/g, ''); // Remove tudo que não é dígito
+            let phone = (guest.phone || '').replace(/\D/g, '');
             
-            // Adiciona o DDI 55 (Brasil) se não estiver presente
             if (phone.length > 0 && !phone.startsWith('55')) {
                 phone = '55' + phone;
             }
 
-            if (phone.length < 12) { // 55 (DDI) + XX (DDD) + 9... (9 dígitos)
+            if (phone.length < 12) {
                 console.warn('Número de telefone pode estar incompleto, mas tentando assim mesmo:', phone);
             }
             
-            // 2. Montar a mensagem
             let message = '';
             const isFree = eventData.isFree;
 
             if (isFree) {
-                // Mensagem de Convite
                 message = `Olá ${guest.name}!\n\n` +
                           `Você está convidado(a) para o evento *${eventData.name}*!\n\n` +
                           `*Data:* ${formatEventDate(eventData.date)}\n` +
@@ -3309,7 +3172,6 @@
                     message += `*Veja no mapa:* ${eventData.locationLink}\n`;
                 }
             } else {
-                // Mensagem de Recibo
                 message = `Olá ${guest.name}!\n\n` +
                           `Este é o seu comprovante de pagamento para o evento *${eventData.name}*.\n\n` +
                           `*Convidado:* ${guest.name}\n` +
@@ -3320,17 +3182,13 @@
                           `Seu código de acesso para a entrada é: *${guest.accessCode}*\n`;
             }
 
-            // 3. Gerar e abrir o link
             const encodedMessage = encodeURIComponent(message);
             
-            // **** ESTA É A LINHA QUE FOI ALTERADA ****
-            // Troca 'https://wa.me/' por 'whatsapp://send'
             const whatsappUrl = `whatsapp://send?phone=${phone}&text=${encodedMessage}`;
             
             window.open(whatsappUrl, '_blank');
             closeAllModals();
         };
-
 
         // ===== EXCLUSÃO DE ITENS =====
         const confirmDelete = (id, type) => {
@@ -3372,7 +3230,6 @@
             closeAllModals();
         };
 
-        
         // ===== RELATÓRIOS PDF =====
 
         const addPdfHeaderAndFooter = (doc, title) => {
@@ -3384,27 +3241,24 @@
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
                 
-                // --- CABEÇALHO ---
                 doc.setFontSize(18);
-                doc.setTextColor(86, 54, 211); // var(--primary-color)
+                doc.setTextColor(86, 54, 211);
                 doc.setFont('helvetica', 'bold');
                 doc.text('Eventos Pro', 20, 20);
                 
                 doc.setFontSize(12);
-                doc.setTextColor(54, 63, 95); // var(--text-color)
+                doc.setTextColor(54, 63, 95);
                 doc.setFont('helvetica', 'normal');
                 doc.text(title, 20, 28);
                 
                 doc.setFontSize(10);
-                doc.setTextColor(150, 156, 178); // var(--text-light-color)
+                doc.setTextColor(150, 156, 178);
                 doc.text(`Evento: ${event.eventData.name || 'N/D'}`, pageWidth - 20, 20, { align: 'right' });
                 doc.text(`Data: ${new Date().toLocaleString('pt-BR')}`, pageWidth - 20, 28, { align: 'right' });
 
-                // Linha
-                doc.setDrawColor(234, 235, 240); // var(--border-color)
+                doc.setDrawColor(234, 235, 240);
                 doc.line(20, 35, pageWidth - 20, 35);
 
-                // --- RODAPÉ ---
                 doc.setFontSize(9);
                 doc.setTextColor(150, 156, 178);
                 doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
@@ -3485,7 +3339,6 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // NOVO: Adiciona coluna 'Pessoas'
             const head = [['#', 'Nome', 'Pessoas', 'Valor Total', 'Valor Pago', 'Valor Pendente', 'Status']];
             
             let totalAmountSum = 0;
@@ -3505,7 +3358,7 @@
                 return [
                     index + 1,
                     guest.name,
-                    familyCount, // NOVO
+                    familyCount,
                     formatCurrency(totalAmount),
                     formatCurrency(paidAmount),
                     formatCurrency(pendingAmount),
@@ -3517,7 +3370,7 @@
             
             const foot = [[
                 { content: 'Total', colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: totalPeopleSum, styles: { fontStyle: 'bold' } }, // NOVO
+                { content: totalPeopleSum, styles: { fontStyle: 'bold' } },
                 { content: formatCurrency(totalAmountSum), styles: { fontStyle: 'bold' } },
                 { content: formatCurrency(paidAmountSum), styles: { fontStyle: 'bold' } },
                 { content: formatCurrency(pendingAmountSum), styles: { fontStyle: 'bold' } },
@@ -3534,7 +3387,7 @@
                 headStyles: { fillColor: [86, 54, 211], textColor: [255, 255, 255] },
                 footStyles: { fillColor: [234, 235, 240], textColor: [54, 63, 95], fontStyle: 'bold' },
                 alternateRowStyles: { fillColor: [247, 248, 252] },
-                margin: { left: 15, right: 15 } // Ajustado para caber a nova coluna
+                margin: { left: 15, right: 15 }
             });
             
             addPdfHeaderAndFooter(doc, 'Relatório de Pagamentos de Convidados');
@@ -3592,7 +3445,6 @@
             setupModals();
             navigateToPage(state.activePage); 
             
-            // Expor funções globais para uso nos event handlers
             window.editGuest = editGuest;
             window.editSupplier = editSupplier;
             window.confirmDelete = confirmDelete;
