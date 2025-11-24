@@ -506,6 +506,7 @@
         .transaction-status { width: 10px; height: 10px; border-radius: 50%; }
         .transaction-status.paid { background-color: var(--success-color); }
         .transaction-status.pending { background-color: var(--pending-color); }
+        .transaction-status.partial { background-color: #cce7ff; color: #004085; }
         .transaction-info span { display: block; }
         .transaction-info .description { font-weight: 500; }
         .transaction-info .details { font-size: 0.8rem; color: var(--text-light-color); }
@@ -542,7 +543,6 @@
             font-size: 1.1rem;
             box-shadow: var(--shadow-light);
         }
-        .checkin-result h4 { margin-bottom: 0.5rem; font-size: 1.3rem;}
         .checkin-result.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .checkin-result.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .checkin-result.pending { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
@@ -633,6 +633,183 @@
             color: var(--text-light-color);
         }
         
+        /* NOVO: Estilos para página de pulseiras */
+        #wristbands-page .card {
+            margin-bottom: 2rem;
+        }
+        
+        .wristband-preview-container {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background-color: #f9f9f9;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .wristband-preview {
+            width: 100%;
+            max-width: 600px;
+            height: 200px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .wristband-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+        }
+        
+        .wristband-text {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            z-index: 1;
+            padding: 0 1rem;
+        }
+        
+        .wristband-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .wristband-controls .form-control {
+            flex-grow: 1;
+            min-width: 200px;
+        }
+        
+        .wristband-info {
+            background-color: var(--card-bg-color);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-light-color);
+        }
+        
+        .wristband-print-preview {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+        }
+        
+        /* MELHORIA: Grid para 10 pulseiras por folha A4 */
+        .wristband-print-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(5, 3cm);
+            gap: 0.5cm;
+            margin: 0 auto;
+            width: 21cm; /* Largura A4 */
+        }
+        
+        .wristband-print-item {
+            width: 10cm; /* Largura de 10cm para duas pulseiras lado a lado */
+            height: 3cm; /* Altura de 3cm conforme solicitado */
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+            padding: 0.2cm;
+            box-sizing: border-box;
+            background: linear-gradient(135deg, #5636D3 0%, #8E73FF 100%);
+        }
+        
+        .wristband-print-text {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            padding: 0 0.5rem;
+            width: 100%;
+            line-height: 1.2;
+        }
+        
+        .wristband-print-serial {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 0.6rem;
+            color: white;
+            background-color: rgba(0,0,0,0.3);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .wristband-print-date {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            font-size: 0.6rem;
+            color: white;
+            background-color: rgba(0,0,0,0.3);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .wristband-print-preview, .wristband-print-preview * {
+                visibility: visible;
+            }
+            .wristband-print-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                max-width: 100%;
+                padding: 0;
+                border: none;
+                box-shadow: none;
+                background-color: white;
+            }
+            .wristband-print-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(5, 3cm);
+                gap: 0.5cm;
+                margin: 1cm;
+                width: 19cm; /* Largura A4 - margens */
+            }
+            .wristband-print-item {
+                width: 9cm; /* Largura ajustada para caber duas por linha */
+                height: 3cm;
+                break-inside: avoid;
+            }
+        }
+        
         /* Responsividade */
         @media (max-width: 992px) {
              #dashboard-charts {
@@ -641,6 +818,9 @@
             }
             .chart-container {
                 height: 350px;
+            }
+            .wristband-print-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
         @media (max-width: 768px) {
@@ -655,6 +835,9 @@
             .list-item { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .list-item-actions { width: 100%; justify-content: flex-end; }
             .event-type-options { grid-template-columns: 1fr; }
+            .wristband-print-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -679,10 +862,12 @@
             <ul id="nav-links">
                 <li><a data-page="dashboard-page" class="active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
                 <li><a data-page="event-page"><i class="fa-solid fa-calendar-check"></i> Evento</a></li>
-                <li><a data-page="tasks-page"><i class="fa-solid fa-check-square"></i> Tarefas</a></li> <li><a data-page="guests-page"><i class="fa-solid fa-users"></i> Convidados</a></li>
+                <li><a data-page="tasks-page"><i class="fa-solid fa-check-square"></i> Tarefas</a></li>
+                <li><a data-page="guests-page"><i class="fa-solid fa-users"></i> Convidados</a></li>
                 <li><a data-page="suppliers-page"><i class="fa-solid fa-truck"></i> Fornecedores</a></li>
                 <li><a data-page="payments-page"><i class="fa-solid fa-money-bill-wave"></i> Pagamentos</a></li>
                 <li><a data-page="checkin-page"><i class="fa-solid fa-id-card"></i> Controle de Entrada</a></li>
+                <li><a data-page="wristbands-page"><i class="fa-solid fa-ticket"></i> Pulseiras</a></li>
                 <li><a data-page="reports-page"><i class="fa-solid fa-chart-line"></i> Relatórios</a></li>
                 <li><a data-page="backup-page"><i class="fa-solid fa-database"></i> Backup</a></li>
             </ul>
@@ -859,6 +1044,59 @@
                 <div id="checkin-result" class="checkin-result" style="margin-top: 2rem;"></div>
             </div>
         </section>
+
+        <!-- NOVA PÁGINA: PULSEIRAS -->
+        <section id="wristbands-page" class="page-content">
+            <header><h2>Impressão de Pulseiras</h2></header>
+            
+            <div class="card">
+                <h3>Configuração das Pulseiras</h3>
+                <p>Configure e imprima pulseiras personalizadas para o seu evento.</p>
+                
+                <div class="wristband-controls">
+                    <div class="form-control">
+                        <label for="wristband-quantity">Quantidade de Pulseiras</label>
+                        <input type="number" id="wristband-quantity" min="1" max="1000" value="30">
+                    </div>
+                    <div class="form-control">
+                        <label for="wristband-style">Estilo da Pulseira</label>
+                        <select id="wristband-style">
+                            <option value="aniversario">Aniversário</option>
+                            <option value="casamento">Casamento</option>
+                            <option value="fechado">Evento Fechado</option>
+                            <option value="corporativo">Corporativo</option>
+                            <option value="padrao">Padrão</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="wristband-preview-container">
+                    <div class="wristband-preview" id="wristband-preview">
+                        <div class="wristband-text" id="wristband-text">Nome do Evento</div>
+                    </div>
+                    <div class="wristband-info">
+                        <p><strong>Informações:</strong> Cada folha A4 comporta até 10 pulseiras de 3cm de altura e 20cm de comprimento. A visualização acima mostra como ficará uma pulseira individual.</p>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn secondary" id="preview-wristbands-btn"><i class="fa-solid fa-eye"></i> Visualizar Impressão</button>
+                    <button class="btn primary" id="print-wristbands-btn"><i class="fa-solid fa-print"></i> Imprimir Pulseiras</button>
+                </div>
+            </div>
+            
+            <div class="wristband-print-preview" id="wristband-print-preview">
+                <h3 style="text-align: center; margin-bottom: 1rem;">Pré-visualização de Impressão</h3>
+                <div class="wristband-print-grid" id="wristband-print-grid">
+                    <!-- As pulseiras serão geradas aqui dinamicamente -->
+                </div>
+                <div class="modal-actions" style="margin-top: 2rem;">
+                    <button class="btn secondary" id="close-preview-btn"><i class="fa-solid fa-times"></i> Fechar Visualização</button>
+                    <button class="btn primary" id="print-now-btn"><i class="fa-solid fa-print"></i> Imprimir Agora</button>
+                </div>
+            </div>
+        </section>
+
         <section id="reports-page" class="page-content">
             <header><h2>Relatórios Financeiros</h2></header>
              <div id="report-summary">
@@ -986,7 +1224,9 @@
             currentActionGuestId: null,
             charts: {},
             qrScanner: null,
-            lastAddedGuestId: null
+            lastAddedGuestId: null,
+            // MELHORIA: Contador global para números de série das pulseiras
+            wristbandSerialCounter: 1
         };
 
         // ===== SELETORES DE ELEMENTOS COMUNS =====
@@ -1276,6 +1516,9 @@
                     break;
                 case 'checkin-page':
                     renderCheckinPage();
+                    break;
+                case 'wristbands-page':
+                    renderWristbandsPage();
                     break;
                 case 'reports-page':
                     renderReportsPage();
@@ -2673,6 +2916,153 @@
 
             resultDiv.style.display = 'block';
             input.value = '';
+        };
+
+        // ===== PÁGINA DE PULSEIRAS =====
+        const renderWristbandsPage = () => {
+            const event = getActiveEvent();
+            if (!event) {
+                document.getElementById('wristband-preview').style.display = 'none';
+                document.getElementById('preview-wristbands-btn').disabled = true;
+                document.getElementById('print-wristbands-btn').disabled = true;
+                return;
+            }
+            
+            document.getElementById('wristband-preview').style.display = 'flex';
+            document.getElementById('preview-wristbands-btn').disabled = false;
+            document.getElementById('print-wristbands-btn').disabled = false;
+            
+            // Atualizar preview da pulseira
+            updateWristbandPreview();
+            
+            // Configurar eventos
+            document.getElementById('wristband-style').onchange = updateWristbandPreview;
+            document.getElementById('wristband-quantity').onchange = updateWristbandPreview;
+            
+            document.getElementById('preview-wristbands-btn').onclick = previewWristbands;
+            document.getElementById('print-wristbands-btn').onclick = printWristbands;
+            document.getElementById('close-preview-btn').onclick = closePreview;
+            document.getElementById('print-now-btn').onclick = printNow;
+        };
+
+        const updateWristbandPreview = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+            
+            const style = document.getElementById('wristband-style').value;
+            const wristbandPreview = document.getElementById('wristband-preview');
+            const wristbandText = document.getElementById('wristband-text');
+            
+            // Definir cores e estilos baseados no tema
+            const styles = {
+                aniversario: {
+                    background: 'linear-gradient(135deg, #FF6B8A 0%, #FF8E53 100%)',
+                    text: event.eventData.name || 'Aniversário'
+                },
+                casamento: {
+                    background: 'linear-gradient(135deg, #BFA16A 0%, #E8D9B5 100%)',
+                    text: event.eventData.name || 'Casamento'
+                },
+                fechado: {
+                    background: 'linear-gradient(135deg, #333333 0%, #666666 100%)',
+                    text: event.eventData.name || 'Evento Fechado'
+                },
+                corporativo: {
+                    background: 'linear-gradient(135deg, #4B90F7 0%, #74B0FB 100%)',
+                    text: event.eventData.name || 'Evento Corporativo'
+                },
+                padrao: {
+                    background: 'linear-gradient(135deg, #5636D3 0%, #8E73FF 100%)',
+                    text: event.eventData.name || 'Evento'
+                }
+            };
+            
+            const selectedStyle = styles[style] || styles.padrao;
+            
+            wristbandPreview.style.background = selectedStyle.background;
+            wristbandText.textContent = selectedStyle.text;
+        };
+
+        const previewWristbands = () => {
+            const event = getActiveEvent();
+            if (!event) return;
+            
+            const quantity = parseInt(document.getElementById('wristband-quantity').value) || 30;
+            const style = document.getElementById('wristband-style').value;
+            const printGrid = document.getElementById('wristband-print-grid');
+            const printPreview = document.getElementById('wristband-print-preview');
+            
+            // Limpar grid
+            printGrid.innerHTML = '';
+            
+            // Definir estilos
+            const styles = {
+                aniversario: {
+                    background: 'linear-gradient(135deg, #FF6B8A 0%, #FF8E53 100%)'
+                },
+                casamento: {
+                    background: 'linear-gradient(135deg, #BFA16A 0%, #E8D9B5 100%)'
+                },
+                fechado: {
+                    background: 'linear-gradient(135deg, #333333 0%, #666666 100%)'
+                },
+                corporativo: {
+                    background: 'linear-gradient(135deg, #4B90F7 0%, #74B0FB 100%)'
+                },
+                padrao: {
+                    background: 'linear-gradient(135deg, #5636D3 0%, #8E73FF 100%)'
+                }
+            };
+            
+            const selectedStyle = styles[style] || styles.padrao;
+            
+            // Calcular quantas páginas serão necessárias (10 pulseiras por página)
+            const itemsPerPage = 10;
+            const totalPages = Math.ceil(quantity / itemsPerPage);
+            
+            // Gerar pulseiras para visualização
+            for (let i = 0; i < quantity; i++) {
+                const wristbandItem = document.createElement('div');
+                wristbandItem.className = 'wristband-print-item';
+                wristbandItem.style.background = selectedStyle.background;
+                
+                const wristbandText = document.createElement('div');
+                wristbandText.className = 'wristband-print-text';
+                wristbandText.textContent = event.eventData.name || 'Evento';
+                
+                // MELHORIA: Adicionar número de série único
+                const serialNumber = document.createElement('div');
+                serialNumber.className = 'wristband-print-serial';
+                serialNumber.textContent = `#${String(state.wristbandSerialCounter + i).padStart(4, '0')}`;
+                
+                // MELHORIA: Adicionar data do evento
+                const eventDate = document.createElement('div');
+                eventDate.className = 'wristband-print-date';
+                eventDate.textContent = formatEventDate(event.eventData.date);
+                
+                wristbandItem.appendChild(wristbandText);
+                wristbandItem.appendChild(serialNumber);
+                wristbandItem.appendChild(eventDate);
+                printGrid.appendChild(wristbandItem);
+            }
+            
+            // Mostrar preview
+            printPreview.style.display = 'block';
+        };
+
+        const closePreview = () => {
+            document.getElementById('wristband-print-preview').style.display = 'none';
+        };
+
+        const printWristbands = () => {
+            previewWristbands();
+        };
+
+        const printNow = () => {
+            // MELHORIA: Atualizar o contador de números de série após a impressão
+            const quantity = parseInt(document.getElementById('wristband-quantity').value) || 30;
+            state.wristbandSerialCounter += quantity;
+            window.print();
         };
 
         // ===== PÁGINA DE RELATÓRIOS =====
